@@ -1,0 +1,373 @@
+================================================================================
+                    BLOG POST DATA FLOW DIAGRAM
+================================================================================
+
+ARCHITECTURE OVERVIEW
+═════════════════════════════════════════════════════════════════════════════
+
+                     ┌─────────────────────────┐
+                     │  React Quill Editor     │
+                     │  (Frontend Component)   │
+                     └──────────┬──────────────┘
+                                │
+                    User types blog content
+                    with rich formatting
+                    (bold, italics, images)
+                                │
+                                ▼
+                     ┌─────────────────────────┐
+                     │  Browser JavaScript     │
+                     │  Captures HTML output   │
+                     └──────────┬──────────────┘
+                                │
+                   Output: "<p>Hello <strong>World</strong></p>"
+                                │
+                                ▼
+                     ┌─────────────────────────┐
+                     │  HTTP POST Request      │
+                     │  /api/blog/create       │
+                     │  {                      │
+                     │    title: "...",        │
+                     │    content: "<p>...</p>",│
+                     │    excerpt: "...",      │
+                     │    tags: [...]          │
+                     │  }                      │
+                     └──────────┬──────────────┘
+                                │
+                                ▼
+                     ┌─────────────────────────┐
+                     │  Backend (Node.js)      │
+                     │  Express Endpoint       │
+                     └──────────┬──────────────┘
+                                │
+                     ┌──────────────────────────────────────┐
+                     │  1. Validate Input                   │
+                     │     ✓ Title required                 │
+                     │     ✓ Content not empty              │
+                     │     ✓ Excerpt required               │
+                     └──────────┬───────────────────────────┘
+                                │
+                     ┌──────────────────────────────────────┐
+                     │  2. Sanitize HTML Content            │
+                     │     ✗ Remove <script> tags           │
+                     │     ✗ Remove event handlers          │
+                     │     ✓ Keep safe tags: <p>, <strong>, │
+                     │     <img>, <a>, etc.                 │
+                     └──────────┬───────────────────────────┘
+                                │
+                     ┌──────────────────────────────────────┐
+                     │  3. Process Data                     │
+                     │     • Generate slug from title       │
+                     │     • Calculate read_time            │
+                     │     • Convert tags to JSON array     │
+                     │     • Timestamp creation             │
+                     └──────────┬───────────────────────────┘
+                                │
+                                ▼
+                     ┌─────────────────────────┐
+                     │  Database Insert        │
+                     │  INSERT INTO blog_posts │
+                     │  (                      │
+                     │    slug,                │
+                     │    title,               │
+                     │    content,   ◄────────── HTML STORED HERE
+                     │    excerpt,             │
+                     │    category,            │
+                     │    tags,                │
+                     │    read_time,           │
+                     │    is_published,        │
+                     │    created_at           │
+                     │  )                      │
+                     └──────────┬──────────────┘
+                                │
+                                ▼
+                     ┌─────────────────────────┐
+                     │  PostgreSQL Database    │
+                     │  blog_posts table       │
+                     │                         │
+                     │  id: 1                  │
+                     │  slug: "my-post"        │
+                     │  title: "My Post"       │
+                     │  content: "<p>...</p>"  │
+                     │  created_at: NOW()      │
+                     └──────────┬──────────────┘
+                                │
+                                ▼
+              ┌──────────────────────────────────────┐
+              │  RETRIEVAL & DISPLAY PHASE            │
+              │                                      │
+              │  User visits: /blog/my-post          │
+              └──────────┬───────────────────────────┘
+                         │
+                         ▼
+              ┌──────────────────────────────────────┐
+              │  GET /api/blog/my-post               │
+              └──────────┬───────────────────────────┘
+                         │
+                         ▼
+              ┌──────────────────────────────────────┐
+              │  SELECT * FROM blog_posts            │
+              │  WHERE slug = 'my-post'              │
+              └──────────┬───────────────────────────┘
+                         │
+                         ▼
+              ┌──────────────────────────────────────┐
+              │  Database Returns Post Data          │
+              │  {                                   │
+              │    id: 1,                            │
+              │    slug: "my-post",                  │
+              │    title: "My Post",                 │
+              │    content: "<p>...</p>", ◄─── HTML RETRIEVED
+              │    author: "Dr. Author",             │
+              │    view_count: 42                    │
+              │  }                                   │
+              └──────────┬───────────────────────────┘
+                         │
+                         ▼
+              ┌──────────────────────────────────────┐
+              │  React Component Receives Data       │
+              │  <BlogDisplay post={data} />         │
+              └──────────┬───────────────────────────┘
+                         │
+                         ▼
+              ┌──────────────────────────────────────┐
+              │  Render HTML Content                 │
+              │  <div                                │
+              │    dangerouslySetInnerHTML={{        │
+              │      __html: post.content            │
+              │    }}                                │
+              │  />                                  │
+              └──────────┬───────────────────────────┘
+                         │
+                         ▼
+              ┌──────────────────────────────────────┐
+              │  Browser Renders HTML                │
+              │  ✓ Paragraphs rendered               │
+              │  ✓ Bold text displayed               │
+              │  ✓ Images shown                      │
+              │  ✓ Links clickable                   │
+              │  ✓ Formatting preserved              │
+              └──────────┬───────────────────────────┘
+                         │
+                         ▼
+              ┌──────────────────────────────────────┐
+              │  User Sees Formatted Blog Post       │
+              │  with all styling intact             │
+              └──────────────────────────────────────┘
+
+
+DATA STORAGE EXAMPLE
+═════════════════════════════════════════════════════════════════════════════
+
+INPUT FROM QUILL EDITOR:
+────────────────────────
+
+User writes:
+  Title: "Advanced Nursing Care"
+  Content with formatting:
+    - "Advanced Nursing Care" (heading)
+    - "Comprehensive guide..." (paragraph)
+    - Bold text, italics
+    - Images with captions
+
+Quill converts to HTML:
+
+  <h2>Advanced Nursing Care</h2>
+  <p>Comprehensive guide to advanced nursing practices and clinical care 
+  methodologies for healthcare professionals.</p>
+  <p>Key topics covered:</p>
+  <ul>
+    <li>Assessment techniques</li>
+    <li>Patient care planning</li>
+    <li>Clinical interventions</li>
+  </ul>
+  <img src="image.jpg" alt="Nursing care">
+
+
+DATABASE STORAGE:
+────────────────
+
+blog_posts table row:
+
+  id          | 1
+  slug        | advanced-nursing-care
+  title       | Advanced Nursing Care
+  content     | <h2>Advanced Nursing Care</h2><p>Comprehensive...</p>...
+  excerpt     | Comprehensive guide to advanced nursing practices...
+  category    | Nursing
+  tags        | ["nursing", "care", "advanced", "clinical"]
+  author_name | Dr. Sarah Johnson
+  read_time   | 8
+  is_published| FALSE
+  created_at  | 2025-01-15 10:30:00
+  view_count  | 0
+
+
+RETRIEVAL & DISPLAY:
+────────────────────
+
+Query:
+  SELECT content FROM blog_posts WHERE slug = 'advanced-nursing-care'
+
+Result:
+  <h2>Advanced Nursing Care</h2><p>Comprehensive...</p>...
+
+React render:
+  <div dangerouslySetInnerHTML={{ __html: content }} />
+
+Browser output:
+  ┌─────────────────────────────────────────────────┐
+  │ Advanced Nursing Care                           │
+  │                                                 │
+  │ Comprehensive guide to advanced nursing        │
+  │ practices and clinical care methodologies       │
+  │ for healthcare professionals.                   │
+  │                                                 │
+  │ Key topics covered:                             │
+  │ • Assessment techniques                         │
+  │ • Patient care planning                         │
+  │ • Clinical interventions                        │
+  │                                                 │
+  │ [Image of nursing care]                         │
+  └─────────────────────────────────────────────────┘
+
+
+CONTENT LIFECYCLE
+═════════════════════════════════════════════════════════════════════════════
+
+1. CREATION PHASE
+   ─────────────
+   ┌──────────────────────────────────────┐
+   │ Author opens blog editor             │
+   │ ↓                                    │
+   │ Writes content in Quill (WYSIWYG)   │
+   │ ↓                                    │
+   │ Adds formatting (bold, images, etc) │
+   │ ↓                                    │
+   │ Clicks "Save as Draft"               │
+   │ ↓                                    │
+   │ POST /api/blog/create                │
+   │ ↓                                    │
+   │ Database: is_published = FALSE       │
+   │ ↓                                    │
+   │ Draft saved (not visible)            │
+   └──────────────────────────────────────┘
+
+2. EDITING PHASE
+   ──────────────
+   ┌──────────────────────────────────────┐
+   │ Author edits draft                   │
+   │ ↓                                    │
+   │ Changes content/formatting           │
+   │ ↓                                    │
+   │ Clicks "Update Draft"                │
+   │ ↓                                    │
+   │ PUT /api/blog/:id                    │
+   │ ↓                                    │
+   │ Database: updated_at = NOW()         │
+   │ ↓                                    │
+   │ Draft updated                        │
+   └──────────────────────────────────────┘
+
+3. PUBLISHING PHASE
+   ────────────────
+   ┌──────────────────────────────────────┐
+   │ Author reviews draft                 │
+   │ ↓                                    │
+   │ Clicks "Publish"                     │
+   │ ↓                                    │
+   │ PUT /api/blog/:id                    │
+   │ { is_published: true }               │
+   │ ↓                                    │
+   │ Database: is_published = TRUE        │
+   │ published_at = NOW()                 │
+   │ ↓                                    │
+   │ Post now visible to readers          │
+   └──────────────────────────────────────┘
+
+4. VIEWING PHASE
+   ──────────────
+   ┌──────────────────────────────────────┐
+   │ Reader visits blog page              │
+   │ ↓                                    │
+   │ GET /blog/advanced-nursing-care      │
+   │ ↓                                    │
+   │ API fetches from database            │
+   │ ↓                                    │
+   │ Increments view_count                │
+   │ ↓                                    │
+   │ Returns HTML content                 │
+   │ ↓                                    │
+   │ React renders in browser             │
+   │ ↓                                    │
+   │ Reader sees formatted post           │
+   └──────────────────────────────────────┘
+
+5. ENGAGEMENT PHASE
+   ────────────────
+   ┌──────────────────────────────────────┐
+   │ Reader can:                          │
+   │ ↓                                    │
+   │ • Read full content                  │
+   │ • Like/rate post                     │
+   │ • Add comments                       │
+   │ • Share on social media              │
+   │ ↓                                    │
+   │ Data stored in:                      │
+   │ • blog_ratings (likes)               │
+   │ • blog_comments (discussion)         │
+   │ • blog_posts.view_count (views)      │
+   └──────────────────────────────────────┘
+
+
+SECURITY SAFEGUARDS
+═════════════════════════════════════════════════════════════════════════════
+
+INPUT STAGE:
+  ✓ User writes in Quill (safe editor)
+  ✓ Only formatting/safe HTML captured
+
+BACKEND SANITIZATION:
+  ✓ Remove <script> tags
+  ✓ Remove event handlers (onclick, etc)
+  ✓ Whitelist safe HTML tags
+  ✓ Validate all inputs
+  ✓ SQL prepared statements (no SQL injection)
+
+DATABASE:
+  ✓ Content stored as-is (after sanitization)
+  ✓ User permissions checked
+  ✓ Audit trail (created_by, updated_by)
+
+DISPLAY:
+  ✓ HTML already sanitized
+  ✓ Safe to render with dangerouslySetInnerHTML
+  ✓ Optional: HTML parser for additional safety
+
+
+PERFORMANCE OPTIMIZATION
+═════════════════════════════════════════════════════════════════════════════
+
+INDEXES:
+  ✓ slug (fast lookups by URL)
+  ✓ category (filter by category)
+  ✓ tags (JSONB GIN index for tag searches)
+  ✓ is_published (filter published posts)
+  ✓ created_at (sort by date)
+
+CACHING STRATEGIES:
+  ✓ Cache popular posts in memory
+  ✓ CDN for featured images
+  ✓ Browser cache for HTML content
+  ✓ Database query optimization
+
+MONITORING:
+  ✓ Track view_count for trending
+  ✓ Monitor comment_count for engagement
+  ✓ Track read_time for user experience
+  ✓ Log view events for analytics
+
+
+================================================================================
+END OF DATA FLOW DIAGRAM
+================================================================================
