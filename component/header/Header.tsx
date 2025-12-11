@@ -16,6 +16,9 @@ const navItems = [
   { label: 'Join As Author', href: '/join-as-author' },
 ];
 
+// PDF Catalog link - replace with your actual Google Drive or PDF link
+const CATALOG_PDF_LINK = 'https://drive.google.com/file/d/13fzHOMvpP4K6YP3z99HOekh6vjQphCbZ/view';
+
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -137,6 +140,7 @@ export default function Header() {
               as="nav"
               display={{ base: 'none', md: 'flex' }}
               gap="4px"
+              alignItems="center"
             >
               {navItems.map((item) => (
                 <motion.a
@@ -180,6 +184,36 @@ export default function Header() {
                   </Box>
                 </motion.a>
               ))}
+
+              {/* Catalog Button */}
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => window.open(CATALOG_PDF_LINK, '_blank')}
+                style={{
+                  padding: '10px 20px',
+                  marginLeft: '12px',
+                  borderRadius: '10px',
+                  border: '2px solid white',
+                  backgroundColor: 'white',
+                  color: '#0f172a',
+                  fontSize: '14px',
+                  fontWeight: '700',
+                  cursor: 'pointer',
+                  transition: 'all 0.3s ease',
+                }}
+                onMouseEnter={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#f0f0f0';
+                  (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 8px 20px rgba(255, 255, 255, 0.2)';
+                }}
+                onMouseLeave={(e) => {
+                  (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'white';
+                  (e.currentTarget as HTMLButtonElement).style.boxShadow = 'none';
+                }}
+              >
+                Get Catalouge
+              </motion.button>
+              
             </Box>
 
             {/* Mobile Menu Button */}
@@ -275,7 +309,32 @@ export default function Header() {
                     </Box>
                   </motion.a>
                 ))}
-                
+
+                {/* Mobile Catalog Button */}
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => {
+                    window.open(CATALOG_PDF_LINK, '_blank');
+                    setIsOpen(false);
+                  }}
+                  style={{
+                    padding: '12px 20px',
+                    marginTop: '8px',
+                    borderRadius: '10px',
+                    border: '2px solid white',
+                    backgroundColor: 'white',
+                    color: '#0f172a',
+                    fontSize: '14px',
+                    fontWeight: '700',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease',
+                    width: '100%',
+                    textAlign: 'center',
+                  }}
+                >
+                  Catalog
+                </motion.button>
               </Box>
             </MotionBox>
           </>
