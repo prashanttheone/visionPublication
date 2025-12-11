@@ -1,7 +1,7 @@
+'use client';
+
 import BlogPostEditor from "@/component/adminComponet/blogEdit/BlogPost";
 
 export default function BlogsPage() {
-  return <div>
-    <BlogPostEditor />
-  </div>;
+  return <BlogPostEditor />;
 }
