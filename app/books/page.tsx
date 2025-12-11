@@ -1,7 +1,9 @@
-export default function Book() {
+import Book from '@/component/book/Book';
+
+export default function BooksPage() {
   return (
     <div>
-      <h1>Book Page</h1>
+        <Book />
     </div>
   );
 }
