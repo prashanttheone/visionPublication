@@ -13,6 +13,7 @@ const navItems = [
   { label: 'Blog', href: '/blog' },
   { label: 'Resources', href: '/resources' },
   { label: 'Contact', href: '/contact' },
+  { label: 'Join As Author', href: '/join-as-author' },
 ];
 
 export default function Header() {
