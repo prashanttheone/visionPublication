@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import {
   Box,
   Container,
@@ -84,32 +84,10 @@ const FormLabel = (props: any) => <Box as="label" fontWeight="bold" mb={2} {...p
 
 export default function ManageBooks() {
   const [books, setBooks] = useState<Book[]>([]);
-  const [courses, setCourses] = useState<Course[]>([
-    { id: 1, name: 'BSc Nursing', description: 'Bachelor of Science in Nursing' },
-    { id: 2, name: 'GNM', description: 'General Nursing & Midwifery' },
-    { id: 3, name: 'Post Basic BSc Nursing', description: 'Post Basic Bachelor of Science in Nursing' }
-  ]);
-  const [semesters, setSemesters] = useState<Semester[]>([
-    // BSc Nursing Semesters
-    { id: 1, course_id: 1, semester_number: 1, description: '1st Year 1st Semester' },
-    { id: 2, course_id: 1, semester_number: 2, description: '1st Year 2nd Semester' },
-    { id: 3, course_id: 1, semester_number: 3, description: '2nd Year 1st Semester' },
-    { id: 4, course_id: 1, semester_number: 4, description: '2nd Year 2nd Semester' },
-    { id: 5, course_id: 1, semester_number: 5, description: '3rd Year 1st Semester' },
-    { id: 6, course_id: 1, semester_number: 6, description: '3rd Year 2nd Semester' },
-    { id: 7, course_id: 1, semester_number: 7, description: '4th Year 1st Semester' },
-    { id: 8, course_id: 1, semester_number: 8, description: '4th Year 2nd Semester' },
-    // GNM Semesters
-    { id: 9, course_id: 2, semester_number: 1, description: '1st Year 1st Semester' },
-    { id: 10, course_id: 2, semester_number: 2, description: '1st Year 2nd Semester' },
-    { id: 11, course_id: 2, semester_number: 3, description: '2nd Year 1st Semester' },
-    { id: 12, course_id: 2, semester_number: 4, description: '2nd Year 2nd Semester' },
-    { id: 13, course_id: 2, semester_number: 5, description: '3rd Year 1st Semester' },
-    { id: 14, course_id: 2, semester_number: 6, description: '3rd Year 2nd Semester' },
-    // Post Basic BSc Nursing Semesters
-    { id: 15, course_id: 3, semester_number: 1, description: '1st Year 1st Semester' },
-    { id: 16, course_id: 3, semester_number: 2, description: '1st Year 2nd Semester' }
-  ]);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [semesters, setSemesters] = useState<Semester[]>([]);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
   const [bookCourseMaps, setBookCourseMaps] = useState<BookCourseMap[]>([]);
   const [formData, setFormData] = useState<Book>(initialFormState);
   const [courseMapping, setCourseMapping] = useState<BookCourseMap[]>([
@@ -120,6 +98,89 @@ export default function ManageBooks() {
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeView, setActiveView] = useState<'list' | 'form'>('list');
+
+  /**
+   * Check database connection health
+   */
+  const checkHealth = useCallback(async (): Promise<boolean> => {
+    try {
+      const response = await fetch('/api/health');
+      const result = await response.json();
+      
+      if (result.success) {
+        setConnectionError(null);
+        return true;
+      } else {
+        setConnectionError('Database connection failed: ' + result.message);
+        return false;
+      }
+    } catch (error) {
+      setConnectionError('Failed to check database connection: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      return false;
+    }
+  }, []);
+
+  /**
+   * Fetch courses and semesters
+   */
+  const fetchCoursesAndSemesters = useCallback(async () => {
+    try {
+      const response = await fetch('/api/course?includeSemesters=true');
+      const result = await response.json();
+
+      if (result.success) {
+        setCourses(result.data || []);
+        
+        // Extract all semesters
+        const allSems: Semester[] = [];
+        result.data?.forEach((course: any) => {
+          if (course.semesters) {
+            allSems.push(...course.semesters);
+          }
+        });
+        setSemesters(allSems);
+      }
+    } catch (error) {
+      console.error('Error fetching courses:', error);
+    }
+  }, []);
+
+  /**
+   * Fetch all books on component mount
+   */
+  useEffect(() => {
+    const initializeData = async () => {
+      // Check health first
+      const isHealthy = await checkHealth();
+      
+      if (!isHealthy) {
+        setIsInitialLoading(false);
+        return;
+      }
+
+      // Fetch courses and books
+      try {
+        await fetchCoursesAndSemesters();
+        
+        const booksResponse = await fetch('/api/book');
+        const booksResult = await booksResponse.json();
+
+        if (booksResult.success) {
+          setBooks(booksResult.data || []);
+          setConnectionError(null);
+        } else {
+          setConnectionError('Failed to fetch books: ' + booksResult.error);
+        }
+      } catch (error) {
+        console.error('Error initializing:', error);
+        setConnectionError('Error loading data: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      } finally {
+        setIsInitialLoading(false);
+      }
+    };
+
+    initializeData();
+  }, [checkHealth, fetchCoursesAndSemesters]);
 
   /**
    * Calculate discount percentage
@@ -217,27 +278,29 @@ export default function ManageBooks() {
 
     setIsLoading(true);
     try {
-      // API call would go here
-      // const response = await fetch(`/api/books/${editingId}`, {
-      //   method: 'PUT',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ book: formData, courseMappings: courseMapping })
-      // });
+      const response = await fetch(`/api/book/${editingId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ book: formData, courseMappings: courseMapping })
+      });
 
-      setBooks(prev =>
-        prev.map(book =>
-          book.id === editingId
-            ? { ...formData, id: editingId, updated_at: new Date().toISOString() }
-            : book
-        )
-      );
-      
-      setFormData(initialFormState);
-      setCourseMapping([{ course_id: 1, semester_id: 1, is_required: true, is_recommended: false }]);
-      setIsEditing(false);
-      setEditingId(null);
-      setActiveView('list');
-      alert('Book updated successfully');
+      const result = await response.json();
+
+      if (result.success) {
+        setBooks(prev =>
+          prev.map(book =>
+            book.id === editingId ? result.data.book : book
+          )
+        );
+        setFormData(initialFormState);
+        setCourseMapping([{ course_id: 1, semester_id: 1, is_required: true, is_recommended: false }]);
+        setIsEditing(false);
+        setEditingId(null);
+        setActiveView('list');
+        alert('Book updated successfully');
+      } else {
+        alert(result.error || 'Failed to update book');
+      }
     } catch (error) {
       alert(error instanceof Error ? error.message : 'Failed to update book');
     } finally {
@@ -253,13 +316,18 @@ export default function ManageBooks() {
 
     setIsLoading(true);
     try {
-      // API call would go here
-      // const response = await fetch(`/api/books/${id}`, {
-      //   method: 'DELETE'
-      // });
+      const response = await fetch(`/api/book/${id}`, {
+        method: 'DELETE'
+      });
 
-      setBooks(prev => prev.filter(book => book.id !== id));
-      alert('Book deleted successfully');
+      const result = await response.json();
+
+      if (result.success) {
+        setBooks(prev => prev.filter(book => book.id !== id));
+        alert('Book deleted successfully');
+      } else {
+        alert(result.error || 'Failed to delete book');
+      }
     } catch (error) {
       alert(error instanceof Error ? error.message : 'Failed to delete book');
     } finally {
@@ -343,31 +411,49 @@ export default function ManageBooks() {
           </Text>
         </Box>
 
+        {/* Connection Error Alert */}
+        {connectionError && (
+          <Box mb={6} p={4} bg="red.50" borderLeft="4px solid" borderColor="red.500" borderRadius="md">
+            <Heading size="sm" color="red.700" mb={2}>
+              ⚠️ Connection Error
+            </Heading>
+            <Text color="red.600" fontSize="sm">
+              {connectionError}
+            </Text>
+          </Box>
+        )}
+
         {/* List View */}
         {activeView === 'list' && (
           <Stack gap={6}>
-            {/* Search and Add Button */}
-            <Stack direction="row" gap={4}>
-              <Input
-                placeholder="Search by name, author, or ISBN..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                size="lg"
-              />
-              <Button
-                colorScheme="green"
-                onClick={() => {
-                  setFormData(initialFormState);
-                  setIsEditing(false);
-                  setActiveView('form');
-                }}
-              >
-                ➕ Add Book
-              </Button>
-            </Stack>
+            {isInitialLoading ? (
+              <Box p={8} textAlign="center">
+                <Text color="gray.600">Loading books...</Text>
+              </Box>
+            ) : (
+              <Box>
+                {/* Search and Add Button */}
+                <Stack direction="row" gap={4}>
+                  <Input
+                    placeholder="Search by name, author, or ISBN..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    size="lg"
+                  />
+                  <Button
+                    colorScheme="green"
+                    onClick={() => {
+                      setFormData(initialFormState);
+                      setIsEditing(false);
+                      setActiveView('form');
+                    }}
+                  >
+                    ➕ Add Book
+                  </Button>
+                </Stack>
 
-            {/* Books Table */}
-            {filteredBooks.length > 0 ? (
+                {/* Books Table */}
+                {filteredBooks.length > 0 ? (
               <Box overflowX="auto" borderWidth={1} borderColor="gray.200" borderRadius="md">
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead style={{ backgroundColor: '#f7fafc' }}>
@@ -431,11 +517,13 @@ export default function ManageBooks() {
                   </tbody>
                 </table>
               </Box>
-            ) : (
-              <Box p={8} textAlign="center">
-                <Text color="gray.600">
-                  {books.length === 0 ? 'No books yet. Create your first book!' : 'No books match your search.'}
-                </Text>
+                ) : (
+                  <Box p={8} textAlign="center">
+                    <Text color="gray.600">
+                      {books.length === 0 ? 'No books yet. Create your first book!' : 'No books match your search.'}
+                    </Text>
+                  </Box>
+                )}
               </Box>
             )}
           </Stack>
