@@ -28,6 +28,8 @@ interface BookCourseMap {
   semester_id: number;
   is_required: boolean;
   is_recommended: boolean;
+  created_at?: string;
+  updated_at?: string;
 }
 
 interface UpdateBookRequest {
@@ -36,14 +38,14 @@ interface UpdateBookRequest {
 }
 
 /**
- * GET - Fetch single book by ID with course mappings
+ * GET - Fetch a single book by ID with optional course mappings
  */
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const bookId = parseInt(params.id);
+    const bookId = parseInt(params.id, 10);
 
     if (isNaN(bookId)) {
       return NextResponse.json(
@@ -51,6 +53,9 @@ export async function GET(
         { status: 400 }
       );
     }
+
+    const searchParams = request.nextUrl.searchParams;
+    const includeMappings = searchParams.get('includeMappings') === 'true';
 
     // Fetch book
     const bookResult = await query<Book>(
@@ -66,18 +71,22 @@ export async function GET(
     }
 
     const book = bookResult.rows[0];
+    let courseMappings: BookCourseMap[] = [];
 
-    // Fetch course mappings
-    const mappingsResult = await query<BookCourseMap>(
-      'SELECT * FROM book_course_map WHERE book_id = $1 ORDER BY course_id, semester_id',
-      [bookId]
-    );
+    // Fetch course mappings if requested
+    if (includeMappings) {
+      const mappingsResult = await query<BookCourseMap>(
+        'SELECT * FROM book_course_map WHERE book_id = $1 ORDER BY course_id, semester_id',
+        [bookId]
+      );
+      courseMappings = mappingsResult.rows;
+    }
 
     return NextResponse.json({
       success: true,
       data: {
-        ...book,
-        courseMappings: mappingsResult.rows
+        book,
+        courseMappings
       }
     });
   } catch (error) {
@@ -94,7 +103,8 @@ export async function GET(
 }
 
 /**
- * PUT - Update book and course mappings
+ * PUT - Update book by ID with optional course mappings
+ * Body: { book: Book, courseMappings?: BookCourseMap[] }
  */
 export async function PUT(
   request: NextRequest,
@@ -103,7 +113,7 @@ export async function PUT(
   const client = await getClient();
 
   try {
-    const bookId = parseInt(params.id);
+    const bookId = parseInt(params.id, 10);
 
     if (isNaN(bookId)) {
       return NextResponse.json(
@@ -123,6 +133,13 @@ export async function PUT(
       );
     }
 
+    if (!book.author || !book.author.trim()) {
+      return NextResponse.json(
+        { success: false, error: 'Author is required' },
+        { status: 400 }
+      );
+    }
+
     if (book.offer_price > book.actual_price) {
       return NextResponse.json(
         { success: false, error: 'Offer price cannot exceed actual price' },
@@ -131,12 +148,8 @@ export async function PUT(
     }
 
     // Check if book exists
-    const existingBook = await client.query(
-      'SELECT id FROM books WHERE id = $1',
-      [bookId]
-    );
-
-    if (existingBook.rows.length === 0) {
+    const existsResult = await client.query('SELECT id FROM books WHERE id = $1', [bookId]);
+    if (existsResult.rows.length === 0) {
       return NextResponse.json(
         { success: false, error: 'Book not found' },
         { status: 404 }
@@ -149,9 +162,9 @@ export async function PUT(
     // Update book
     const bookResult = await client.query<Book>(
       `UPDATE books 
-       SET name = $1, author = $2, isbn = $3, edition = $4, description = $5, image_url = $6,
-           actual_price = $7, offer_price = $8, stock_quantity = $9, in_stock = $10,
-           rating = $11, reviews_count = $12, category = $13, updated_at = CURRENT_TIMESTAMP
+       SET name = $1, author = $2, isbn = $3, edition = $4, description = $5, 
+           image_url = $6, actual_price = $7, offer_price = $8, stock_quantity = $9, 
+           in_stock = $10, rating = $11, reviews_count = $12, category = $13, updated_at = CURRENT_TIMESTAMP
        WHERE id = $14
        RETURNING *`,
       [
@@ -175,13 +188,11 @@ export async function PUT(
     const updatedBook = bookResult.rows[0];
 
     // Delete existing course mappings
-    await client.query(
-      'DELETE FROM book_course_map WHERE book_id = $1',
-      [bookId]
-    );
+    await client.query('DELETE FROM book_course_map WHERE book_id = $1', [bookId]);
+
+    let newMappings: BookCourseMap[] = [];
 
     // Insert new course mappings
-    let newMappings: BookCourseMap[] = [];
     if (courseMappings.length > 0) {
       const mappingInserts = courseMappings.map(mapping =>
         client.query<BookCourseMap>(
@@ -209,9 +220,19 @@ export async function PUT(
     });
   } catch (error) {
     // Rollback transaction on error
-    await client.query('ROLLBACK');
+    await client.query('ROLLBACK').catch(() => {});
 
     console.error('Error updating book:', error);
+
+    if (error instanceof Error && error.message.includes('duplicate key')) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'A book with this ISBN already exists'
+        },
+        { status: 409 }
+      );
+    }
 
     return NextResponse.json(
       {
@@ -227,14 +248,16 @@ export async function PUT(
 }
 
 /**
- * DELETE - Delete book (cascades to course mappings)
+ * DELETE - Delete book by ID (cascades to course mappings)
  */
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const client = await getClient();
+
   try {
-    const bookId = parseInt(params.id);
+    const bookId = parseInt(params.id, 10);
 
     if (isNaN(bookId)) {
       return NextResponse.json(
@@ -244,27 +267,42 @@ export async function DELETE(
     }
 
     // Check if book exists
-    const existingBook = await query(
-      'SELECT id, name FROM books WHERE id = $1',
-      [bookId]
-    );
-
-    if (existingBook.rows.length === 0) {
+    const existsResult = await client.query('SELECT id FROM books WHERE id = $1', [bookId]);
+    if (existsResult.rows.length === 0) {
       return NextResponse.json(
         { success: false, error: 'Book not found' },
         { status: 404 }
       );
     }
 
-    // Delete book (course mappings cascade delete)
-    await query('DELETE FROM books WHERE id = $1', [bookId]);
+    // Start transaction
+    await client.query('BEGIN');
+
+    // Delete course mappings
+    await client.query('DELETE FROM book_course_map WHERE book_id = $1', [bookId]);
+
+    // Delete book
+    const deleteResult = await client.query<Book>(
+      'DELETE FROM books WHERE id = $1 RETURNING *',
+      [bookId]
+    );
+
+    const deletedBook = deleteResult.rows[0];
+
+    // Commit transaction
+    await client.query('COMMIT');
 
     return NextResponse.json({
       success: true,
-      message: 'Book and associated course mappings deleted successfully',
-      data: existingBook.rows[0]
+      message: 'Book deleted successfully',
+      data: {
+        book: deletedBook
+      }
     });
   } catch (error) {
+    // Rollback transaction on error
+    await client.query('ROLLBACK').catch(() => {});
+
     console.error('Error deleting book:', error);
 
     return NextResponse.json(
@@ -275,5 +313,7 @@ export async function DELETE(
       },
       { status: 500 }
     );
+  } finally {
+    client.release();
   }
 }

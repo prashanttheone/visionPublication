@@ -66,49 +66,17 @@ export default function ManageCourse() {
   const [activeView, setActiveView] = useState<'list' | 'form'>('list');
   const [selectedCourseId, setSelectedCourseId] = useState<number | null>(null);
   const [showSemesters, setShowSemesters] = useState(false);
-  const [connectionError, setConnectionError] = useState<string | null>(null);
-
-  /**
-   * Check database connection health
-   */
-  const checkHealth = useCallback(async (): Promise<boolean> => {
-    try {
-      const response = await fetch('/api/health');
-      const result = await response.json();
-      
-      if (result.success) {
-        setConnectionError(null);
-        return true;
-      } else {
-        setConnectionError('Database connection failed: ' + result.message);
-        return false;
-      }
-    } catch (error) {
-      setConnectionError('Failed to check database connection: ' + (error instanceof Error ? error.message : 'Unknown error'));
-      return false;
-    }
-  }, []);
 
   /**
    * Fetch all courses on component mount
    */
   useEffect(() => {
-    const initializeCourses = async () => {
-      // First check health
-      const isHealthy = await checkHealth();
-      
-      if (!isHealthy) {
-        setIsInitialLoading(false);
-        return;
-      }
-
-      // If healthy, fetch courses
+    const fetchCourses = async () => {
       try {
         const response = await fetch('/api/course?includeSemesters=true');
         
         if (!response.ok) {
           console.error('API Error:', response.status, response.statusText);
-          setConnectionError(`API Error: ${response.status} ${response.statusText}`);
           setIsInitialLoading(false);
           return;
         }
@@ -126,21 +94,18 @@ export default function ManageCourse() {
             }
           });
           setAllSemesters(semesters);
-          setConnectionError(null);
         } else {
           console.error('Failed to fetch courses:', result.error);
-          setConnectionError('Failed to fetch courses: ' + result.error);
         }
       } catch (error) {
         console.error('Error fetching courses:', error);
-        setConnectionError('Error fetching courses: ' + (error instanceof Error ? error.message : 'Unknown error'));
       } finally {
         setIsInitialLoading(false);
       }
     };
 
-    initializeCourses();
-  }, [checkHealth]);
+    fetchCourses();
+  }, []);
 
   /**
    * Filter courses based on search term
@@ -435,18 +400,6 @@ export default function ManageCourse() {
             Create and manage academic courses with years and semesters
           </Text>
         </Box>
-
-        {/* Connection Error Alert */}
-        {connectionError && (
-          <Box mb={6} p={4} bg="red.50" borderLeft="4px solid" borderColor="red.500" borderRadius="md">
-            <Heading size="sm" color="red.700" mb={2}>
-              ⚠️ Connection Error
-            </Heading>
-            <Text color="red.600" fontSize="sm">
-              {connectionError}
-            </Text>
-          </Box>
-        )}
 
         {/* List View */}
         {activeView === 'list' && !showSemesters && (
