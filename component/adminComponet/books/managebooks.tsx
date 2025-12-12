@@ -14,6 +14,7 @@ import {
   Separator
 } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
+import CloudinaryImageUpload from '@/component/imageUpload/CloudinaryImageUpload';
 
 const MotionBox = motion.create(Box);
 
@@ -76,7 +77,6 @@ const FORM_SECTIONS = {
     color: 'blue.600',
     fields: [
       { name: 'description', label: 'Description', type: 'textarea', placeholder: 'Enter book description', rows: 4 },
-      { name: 'image_url', label: 'Image URL', type: 'url', placeholder: 'https://images.example.com/book.jpg' },
     ]
   },
   pricing: {
@@ -136,6 +136,7 @@ export default function ManageBooks() {
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeView, setActiveView] = useState<'list' | 'form'>('list');
+  const [uploadedImageUrl, setUploadedImageUrl] = useState<string>('');
 
   const checkHealth = useCallback(async (): Promise<boolean> => {
     try {
@@ -236,15 +237,20 @@ export default function ManageBooks() {
     }
     setIsLoading(true);
     try {
+      const bookData = {
+        ...formData,
+        image_url: uploadedImageUrl || formData.image_url
+      };
       const response = await fetch('/api/book', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ book: formData, courseMappings: courseMapping })
+        body: JSON.stringify({ book: bookData, courseMappings: courseMapping })
       });
       const result = await response.json();
       if (result.success) {
         setBooks(prev => [...prev, result.data.book]);
         setFormData(initialFormState);
+        setUploadedImageUrl('');
         setCourseMapping([{ course_id: 1, semester_id: 1, is_required: true, is_recommended: false }]);
         setActiveView('list');
         alert('✅ Book created successfully!');
@@ -256,7 +262,7 @@ export default function ManageBooks() {
     } finally {
       setIsLoading(false);
     }
-  }, [formData, courseMapping]);
+  }, [formData, courseMapping, uploadedImageUrl]);
 
   const handleUpdate = useCallback(async () => {
     if (!editingId) return;
@@ -270,15 +276,20 @@ export default function ManageBooks() {
     }
     setIsLoading(true);
     try {
+      const bookData = {
+        ...formData,
+        image_url: uploadedImageUrl || formData.image_url
+      };
       const response = await fetch(`/api/book/${editingId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ book: formData, courseMappings: courseMapping })
+        body: JSON.stringify({ book: bookData, courseMappings: courseMapping })
       });
       const result = await response.json();
       if (result.success) {
         setBooks(prev => prev.map(book => book.id === editingId ? result.data.book : book));
         setFormData(initialFormState);
+        setUploadedImageUrl('');
         setCourseMapping([{ course_id: 1, semester_id: 1, is_required: true, is_recommended: false }]);
         setIsEditing(false);
         setEditingId(null);
@@ -292,7 +303,7 @@ export default function ManageBooks() {
     } finally {
       setIsLoading(false);
     }
-  }, [editingId, formData, courseMapping]);
+  }, [editingId, formData, courseMapping, uploadedImageUrl]);
 
   const handleDelete = useCallback(async (id: number) => {
     if (!confirm('Are you sure you want to delete this book?')) return;
@@ -315,6 +326,7 @@ export default function ManageBooks() {
 
   const handleEdit = useCallback((book: Book) => {
     setFormData(book);
+    setUploadedImageUrl('');
     setCourseMapping([{ course_id: 1, semester_id: 1, is_required: true, is_recommended: false }]);
     setEditingId(book.id!);
     setIsEditing(true);
@@ -327,6 +339,7 @@ export default function ManageBooks() {
 
   const handleCancel = useCallback(() => {
     setFormData(initialFormState);
+    setUploadedImageUrl('');
     setCourseMapping([{ course_id: 1, semester_id: 1, is_required: true, is_recommended: false }]);
     setIsEditing(false);
     setEditingId(null);
@@ -513,6 +526,26 @@ export default function ManageBooks() {
 
             <Stack gap={6} maxW="800px">
               {Object.keys(FORM_SECTIONS).map(key => renderFormSection(key as keyof typeof FORM_SECTIONS))}
+
+              {/* Cloudinary Image Upload */}
+              <Box>
+                <Heading size="sm" mb={4} color="blue.600">
+                  🖼️ Book Cover Image
+                </Heading>
+                <CloudinaryImageUpload onImageSelect={(secureUrl) => setUploadedImageUrl(secureUrl)} />
+                {uploadedImageUrl && (
+                  <Text fontSize="sm" color="green.600" mt={3}>
+                    ✅ Image URL saved: {uploadedImageUrl.substring(0, 50)}...
+                  </Text>
+                )}
+                {formData.image_url && !uploadedImageUrl && (
+                  <Text fontSize="sm" color="gray.600" mt={3}>
+                    📋 Current image: {formData.image_url.substring(0, 50)}...
+                  </Text>
+                )}
+              </Box>
+
+              <Separator />
 
               {formData.actual_price > 0 && (
                 <Text fontSize="sm" color="green.600" mt={2}>
