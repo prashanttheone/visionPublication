@@ -2,7 +2,7 @@
 
 import { Box, Container, Text, Badge } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { HiPlayCircle } from 'react-icons/hi2';
 
 const MotionBox = motion.create(Box);
@@ -11,49 +11,43 @@ interface YouTubeVideo {
   id: number;
   title: string;
   headline: string;
-  videoId: string;
+  video_id: string;
   thumbnail: string;
   duration: string;
+  is_active: boolean;
+  display_order: number;
 }
 
 export default function Youtube() {
+  const [videos, setVideos] = useState<YouTubeVideo[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedVideo, setSelectedVideo] = useState<YouTubeVideo | null>(null);
   const [isOpen, setIsOpen] = useState(false);
 
-  const videos: YouTubeVideo[] = [
-    {
-      id: 1,
-      title: 'Healthcare Education Excellence',
-      headline: 'Transforming Nursing Education with Modern Methods',
-      videoId: 'JyvX1LkNXz8',
-      thumbnail: 'https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg',
-      duration: '12:45',
-    },
-    {
-      id: 2,
-      title: 'Clinical Best Practices',
-      headline: 'Evidence-Based Approaches to Patient Care',
-      videoId: 'jNQXAC9IVRw',
-      thumbnail: 'https://img.youtube.com/vi/jNQXAC9IVRw/maxresdefault.jpg',
-      duration: '18:30',
-    },
-    {
-      id: 3,
-      title: 'Medical Research Insights',
-      headline: 'Latest Discoveries in Healthcare Innovation',
-      videoId: '9bZkp7q19f0',
-      thumbnail: 'https://img.youtube.com/vi/9bZkp7q19f0/maxresdefault.jpg',
-      duration: '15:20',
-    },
-    {
-      id: 4,
-      title: 'Professional Development',
-      headline: 'Career Growth Strategies for Healthcare Professionals',
-      videoId: 'OPf0YbXqDm0',
-      thumbnail: 'https://img.youtube.com/vi/OPf0YbXqDm0/maxresdefault.jpg',
-      duration: '22:15',
-    },
-  ];
+  useEffect(() => {
+    const fetchVideos = async () => {
+      try {
+        setIsLoading(true);
+        const response = await fetch('/api/youtube?active=true');
+        const data = await response.json();
+
+        if (data.success) {
+          setVideos(data.data);
+          setError(null);
+        } else {
+          setError('Failed to load videos');
+        }
+      } catch (err) {
+        console.error('Error fetching videos:', err);
+        setError('Failed to load videos');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchVideos();
+  }, []);
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -133,121 +127,141 @@ export default function Youtube() {
         </MotionBox>
 
         {/* Videos Grid */}
-        <Box display="grid" gridTemplateColumns={{ base: '1fr', md: 'repeat(2, 1fr)', lg: 'repeat(4, 1fr)' }} gap={{ base: '24px', md: '28px' }}>
-          {videos.map((video) => (
-            <MotionBox key={video.id} variants={cardVariants} initial="hidden" whileInView="visible" viewport={{ once: true }} whileHover="hover">
-              <Box
-                bg="rgba(30, 41, 59, 0.6)"
-                border="1px solid"
-                borderColor="rgba(100, 181, 246, 0.2)"
-                borderRadius="16px"
-                overflow="hidden"
-                backdropFilter="blur(10px)"
-                height="100%"
-                display="flex"
-                flexDirection="column"
-                transition="all 0.3s ease"
-                _hover={{
-                  borderColor: 'rgba(100, 181, 246, 0.4)',
-                }}
-              >
-                {/* Video Thumbnail */}
+        {isLoading ? (
+          <Box textAlign="center" py="60px">
+            <Text color="white" fontSize="18px" fontWeight="700">
+              Loading videos...
+            </Text>
+          </Box>
+        ) : error ? (
+          <Box textAlign="center" py="60px">
+            <Text color="red.300" fontSize="18px" fontWeight="700">
+              {error}
+            </Text>
+          </Box>
+        ) : videos.length === 0 ? (
+          <Box textAlign="center" py="60px">
+            <Text color="gray.300" fontSize="18px" fontWeight="700">
+              No videos available
+            </Text>
+          </Box>
+        ) : (
+          <Box display="grid" gridTemplateColumns={{ base: '1fr', md: 'repeat(2, 1fr)', lg: 'repeat(4, 1fr)' }} gap={{ base: '24px', md: '28px' }}>
+            {videos.map((video) => (
+              <MotionBox key={video.id} variants={cardVariants} initial="hidden" whileInView="visible" viewport={{ once: true }} whileHover="hover">
                 <Box
-                  position="relative"
-                  width="100%"
-                  height="180px"
+                  bg="rgba(30, 41, 59, 0.6)"
+                  border="1px solid"
+                  borderColor="rgba(100, 181, 246, 0.2)"
+                  borderRadius="16px"
                   overflow="hidden"
-                  bg="rgba(100, 181, 246, 0.1)"
-                  backgroundImage={`url(${video.thumbnail})`}
-                  backgroundSize="cover"
-                  backgroundPosition="center"
-                  cursor="pointer"
-                  onClick={() => handleVideoClick(video)}
+                  backdropFilter="blur(10px)"
+                  height="100%"
+                  display="flex"
+                  flexDirection="column"
+                  transition="all 0.3s ease"
+                  _hover={{
+                    borderColor: 'rgba(100, 181, 246, 0.4)',
+                  }}
                 >
-                  {/* Play Button Overlay */}
+                  {/* Video Thumbnail */}
                   <Box
-                    position="absolute"
-                    top={0}
-                    left={0}
-                    right={0}
-                    bottom={0}
-                    bg="rgba(0, 0, 0, 0.3)"
-                    display="flex"
-                    alignItems="center"
-                    justifyContent="center"
-                    _groupHover={{ bg: 'rgba(0, 0, 0, 0.5)' }}
-                    transition="all 0.3s ease"
+                    position="relative"
+                    width="100%"
+                    height="180px"
+                    overflow="hidden"
+                    bg="rgba(100, 181, 246, 0.1)"
+                    backgroundImage={`url(${video.thumbnail})`}
+                    backgroundSize="cover"
+                    backgroundPosition="center"
+                    cursor="pointer"
+                    onClick={() => handleVideoClick(video)}
                   >
-                    <motion.div
-                      whileHover={{ scale: 1.15 }}
-                      whileTap={{ scale: 0.95 }}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        cursor: 'pointer',
-                      }}
+                    {/* Play Button Overlay */}
+                    <Box
+                      position="absolute"
+                      top={0}
+                      left={0}
+                      right={0}
+                      bottom={0}
+                      bg="rgba(0, 0, 0, 0.3)"
+                      display="flex"
+                      alignItems="center"
+                      justifyContent="center"
+                      _groupHover={{ bg: 'rgba(0, 0, 0, 0.5)' }}
+                      transition="all 0.3s ease"
                     >
-                      <HiPlayCircle size={56} color="white" style={{ filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.3))' }} />
-                    </motion.div>
+                      <motion.div
+                        whileHover={{ scale: 1.15 }}
+                        whileTap={{ scale: 0.95 }}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <HiPlayCircle size={56} color="white" style={{ filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.3))' }} />
+                      </motion.div>
+                    </Box>
+
+                    {/* Duration Badge */}
+                    <Badge
+                      position="absolute"
+                      bottom="12px"
+                      right="12px"
+                      bg="rgba(0, 0, 0, 0.7)"
+                      color="white"
+                      px="10px"
+                      py="4px"
+                      borderRadius="4px"
+                      fontSize="xs"
+                      fontWeight="700"
+                    >
+                      {video.duration}
+                    </Badge>
                   </Box>
 
-                  {/* Duration Badge */}
-                  <Badge
-                    position="absolute"
-                    bottom="12px"
-                    right="12px"
-                    bg="rgba(0, 0, 0, 0.7)"
-                    color="white"
-                    px="10px"
-                    py="4px"
-                    borderRadius="4px"
-                    fontSize="xs"
-                    fontWeight="700"
-                  >
-                    {video.duration}
-                  </Badge>
+                  {/* Card Footer */}
+                  <Box p={{ base: '16px', md: '20px' }} flex="1" display="flex" flexDirection="column">
+                    <Text fontSize="sm" color="gray.400" fontWeight="600" mb="8px">
+                      Video {video.id}
+                    </Text>
+
+                    <Text fontSize={{ base: '15px', md: '16px' }} fontWeight="800" color="white" lineHeight="1.4" mb="8px">
+                      {video.title}
+                    </Text>
+
+                    <Text fontSize="sm" color="gray.300" lineHeight="1.5" flex="1">
+                      {video.headline}
+                    </Text>
+
+                    {/* Watch Button */}
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => handleVideoClick(video)}
+                      style={{
+                        marginTop: '16px',
+                        padding: '10px 16px',
+                        fontSize: '14px',
+                        fontWeight: '700',
+                        border: '1px solid rgba(100, 181, 246, 0.5)',
+                        borderRadius: '8px',
+                        background: 'linear-gradient(135deg, rgba(100, 181, 246, 0.1), rgba(66, 165, 245, 0.05))',
+                        color: '#64B5F6',
+                        cursor: 'pointer',
+                        transition: 'all 0.3s ease',
+                      }}
+                    >
+                      Watch Now
+                    </motion.button>
+                  </Box>
                 </Box>
-
-                {/* Card Footer */}
-                <Box p={{ base: '16px', md: '20px' }} flex="1" display="flex" flexDirection="column">
-                  <Text fontSize="sm" color="gray.400" fontWeight="600" mb="8px">
-                    Video {video.id}
-                  </Text>
-
-                  <Text fontSize={{ base: '15px', md: '16px' }} fontWeight="800" color="white" lineHeight="1.4" mb="8px">
-                    {video.title}
-                  </Text>
-
-                  <Text fontSize="sm" color="gray.300" lineHeight="1.5" flex="1">
-                    {video.headline}
-                  </Text>
-
-                  {/* Watch Button */}
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => handleVideoClick(video)}
-                    style={{
-                      marginTop: '16px',
-                      padding: '10px 16px',
-                      fontSize: '14px',
-                      fontWeight: '700',
-                      border: '1px solid rgba(100, 181, 246, 0.5)',
-                      borderRadius: '8px',
-                      background: 'linear-gradient(135deg, rgba(100, 181, 246, 0.1), rgba(66, 165, 245, 0.05))',
-                      color: '#64B5F6',
-                      cursor: 'pointer',
-                      transition: 'all 0.3s ease',
-                    }}
-                  >
-                    Watch Now
-                  </motion.button>
-                </Box>
-              </Box>
-            </MotionBox>
-          ))}
-        </Box>
+              </MotionBox>
+            ))}
+          </Box>
+        )}
       </Container>
 
       {/* Video Player Modal */}
@@ -312,7 +326,7 @@ export default function Youtube() {
             <iframe
               width="100%"
               height="500px"
-              src={`https://www.youtube.com/embed/${selectedVideo.videoId}?autoplay=1`}
+              src={`https://www.youtube.com/embed/${selectedVideo.video_id}?autoplay=1`}
               title={selectedVideo.title}
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
