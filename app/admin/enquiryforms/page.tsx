@@ -1,3 +1,5 @@
+import FormView from "@/component/adminComponet/formData/FormView";
+
 export default function EnquiryFormsPage() {
-  return <div>Enquiry Forms Page</div>;
+  return <div><FormView></FormView></div>;
 }

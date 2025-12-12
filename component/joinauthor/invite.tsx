@@ -62,26 +62,51 @@ export default function Invite() {
     }));
   };
 
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // Here you would typically send the data to a backend
-    console.log('Form submitted:', formData);
-    setSubmitted(true);
-    // Reset form after 3 seconds
-    setTimeout(() => {
-      setFormData({
-        fullName: '',
-        email: '',
-        phone: '',
-        qualification: '',
-        specialization: '',
-        experience: '',
-        bookTitle: '',
-        bookDescription: '',
-        publishingGoal: '',
+
+    try {
+      const response = await fetch('/api/form', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'author',
+          full_name: formData.fullName,
+          email: formData.email,
+          phone: formData.phone,
+          qualification: formData.qualification,
+          specialization: formData.specialization,
+          experience: formData.experience,
+          book_title: formData.bookTitle,
+          book_description: formData.bookDescription,
+          publishing_goal: formData.publishingGoal,
+        }),
       });
-      setSubmitted(false);
-    }, 3000);
+
+      if (response.ok) {
+        setSubmitted(true);
+        // Reset form after 3 seconds
+        setTimeout(() => {
+          setFormData({
+            fullName: '',
+            email: '',
+            phone: '',
+            qualification: '',
+            specialization: '',
+            experience: '',
+            bookTitle: '',
+            bookDescription: '',
+            publishingGoal: '',
+          });
+          setSubmitted(false);
+        }, 3000);
+      } else {
+        alert('Failed to submit application. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      alert('An error occurred. Please try again.');
+    }
   };
 
   const inputStyle = {

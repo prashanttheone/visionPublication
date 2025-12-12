@@ -4,12 +4,28 @@ import { Box, Container, Text, Input, Textarea } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
 import { HiOutlinePhone, HiOutlineEnvelope, HiOutlineMapPin, HiOutlineClock } from 'react-icons/hi2';
 import { FaFacebook, FaTwitter, FaLinkedin, FaInstagram, FaYoutube } from 'react-icons/fa';
+import { useState } from 'react';
 
 const MotionBox = motion.create(Box);
 const MotionInput = motion.create(Input);
 const MotionTextarea = motion.create(Textarea);
 
+interface FormData {
+  fullName: string;
+  email: string;
+  subject: string;
+  message: string;
+}
+
 export default function Contact() {
+  const [formData, setFormData] = useState<FormData>({
+    fullName: '',
+    email: '',
+    subject: '',
+    message: '',
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submissionStatus, setSubmissionStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -42,6 +58,49 @@ export default function Contact() {
       boxShadow: '0 20px 40px rgba(100, 181, 246, 0.2)',
       transition: { duration: 0.2 },
     },
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setSubmissionStatus('idle');
+
+    try {
+      const response = await fetch('/api/form', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'contact',
+          full_name: formData.fullName,
+          email: formData.email,
+          subject: formData.subject,
+          message: formData.message,
+        }),
+      });
+
+      if (response.ok) {
+        setSubmissionStatus('success');
+        setFormData({ fullName: '', email: '', subject: '', message: '' });
+        setTimeout(() => setSubmissionStatus('idle'), 3000);
+      } else {
+        setSubmissionStatus('error');
+        setTimeout(() => setSubmissionStatus('idle'), 3000);
+      }
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      setSubmissionStatus('error');
+      setTimeout(() => setSubmissionStatus('idle'), 3000);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const socialLinks = [
@@ -280,124 +339,178 @@ export default function Contact() {
               </Text>
             </MotionBox>
 
-            <Box display="flex" flexDirection="column" gap="16px">
-              <MotionBox variants={itemVariants}>
-                <Text fontSize="sm" fontWeight="600" color="gray.300" mb="8px">
-                  Full Name
-                </Text>
-                <Input
-                  placeholder="John Doe"
-                  bg="rgba(30, 41, 59, 0.6)"
-                  border="1px solid"
-                  borderColor="rgba(100, 181, 246, 0.2)"
-                  color="white"
-                  borderRadius="8px"
-                  py="12px"
-                  px="16px"
-                  fontSize="sm"
-                  _placeholder={{ color: 'gray.500' }}
-                  _focus={{
-                    outline: 'none',
-                    borderColor: 'rgba(100, 181, 246, 0.5)',
-                    boxShadow: '0 0 0 3px rgba(100, 181, 246, 0.1)',
-                  }}
-                />
-              </MotionBox>
+            <form onSubmit={handleSubmit}>
+              <Box display="flex" flexDirection="column" gap="16px">
+                {/* Status Messages */}
+                {submissionStatus === 'success' && (
+                  <MotionBox
+                    variants={itemVariants}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    bg="rgba(76, 175, 80, 0.2)"
+                    border="1px solid rgba(76, 175, 80, 0.5)"
+                    borderRadius="8px"
+                    p="12px"
+                  >
+                    <Text color="#4CAF50" fontSize="sm" fontWeight="600">
+                      ✓ Message sent successfully! We'll get back to you soon.
+                    </Text>
+                  </MotionBox>
+                )}
 
-              <MotionBox variants={itemVariants}>
-                <Text fontSize="sm" fontWeight="600" color="gray.300" mb="8px">
-                  Email Address
-                </Text>
-                <Input
-                  placeholder="john@example.com"
-                  type="email"
-                  bg="rgba(30, 41, 59, 0.6)"
-                  border="1px solid"
-                  borderColor="rgba(100, 181, 246, 0.2)"
-                  color="white"
-                  borderRadius="8px"
-                  py="12px"
-                  px="16px"
-                  fontSize="sm"
-                  _placeholder={{ color: 'gray.500' }}
-                  _focus={{
-                    outline: 'none',
-                    borderColor: 'rgba(100, 181, 246, 0.5)',
-                    boxShadow: '0 0 0 3px rgba(100, 181, 246, 0.1)',
-                  }}
-                />
-              </MotionBox>
+                {submissionStatus === 'error' && (
+                  <MotionBox
+                    variants={itemVariants}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    bg="rgba(244, 67, 54, 0.2)"
+                    border="1px solid rgba(244, 67, 54, 0.5)"
+                    borderRadius="8px"
+                    p="12px"
+                  >
+                    <Text color="#F44336" fontSize="sm" fontWeight="600">
+                      ✗ Failed to send message. Please try again.
+                    </Text>
+                  </MotionBox>
+                )}
 
-              <MotionBox variants={itemVariants}>
-                <Text fontSize="sm" fontWeight="600" color="gray.300" mb="8px">
-                  Subject
-                </Text>
-                <Input
-                  placeholder="How can we help?"
-                  bg="rgba(30, 41, 59, 0.6)"
-                  border="1px solid"
-                  borderColor="rgba(100, 181, 246, 0.2)"
-                  color="white"
-                  borderRadius="8px"
-                  py="12px"
-                  px="16px"
-                  fontSize="sm"
-                  _placeholder={{ color: 'gray.500' }}
-                  _focus={{
-                    outline: 'none',
-                    borderColor: 'rgba(100, 181, 246, 0.5)',
-                    boxShadow: '0 0 0 3px rgba(100, 181, 246, 0.1)',
-                  }}
-                />
-              </MotionBox>
+                <MotionBox variants={itemVariants}>
+                  <Text fontSize="sm" fontWeight="600" color="gray.300" mb="8px">
+                    Full Name
+                  </Text>
+                  <Input
+                    name="fullName"
+                    value={formData.fullName}
+                    onChange={handleInputChange}
+                    placeholder="John Doe"
+                    required
+                    bg="rgba(30, 41, 59, 0.6)"
+                    border="1px solid"
+                    borderColor="rgba(100, 181, 246, 0.2)"
+                    color="white"
+                    borderRadius="8px"
+                    py="12px"
+                    px="16px"
+                    fontSize="sm"
+                    _placeholder={{ color: 'gray.500' }}
+                    _focus={{
+                      outline: 'none',
+                      borderColor: 'rgba(100, 181, 246, 0.5)',
+                      boxShadow: '0 0 0 3px rgba(100, 181, 246, 0.1)',
+                    }}
+                  />
+                </MotionBox>
 
-              <MotionBox variants={itemVariants}>
-                <Text fontSize="sm" fontWeight="600" color="gray.300" mb="8px">
-                  Message
-                </Text>
-                <Textarea
-                  placeholder="Tell us more about your inquiry..."
-                  bg="rgba(30, 41, 59, 0.6)"
-                  border="1px solid"
-                  borderColor="rgba(100, 181, 246, 0.2)"
-                  color="white"
-                  borderRadius="8px"
-                  py="12px"
-                  px="16px"
-                  fontSize="sm"
-                  minH="140px"
-                  resize="none"
-                  _placeholder={{ color: 'gray.500' }}
-                  _focus={{
-                    outline: 'none',
-                    borderColor: 'rgba(100, 181, 246, 0.5)',
-                    boxShadow: '0 0 0 3px rgba(100, 181, 246, 0.1)',
-                  }}
-                />
-              </MotionBox>
+                <MotionBox variants={itemVariants}>
+                  <Text fontSize="sm" fontWeight="600" color="gray.300" mb="8px">
+                    Email Address
+                  </Text>
+                  <Input
+                    name="email"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    placeholder="john@example.com"
+                    type="email"
+                    required
+                    bg="rgba(30, 41, 59, 0.6)"
+                    border="1px solid"
+                    borderColor="rgba(100, 181, 246, 0.2)"
+                    color="white"
+                    borderRadius="8px"
+                    py="12px"
+                    px="16px"
+                    fontSize="sm"
+                    _placeholder={{ color: 'gray.500' }}
+                    _focus={{
+                      outline: 'none',
+                      borderColor: 'rgba(100, 181, 246, 0.5)',
+                      boxShadow: '0 0 0 3px rgba(100, 181, 246, 0.1)',
+                    }}
+                  />
+                </MotionBox>
 
-              <MotionBox variants={itemVariants}>
-                <motion.button
-                  whileHover={{ scale: 1.05, boxShadow: '0 20px 40px rgba(255, 140, 0, 0.3)' }}
-                  whileTap={{ scale: 0.95 }}
-                  style={{
-                    width: '100%',
-                    padding: '14px 32px',
-                    fontSize: '16px',
-                    fontWeight: '600',
-                    border: 'none',
-                    borderRadius: '8px',
-                    background: 'linear-gradient(135deg, #FF8C00, #FFA500)',
-                    color: 'white',
-                    cursor: 'pointer',
-                    boxShadow: '0 10px 30px rgba(255, 140, 0, 0.2)',
-                    transition: 'all 0.3s ease',
-                  }}
-                >
-                  Send Message
-                </motion.button>
-              </MotionBox>
-            </Box>
+                <MotionBox variants={itemVariants}>
+                  <Text fontSize="sm" fontWeight="600" color="gray.300" mb="8px">
+                    Subject
+                  </Text>
+                  <Input
+                    name="subject"
+                    value={formData.subject}
+                    onChange={handleInputChange}
+                    placeholder="How can we help?"
+                    required
+                    bg="rgba(30, 41, 59, 0.6)"
+                    border="1px solid"
+                    borderColor="rgba(100, 181, 246, 0.2)"
+                    color="white"
+                    borderRadius="8px"
+                    py="12px"
+                    px="16px"
+                    fontSize="sm"
+                    _placeholder={{ color: 'gray.500' }}
+                    _focus={{
+                      outline: 'none',
+                      borderColor: 'rgba(100, 181, 246, 0.5)',
+                      boxShadow: '0 0 0 3px rgba(100, 181, 246, 0.1)',
+                    }}
+                  />
+                </MotionBox>
+
+                <MotionBox variants={itemVariants}>
+                  <Text fontSize="sm" fontWeight="600" color="gray.300" mb="8px">
+                    Message
+                  </Text>
+                  <Textarea
+                    name="message"
+                    value={formData.message}
+                    onChange={handleInputChange}
+                    placeholder="Tell us more about your inquiry..."
+                    required
+                    bg="rgba(30, 41, 59, 0.6)"
+                    border="1px solid"
+                    borderColor="rgba(100, 181, 246, 0.2)"
+                    color="white"
+                    borderRadius="8px"
+                    py="12px"
+                    px="16px"
+                    fontSize="sm"
+                    minH="140px"
+                    resize="none"
+                    _placeholder={{ color: 'gray.500' }}
+                    _focus={{
+                      outline: 'none',
+                      borderColor: 'rgba(100, 181, 246, 0.5)',
+                      boxShadow: '0 0 0 3px rgba(100, 181, 246, 0.1)',
+                    }}
+                  />
+                </MotionBox>
+
+                <MotionBox variants={itemVariants}>
+                  <motion.button
+                    whileHover={{ scale: isSubmitting ? 1 : 1.05, boxShadow: '0 20px 40px rgba(255, 140, 0, 0.3)' }}
+                    whileTap={{ scale: isSubmitting ? 1 : 0.95 }}
+                    type="submit"
+                    disabled={isSubmitting}
+                    style={{
+                      width: '100%',
+                      padding: '14px 32px',
+                      fontSize: '16px',
+                      fontWeight: '600',
+                      border: 'none',
+                      borderRadius: '8px',
+                      background: 'linear-gradient(135deg, #FF8C00, #FFA500)',
+                      color: 'white',
+                      cursor: isSubmitting ? 'not-allowed' : 'pointer',
+                      boxShadow: '0 10px 30px rgba(255, 140, 0, 0.2)',
+                      transition: 'all 0.3s ease',
+                      opacity: isSubmitting ? 0.7 : 1,
+                    }}
+                  >
+                    {isSubmitting ? 'Sending...' : 'Send Message'}
+                  </motion.button>
+                </MotionBox>
+              </Box>
+            </form>
           </MotionBox>
 
           {/* Social Links & Info */}
