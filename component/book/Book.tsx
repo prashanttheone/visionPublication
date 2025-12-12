@@ -5,23 +5,103 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { HiStar, HiHeart } from 'react-icons/hi2';
-import type { Book } from './bookData';
-import { booksData } from './bookData';
 
 const MotionBox = motion.create(Box);
 
+interface ApiBook {
+  id: number;
+  name: string;
+  author: string;
+  isbn: string;
+  edition: string;
+  description: string;
+  image_url: string;
+  actual_price: number;
+  offer_price: number;
+  stock_quantity: number;
+  in_stock: boolean;
+  rating: number;
+  reviews_count: number;
+  category: string;
+  courseMappings?: CourseMapping[];
+}
+
+interface CourseMapping {
+  id: number;
+  book_id: number;
+  course_id: number;
+  semester_id: number;
+  is_required: boolean;
+  is_recommended: boolean;
+}
+
+interface Course {
+  id: number;
+  name: string;
+  description?: string;
+}
+
 export default function Book() {
   const router = useRouter();
-  const [selectedProgram, setSelectedProgram] = useState<'BSc' | 'GNM' | 'Post-Basic'>('BSc');
+  const [books, setBooks] = useState<ApiBook[]>([]);
+  const [courseMappings, setCourseMappings] = useState<CourseMapping[]>([]);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [selectedCourseId, setSelectedCourseId] = useState<number | null>(null);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [autoplay, setAutoplay] = useState(true);
   const [wishlist, setWishlist] = useState<number[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const programs = [
-    { id: 'BSc', label: 'B.Sc Nursing', color: '#64B5F6' },
-    { id: 'GNM', label: 'G.N.M', color: '#FF8C00' },
-    { id: 'Post-Basic', label: 'Post-Basic B.Sc', color: '#90CAF9' },
+    { id: 1, label: 'B.Sc Nursing', color: '#64B5F6' },
+    { id: 2, label: 'G.N.M', color: '#FF8C00' },
+    { id: 3, label: 'Post-Basic B.Sc', color: '#90CAF9' },
   ] as const;
+
+  // Fetch books and course mappings on mount
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+
+        // Fetch courses
+        const coursesRes = await fetch('/api/course');
+        const coursesData = await coursesRes.json();
+        if (coursesData.success) {
+          setCourses(coursesData.data || []);
+          // Set first course as default
+          if (coursesData.data && coursesData.data.length > 0) {
+            setSelectedCourseId(coursesData.data[0].id);
+          }
+        }
+
+        // Fetch books with course mappings
+        const booksRes = await fetch('/api/book?includeMappings=true');
+        const booksData = await booksRes.json();
+        if (booksData.success) {
+          setBooks(booksData.data || []);
+          // Extract course mappings
+          const allMappings: CourseMapping[] = [];
+          booksData.data?.forEach((book: ApiBook) => {
+            if (book.courseMappings) {
+              allMappings.push(...book.courseMappings);
+            }
+          });
+          setCourseMappings(allMappings);
+        }
+
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching data:', err);
+        setError('Failed to load books. Please try again later.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
 
   const bannerSlides = [
     {
@@ -51,8 +131,18 @@ export default function Book() {
   ];
 
   const filteredBooks = useMemo(() => {
-    return booksData.filter((book) => book.program === selectedProgram);
-  }, [selectedProgram]);
+    if (!selectedCourseId || !courseMappings.length) {
+      return books;
+    }
+
+    // Get book IDs mapped to the selected course
+    const bookIds = courseMappings
+      .filter((mapping) => mapping.course_id === selectedCourseId)
+      .map((mapping) => mapping.book_id);
+
+    // Filter books by the mapped IDs
+    return books.filter((book) => bookIds.includes(book.id));
+  }, [books, courseMappings, selectedCourseId]);
 
   const handleBookClick = (bookId: number) => {
     router.push(`/books/store/${bookId}`);
@@ -60,7 +150,9 @@ export default function Book() {
 
   const toggleWishlist = (e: React.MouseEvent, bookId: number) => {
     e.stopPropagation();
-    setWishlist((prev) => (prev.includes(bookId) ? prev.filter((id) => id !== bookId) : [...prev, bookId]));
+    setWishlist((prev) =>
+      prev.includes(bookId) ? prev.filter((id) => id !== bookId) : [...prev, bookId]
+    );
   };
 
   useEffect(() => {
@@ -114,15 +206,60 @@ export default function Book() {
     },
   };
 
+  const calculateDiscount = (actualPrice: number, offerPrice: number) => {
+    if (actualPrice <= 0) return 0;
+    return Math.round(((actualPrice - offerPrice) / actualPrice) * 100);
+  };
+
+  if (error) {
+    return (
+      <Box bg="linear-gradient(135deg, #0f172a 0%, #1a2332 50%, #0f172a 100%)" py={{ base: '60px', md: '80px' }}>
+        <Container maxW="1400px" textAlign="center">
+          <Text fontSize="18px" color="red.400" fontWeight="bold">
+            {error}
+          </Text>
+        </Container>
+      </Box>
+    );
+  }
+
   return (
     <Box bg="linear-gradient(135deg, #0f172a 0%, #1a2332 50%, #0f172a 100%)" py={{ base: '60px', md: '80px' }} position="relative" overflow="hidden">
       {/* Background Elements */}
-      <Box position="fixed" top="-100px" right="-100px" width="400px" height="400px" borderRadius="50%" bgGradient="radial(circle, rgba(100, 181, 246, 0.1) 0%, transparent 70%)" filter="blur(40px)" pointerEvents="none" zIndex={0} />
-      <Box position="fixed" bottom="-50px" left="-50px" width="300px" height="300px" borderRadius="50%" bgGradient="radial(circle, rgba(255, 140, 0, 0.05) 0%, transparent 70%)" filter="blur(40px)" pointerEvents="none" zIndex={0} />
+      <Box
+        position="fixed"
+        top="-100px"
+        right="-100px"
+        width="400px"
+        height="400px"
+        borderRadius="50%"
+        bgGradient="radial(circle, rgba(100, 181, 246, 0.1) 0%, transparent 70%)"
+        filter="blur(40px)"
+        pointerEvents="none"
+        zIndex={0}
+      />
+      <Box
+        position="fixed"
+        bottom="-50px"
+        left="-50px"
+        width="300px"
+        height="300px"
+        borderRadius="50%"
+        bgGradient="radial(circle, rgba(255, 140, 0, 0.05) 0%, transparent 70%)"
+        filter="blur(40px)"
+        pointerEvents="none"
+        zIndex={0}
+      />
 
       <Container maxW="1400px" px={{ base: '16px', md: '32px' }} position="relative" zIndex={1}>
         {/* Banner Carousel */}
-        <Box position="relative" mb={{ base: '40px', md: '60px' }} borderRadius="16px" overflow="hidden" height={{ base: '300px', md: '400px', lg: '500px' }}>
+        <Box
+          position="relative"
+          mb={{ base: '40px', md: '60px' }}
+          borderRadius="16px"
+          overflow="hidden"
+          height={{ base: '300px', md: '400px', lg: '500px' }}
+        >
           <AnimatePresence mode="wait">
             <motion.div
               key={currentSlide}
@@ -143,12 +280,7 @@ export default function Book() {
                 backgroundPosition="center"
                 opacity={0.6}
               />
-              <Box
-                position="absolute"
-                inset="0"
-                bg={bannerSlides[currentSlide].gradient}
-                opacity={0.7}
-              />
+              <Box position="absolute" inset="0" bg={bannerSlides[currentSlide].gradient} opacity={0.7} />
               <Box
                 position="absolute"
                 inset="0"
@@ -164,7 +296,16 @@ export default function Book() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: 0.2 }}
                 >
-                  <Box display="inline-block" bg="rgba(255, 140, 0, 0.1)" border="2px solid" borderColor="rgba(255, 140, 0, 0.5)" px="16px" py="8px" borderRadius="50px" mb="16px">
+                  <Box
+                    display="inline-block"
+                    bg="rgba(255, 140, 0, 0.1)"
+                    border="2px solid"
+                    borderColor="rgba(255, 140, 0, 0.5)"
+                    px="16px"
+                    py="8px"
+                    borderRadius="50px"
+                    mb="16px"
+                  >
                     <Text fontSize="sm" fontWeight="700" color="#FF8C00" textTransform="uppercase" letterSpacing="1px">
                       {bannerSlides[currentSlide].subtitle}
                     </Text>
@@ -279,27 +420,27 @@ export default function Book() {
           </Box>
         </Box>
 
-        {/* Program Category Buttons */}
+        {/* Course Category Buttons */}
         <Box display="flex" gap={{ base: '12px', md: '16px' }} mb={{ base: '40px', md: '60px' }} justifyContent="center" flexWrap="wrap">
-          {programs.map((program) => (
+          {courses.map((course) => (
             <motion.button
-              key={program.id}
+              key={course.id}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => setSelectedProgram(program.id as 'BSc' | 'GNM' | 'Post-Basic')}
+              onClick={() => setSelectedCourseId(course.id)}
               style={{
                 padding: '12px 28px',
                 borderRadius: '50px',
-                border: `2px solid ${selectedProgram === program.id ? program.color : 'rgba(255, 255, 255, 0.2)'}`,
-                background: selectedProgram === program.id ? `${program.color}20` : 'transparent',
-                color: selectedProgram === program.id ? program.color : 'white',
+                border: `2px solid ${selectedCourseId === course.id ? '#64B5F6' : 'rgba(255, 255, 255, 0.2)'}`,
+                background: selectedCourseId === course.id ? 'rgba(100, 181, 246, 0.1)' : 'transparent',
+                color: selectedCourseId === course.id ? '#64B5F6' : 'white',
                 fontSize: '14px',
                 fontWeight: '700',
                 cursor: 'pointer',
                 transition: 'all 0.3s ease',
               }}
             >
-              {program.label}
+              {course.name}
             </motion.button>
           ))}
         </Box>
@@ -309,14 +450,30 @@ export default function Book() {
           {/* Results Info */}
           <MotionBox variants={itemVariants} initial="hidden" animate="visible" mb="24px">
             <Text fontSize="15px" color="gray.300" fontWeight="500">
-              Showing <strong>{filteredBooks.length}</strong> books in {programs.find(p => p.id === selectedProgram)?.label}
+              Showing <strong>{isLoading ? 0 : filteredBooks.length}</strong> books in{' '}
+              <strong>{courses.find((c) => c.id === selectedCourseId)?.name || 'Selected Course'}</strong>
             </Text>
           </MotionBox>
 
           {/* Books Grid */}
-          {filteredBooks.length > 0 ? (
+          {isLoading ? (
+            <MotionBox
+              variants={itemVariants}
+              initial="hidden"
+              animate="visible"
+              textAlign="center"
+              py="60px"
+              bg="rgba(30, 41, 59, 0.4)"
+              borderRadius="16px"
+              border="1px solid rgba(100, 181, 246, 0.2)"
+            >
+              <Text fontSize="18px" fontWeight="700" color="white">
+                Loading books...
+              </Text>
+            </MotionBox>
+          ) : filteredBooks.length > 0 ? (
             <Grid gridTemplateColumns={{ base: '1fr', sm: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)' }} gap={{ base: '20px', md: '24px' }}>
-              {filteredBooks.map((book: Book) => (
+              {filteredBooks.map((book) => (
                 <MotionBox
                   key={book.id}
                   variants={cardVariants}
@@ -345,7 +502,7 @@ export default function Book() {
                     {/* Book Image Container */}
                     <Box position="relative" width="100%" height="280px" overflow="hidden" bg="rgba(100, 181, 246, 0.1)">
                       <img
-                        src={book.image}
+                        src={book.image_url || 'https://via.placeholder.com/500x700?text=No+Image'}
                         alt={book.name}
                         style={{
                           width: '100%',
@@ -356,14 +513,14 @@ export default function Book() {
                       />
 
                       {/* Discount Badge */}
-                      {book.discount > 0 && (
+                      {calculateDiscount(book.actual_price, book.offer_price) > 0 && (
                         <Badge position="absolute" top="12px" right="12px" bg="linear-gradient(135deg, #FF8C00, #FFA500)" color="white" px="12px" py="6px" borderRadius="8px" fontWeight="700" fontSize="12px">
-                          -{book.discount}%
+                          -{calculateDiscount(book.actual_price, book.offer_price)}%
                         </Badge>
                       )}
 
                       {/* Stock Status */}
-                      {!book.inStock && (
+                      {!book.in_stock && (
                         <Box position="absolute" inset="0" bg="rgba(0, 0, 0, 0.6)" display="flex" alignItems="center" justifyContent="center">
                           <Text color="white" fontWeight="700" fontSize="16px">
                             Out of Stock
@@ -406,19 +563,19 @@ export default function Book() {
                         <Box display="flex" alignItems="center" gap="4px">
                           <HiStar size={14} color="#FF8C00" fill="#FF8C00" />
                           <Text fontSize="xs" color="gray.300" fontWeight="600">
-                            {book.rating}
+                            {typeof book.rating === 'number' ? book.rating.toFixed(1) : book.rating}
                           </Text>
                         </Box>
                       </Box>
 
                       {/* Book Name */}
                       <Text fontSize={{ base: '15px', md: '16px' }} fontWeight="800" color="white" lineHeight="1.4" mb="8px">
-                        {book.name.length > 50 ? `${book.name.substring(0, 50)}...` : book.name}
+                        {book.name && book.name.length > 50 ? `${book.name.substring(0, 50)}...` : book.name}
                       </Text>
 
                       {/* Author */}
                       <Text fontSize="sm" color="gray.400" mb="8px">
-                        by <strong>{book.author.length > 30 ? `${book.author.substring(0, 30)}...` : book.author}</strong>
+                        by <strong>{book.author && book.author.length > 30 ? `${book.author.substring(0, 30)}...` : book.author}</strong>
                       </Text>
 
                       {/* ISBN & Edition */}
@@ -429,21 +586,21 @@ export default function Book() {
 
                       {/* Description */}
                       <Text fontSize="sm" color="gray.300" lineHeight="1.5" mb="12px" flex="1">
-                        {book.description.length > 100 ? `${book.description.substring(0, 100)}...` : book.description}
+                        {book.description && book.description.length > 100 ? `${book.description.substring(0, 100)}...` : book.description || 'No description available'}
                       </Text>
 
                       {/* Price Section */}
                       <Box>
                         <Box display="flex" alignItems="center" gap="8px" mb="4px">
                           <Text fontSize="18px" fontWeight="900" color="#FF8C00">
-                            ₹{book.price}
+                            ₹{book.offer_price}
                           </Text>
                           <Text fontSize="14px" color="gray.500" textDecoration="line-through">
-                            ₹{book.actualPrice}
+                            ₹{book.actual_price}
                           </Text>
                         </Box>
                         <Text fontSize="xs" color="gray.400">
-                          {book.reviews} reviews
+                          {book.reviews_count} reviews
                         </Text>
                       </Box>
                     </Box>
@@ -466,7 +623,7 @@ export default function Book() {
                 No books found
               </Text>
               <Text fontSize="14px" color="gray.300">
-                Try selecting a different program
+                Try selecting a different course
               </Text>
             </MotionBox>
           )}
