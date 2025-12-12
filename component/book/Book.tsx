@@ -86,6 +86,50 @@ export default function Book() {
     },
   ];
 
+  // Fetch books and course mappings on mount
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+
+        // Fetch courses
+        const coursesRes = await fetch('/api/course');
+        const coursesData = await coursesRes.json();
+        if (coursesData.success) {
+          setCourses(coursesData.data || []);
+          // Set first course as default
+          if (coursesData.data && coursesData.data.length > 0) {
+            setSelectedCourseId(coursesData.data[0].id);
+          }
+        }
+
+        // Fetch books with course mappings
+        const booksRes = await fetch('/api/book?includeMappings=true');
+        const booksData = await booksRes.json();
+        if (booksData.success) {
+          setBooks(booksData.data || []);
+          // Extract course mappings
+          const allMappings: CourseMapping[] = [];
+          booksData.data?.forEach((book: ApiBook) => {
+            if (book.courseMappings) {
+              allMappings.push(...book.courseMappings);
+            }
+          });
+          setCourseMappings(allMappings);
+        }
+
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching data:', err);
+        setError('Failed to load books. Please try again later.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
   const filteredBooks = useMemo(() => {
     if (!selectedCourseId || !courseMappings.length) {
       return books;
