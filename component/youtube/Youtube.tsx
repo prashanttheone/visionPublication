@@ -25,7 +25,7 @@ export default function Youtube() {
       id: 1,
       title: 'Healthcare Education Excellence',
       headline: 'Transforming Nursing Education with Modern Methods',
-      videoId: 'dQw4w9WgXcQ',
+      videoId: 'JyvX1LkNXz8',
       thumbnail: 'https://img.youtube.com/vi/dQw4w9WgXcQ/maxresdefault.jpg',
       duration: '12:45',
     },
