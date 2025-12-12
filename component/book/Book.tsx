@@ -41,6 +41,16 @@ interface Course {
   description?: string;
 }
 
+interface BookSlider {
+  id: number;
+  title: string;
+  subtitle: string;
+  description: string;
+  image_url: string;
+  is_active: boolean;
+  display_order: number;
+}
+
 export default function Book() {
   const router = useRouter();
   const [books, setBooks] = useState<ApiBook[]>([]);
@@ -50,6 +60,7 @@ export default function Book() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [autoplay, setAutoplay] = useState(true);
   const [wishlist, setWishlist] = useState<number[]>([]);
+  const [bannerSlides, setBannerSlides] = useState<(BookSlider & { gradient: string })[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -59,38 +70,33 @@ export default function Book() {
     { id: 3, label: 'Post-Basic B.Sc', color: '#90CAF9' },
   ] as const;
 
-  const bannerSlides = [
-    {
-      id: 1,
-      title: 'Healthcare Books Collection',
-      subtitle: 'Discover Medical Excellence',
-      description: 'Explore our comprehensive range of nursing, medical, and healthcare textbooks curated by expert authors.',
-      image: 'https://images.unsplash.com/photo-1505228395891-9a51e7e86e81?w=1200&h=500&fit=crop',
-      gradient: 'linear(135deg, #0f172a 0%, #1e293b 100%)',
-    },
-    {
-      id: 2,
-      title: 'Expert-Curated Content',
-      subtitle: 'Quality Education Resources',
-      description: 'Access peer-reviewed publications written by leading healthcare professionals and educators.',
-      image: 'https://images.unsplash.com/photo-150784272343-583f20270319?w=1200&h=500&fit=crop',
-      gradient: 'linear(135deg, #1a2a4a 0%, #2d4a6e 100%)',
-    },
-    {
-      id: 3,
-      title: 'Latest Medical Insights',
-      subtitle: 'Stay Updated with Research',
-      description: 'Get the latest information on medical advancements and healthcare best practices.',
-      image: 'https://images.unsplash.com/photo-1576091160550-112173faf246?w=1200&h=500&fit=crop',
-      gradient: 'linear(135deg, #0f172a 0%, #1a3a52 100%)',
-    },
+  // Hardcoded gradients for banner slides
+  const gradients = [
+    'linear(135deg, #0f172a 0%, #1e293b 100%)',
+    'linear(135deg, #1a2a4a 0%, #2d4a6e 100%)',
+    'linear(135deg, #0f172a 0%, #1a3a52 100%)',
+    'linear(135deg, #1a2a3a 0%, #2d3f4e 100%)',
+    'linear(135deg, #0f1820 0%, #1a2f3a 100%)',
   ];
 
-  // Fetch books and course mappings on mount
+  // Fetch books, courses, and banner sliders on mount
   useEffect(() => {
     const fetchData = async () => {
       try {
         setIsLoading(true);
+
+        // Fetch banner sliders
+        const slidersRes = await fetch('/api/book/slider?active=true');
+        const slidersData = await slidersRes.json();
+        if (slidersData.success && slidersData.data.length > 0) {
+          // Map sliders with hardcoded gradients
+          const slidersWithGradients = slidersData.data.map((slider: BookSlider, index: number) => ({
+            ...slider,
+            image_url: slider.image_url,
+            gradient: gradients[index % gradients.length],
+          }));
+          setBannerSlides(slidersWithGradients);
+        }
 
         // Fetch courses
         const coursesRes = await fetch('/api/course');
@@ -302,6 +308,7 @@ export default function Book() {
 
       <Container maxW="1400px" px={{ base: '16px', md: '32px' }} position="relative" zIndex={1}>
         {/* Banner Carousel */}
+        {bannerSlides.length > 0 ? (
         <Box
           position="relative"
           mb={{ base: '40px', md: '60px' }}
@@ -324,12 +331,12 @@ export default function Book() {
               <Box
                 position="absolute"
                 inset="0"
-                backgroundImage={`url(${bannerSlides[currentSlide].image})`}
+                backgroundImage={`url(${bannerSlides[currentSlide]?.image_url})`}
                 backgroundSize="cover"
                 backgroundPosition="center"
                 opacity={0.6}
               />
-              <Box position="absolute" inset="0" bg={bannerSlides[currentSlide].gradient} opacity={0.7} />
+              <Box position="absolute" inset="0" bg={bannerSlides[currentSlide]?.gradient} opacity={0.7} />
               <Box
                 position="absolute"
                 inset="0"
@@ -424,6 +431,23 @@ export default function Book() {
             ))}
           </Box>
         </Box>
+        ) : (
+          <Box
+            position="relative"
+            mb={{ base: '40px', md: '60px' }}
+            borderRadius="16px"
+            overflow="hidden"
+            height={{ base: '300px', md: '400px', lg: '500px' }}
+            bg="rgba(100, 181, 246, 0.1)"
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+          >
+            <Text color="gray.400" fontSize="18px" fontWeight="700">
+              Loading banner...
+            </Text>
+          </Box>
+        )}
 
         {/* Course Category Buttons */}
         <Box display="flex" gap={{ base: '12px', md: '16px' }} mb={{ base: '40px', md: '60px' }} justifyContent="center" flexWrap="wrap">
