@@ -1,3 +1,5 @@
+import AdminHome from "@/component/adminComponet/admin";
+
 export default function Page() {
-  return <div>Dashboard Page</div>;
+  return <div>  <AdminHome></AdminHome></div>;
 }
