@@ -59,50 +59,6 @@ export default function Book() {
     { id: 3, label: 'Post-Basic B.Sc', color: '#90CAF9' },
   ] as const;
 
-  // Fetch books and course mappings on mount
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setIsLoading(true);
-
-        // Fetch courses
-        const coursesRes = await fetch('/api/course');
-        const coursesData = await coursesRes.json();
-        if (coursesData.success) {
-          setCourses(coursesData.data || []);
-          // Set first course as default
-          if (coursesData.data && coursesData.data.length > 0) {
-            setSelectedCourseId(coursesData.data[0].id);
-          }
-        }
-
-        // Fetch books with course mappings
-        const booksRes = await fetch('/api/book?includeMappings=true');
-        const booksData = await booksRes.json();
-        if (booksData.success) {
-          setBooks(booksData.data || []);
-          // Extract course mappings
-          const allMappings: CourseMapping[] = [];
-          booksData.data?.forEach((book: ApiBook) => {
-            if (book.courseMappings) {
-              allMappings.push(...book.courseMappings);
-            }
-          });
-          setCourseMappings(allMappings);
-        }
-
-        setError(null);
-      } catch (err) {
-        console.error('Error fetching data:', err);
-        setError('Failed to load books. Please try again later.');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
-
   const bannerSlides = [
     {
       id: 1,
@@ -206,6 +162,55 @@ export default function Book() {
     },
   };
 
+  const navigationButtonStyle = {
+    position: 'absolute' as const,
+    top: '50%',
+    transform: 'translateY(-50%)',
+    background: 'rgba(255, 255, 255, 0.2)',
+    border: '1px solid rgba(255, 255, 255, 0.3)',
+    color: 'white',
+    width: '40px',
+    height: '40px',
+    borderRadius: '50%',
+    display: 'flex' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    cursor: 'pointer' as const,
+    zIndex: 10,
+    fontSize: '20px',
+  };
+
+  const dotStyle = {
+    height: '10px',
+    borderRadius: '50px',
+    border: 'none',
+    cursor: 'pointer' as const,
+    transition: 'all 0.3s ease',
+  };
+
+  const courseButtonStyle = {
+    padding: '12px 28px',
+    borderRadius: '50px',
+    fontSize: '14px',
+    fontWeight: '700',
+    cursor: 'pointer' as const,
+    transition: 'all 0.3s ease',
+  };
+
+  const wishlistButtonStyle = {
+    position: 'absolute' as const,
+    bottom: '12px',
+    right: '12px',
+    borderRadius: '50%',
+    width: '44px',
+    height: '44px',
+    display: 'flex' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    cursor: 'pointer' as const,
+    zIndex: 5,
+  };
+
   const calculateDiscount = (actualPrice: number, offerPrice: number) => {
     if (actualPrice <= 0) return 0;
     return Math.round(((actualPrice - offerPrice) / actualPrice) * 100);
@@ -291,48 +296,42 @@ export default function Book() {
                 textAlign="center"
                 p={{ base: '20px', md: '40px' }}
               >
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.2 }}
-                >
-                  <Box
-                    display="inline-block"
-                    bg="rgba(255, 140, 0, 0.1)"
-                    border="2px solid"
-                    borderColor="rgba(255, 140, 0, 0.5)"
-                    px="16px"
-                    py="8px"
-                    borderRadius="50px"
-                    mb="16px"
+                {['subtitle', 'title', 'description'].map((field, delayIndex) => (
+                  <motion.div
+                    key={field}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.2 + delayIndex * 0.2 }}
+                    style={field === 'title' ? { marginBottom: '16px' } : field === 'description' ? { maxWidth: '600px' } : {}}
                   >
-                    <Text fontSize="sm" fontWeight="700" color="#FF8C00" textTransform="uppercase" letterSpacing="1px">
-                      {bannerSlides[currentSlide].subtitle}
-                    </Text>
-                  </Box>
-                </motion.div>
-
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.4 }}
-                  style={{ marginBottom: '16px' }}
-                >
-                  <Text fontSize={{ base: '28px', md: '40px', lg: '56px' }} fontWeight="900" lineHeight="1.2" color="white">
-                    {bannerSlides[currentSlide].title}
-                  </Text>
-                </motion.div>
-
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: 0.6 }}
-                  style={{ maxWidth: '600px' }}
-                >
-                  <Text fontSize={{ base: '14px', md: '16px' }} color="gray.200" lineHeight="1.6">
-                    {bannerSlides[currentSlide].description}
-                  </Text>
-                </motion.div>
+                    {field === 'subtitle' && (
+                      <Box
+                        display="inline-block"
+                        bg="rgba(255, 140, 0, 0.1)"
+                        border="2px solid"
+                        borderColor="rgba(255, 140, 0, 0.5)"
+                        px="16px"
+                        py="8px"
+                        borderRadius="50px"
+                        mb="16px"
+                      >
+                        <Text fontSize="sm" fontWeight="700" color="#FF8C00" textTransform="uppercase" letterSpacing="1px">
+                          {bannerSlides[currentSlide].subtitle}
+                        </Text>
+                      </Box>
+                    )}
+                    {field === 'title' && (
+                      <Text fontSize={{ base: '28px', md: '40px', lg: '56px' }} fontWeight="900" lineHeight="1.2" color="white">
+                        {bannerSlides[currentSlide].title}
+                      </Text>
+                    )}
+                    {field === 'description' && (
+                      <Text fontSize={{ base: '14px', md: '16px' }} color="gray.200" lineHeight="1.6">
+                        {bannerSlides[currentSlide].description}
+                      </Text>
+                    )}
+                  </motion.div>
+                ))}
               </Box>
             </motion.div>
           </AnimatePresence>
@@ -342,24 +341,7 @@ export default function Book() {
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
             onClick={prevSlide}
-            style={{
-              position: 'absolute',
-              left: '20px',
-              top: '50%',
-              transform: 'translateY(-50%)',
-              background: 'rgba(255, 255, 255, 0.2)',
-              border: '1px solid rgba(255, 255, 255, 0.3)',
-              color: 'white',
-              width: '40px',
-              height: '40px',
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              zIndex: 10,
-              fontSize: '20px',
-            }}
+            style={{ ...navigationButtonStyle, left: '20px' }}
           >
             &#10094;
           </motion.button>
@@ -368,24 +350,7 @@ export default function Book() {
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
             onClick={nextSlide}
-            style={{
-              position: 'absolute',
-              right: '20px',
-              top: '50%',
-              transform: 'translateY(-50%)',
-              background: 'rgba(255, 255, 255, 0.2)',
-              border: '1px solid rgba(255, 255, 255, 0.3)',
-              color: 'white',
-              width: '40px',
-              height: '40px',
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              zIndex: 10,
-              fontSize: '20px',
-            }}
+            style={{ ...navigationButtonStyle, right: '20px' }}
           >
             &#10095;
           </motion.button>
@@ -407,13 +372,9 @@ export default function Book() {
                 whileHover={{ scale: 1.2 }}
                 whileTap={{ scale: 0.95 }}
                 style={{
+                  ...dotStyle,
                   width: currentSlide === index ? '28px' : '10px',
-                  height: '10px',
-                  borderRadius: '50px',
                   background: currentSlide === index ? '#FF8C00' : 'rgba(255, 255, 255, 0.4)',
-                  border: 'none',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s ease',
                 }}
               />
             ))}
@@ -422,27 +383,25 @@ export default function Book() {
 
         {/* Course Category Buttons */}
         <Box display="flex" gap={{ base: '12px', md: '16px' }} mb={{ base: '40px', md: '60px' }} justifyContent="center" flexWrap="wrap">
-          {courses.map((course) => (
-            <motion.button
-              key={course.id}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setSelectedCourseId(course.id)}
-              style={{
-                padding: '12px 28px',
-                borderRadius: '50px',
-                border: `2px solid ${selectedCourseId === course.id ? '#64B5F6' : 'rgba(255, 255, 255, 0.2)'}`,
-                background: selectedCourseId === course.id ? 'rgba(100, 181, 246, 0.1)' : 'transparent',
-                color: selectedCourseId === course.id ? '#64B5F6' : 'white',
-                fontSize: '14px',
-                fontWeight: '700',
-                cursor: 'pointer',
-                transition: 'all 0.3s ease',
-              }}
-            >
-              {course.name}
-            </motion.button>
-          ))}
+          {courses.map((course) => {
+            const isSelected = selectedCourseId === course.id;
+            return (
+              <motion.button
+                key={course.id}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setSelectedCourseId(course.id)}
+                style={{
+                  ...courseButtonStyle,
+                  border: `2px solid ${isSelected ? '#64B5F6' : 'rgba(255, 255, 255, 0.2)'}`,
+                  background: isSelected ? 'rgba(100, 181, 246, 0.1)' : 'transparent',
+                  color: isSelected ? '#64B5F6' : 'white',
+                }}
+              >
+                {course.name}
+              </motion.button>
+            );
+          })}
         </Box>
 
         {/* Books Grid */}
@@ -534,19 +493,9 @@ export default function Book() {
                         whileTap={{ scale: 0.95 }}
                         onClick={(e) => toggleWishlist(e, book.id)}
                         style={{
-                          position: 'absolute',
-                          bottom: '12px',
-                          right: '12px',
+                          ...wishlistButtonStyle,
                           background: wishlist.includes(book.id) ? 'rgba(255, 140, 0, 0.3)' : 'rgba(255, 255, 255, 0.1)',
                           border: wishlist.includes(book.id) ? '2px solid #FF8C00' : '2px solid rgba(255, 255, 255, 0.3)',
-                          borderRadius: '50%',
-                          width: '44px',
-                          height: '44px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          cursor: 'pointer',
-                          zIndex: 5,
                         }}
                       >
                         <HiHeart size={20} color={wishlist.includes(book.id) ? '#FF8C00' : 'white'} fill={wishlist.includes(book.id) ? '#FF8C00' : 'none'} />
