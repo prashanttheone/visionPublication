@@ -38,8 +38,8 @@ CREATE TABLE IF NOT EXISTS shopping_cart (
     quantity INT NOT NULL DEFAULT 1 CHECK (quantity > 0),
     
     -- Timestamps
-    added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    added_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     
     -- Constraints
     UNIQUE (user_id, book_id)
@@ -49,3 +49,27 @@ CREATE TABLE IF NOT EXISTS shopping_cart (
 CREATE INDEX idx_shopping_cart_user_id ON shopping_cart(user_id);
 CREATE INDEX idx_shopping_cart_book_id ON shopping_cart(book_id);
 CREATE INDEX idx_shopping_cart_added_at ON shopping_cart(added_at);
+
+/**
+ * ============================================
+ * AUTO-UPDATE TRIGGER FOR updated_at
+ * ============================================
+ * 
+ * PostgreSQL trigger to automatically update updated_at timestamp
+ * when any row in shopping_cart is modified.
+ */
+
+-- Create reusable trigger function (if not exists)
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Apply trigger to shopping_cart table
+CREATE TRIGGER update_shopping_cart_updated_at
+    BEFORE UPDATE ON shopping_cart
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
