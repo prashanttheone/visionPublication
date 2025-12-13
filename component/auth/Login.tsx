@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Box,
   Container,
@@ -17,25 +18,56 @@ import { FiEye, FiEyeOff } from 'react-icons/fi';
 const MotionBox = motion.create(Box);
 
 export default function Login() {
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
-    // TODO: Implement login functionality
-    setTimeout(() => {
+    setError(null);
+
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error || 'Failed to login');
+        return;
+      }
+
+      // Store token in localStorage
+      localStorage.setItem('authToken', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+
+      // Redirect to home or dashboard
+      if (data.user.role === 'admin') {
+        router.push('/admin');
+      } else {
+        router.push('/');
+      }
+    } catch (err: any) {
+      setError(err.message || 'An unexpected error occurred');
+    } finally {
       setIsLoading(false);
-      alert('✅ Login functionality coming soon - Configure authentication in your backend');
-    }, 1000);
+    }
   };
 
   const handleGoogleLogin = () => {
-    // TODO: Implement Google login
     alert('🔐 Google login coming soon - Configure Google OAuth in your application');
   };
 
@@ -56,6 +88,15 @@ export default function Login() {
               Sign in to your VisionPub account
             </Text>
           </Stack>
+
+          {/* Error Message */}
+          {error && (
+            <Box bg="red.50" border="1px solid" borderColor="red.300" p="4" borderRadius="md">
+              <Text color="red.700" fontSize="sm" fontWeight="500">
+                ❌ {error}
+              </Text>
+            </Box>
+          )}
 
           {/* Login Form */}
           <Box as="form" onSubmit={handleLogin}>

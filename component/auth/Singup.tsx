@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Box,
   Container,
@@ -17,17 +18,21 @@ import { FiEye, FiEyeOff } from 'react-icons/fi';
 const MotionBox = motion.create(Box);
 
 export default function Signup() {
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
     email: '',
+    phone: '',
     password: '',
     confirmPassword: ''
   });
   const [agreeToTerms, setAgreeToTerms] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -39,28 +44,73 @@ export default function Signup() {
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     
     if (formData.password !== formData.confirmPassword) {
-      alert('❌ Passwords do not match');
+      setError('Passwords do not match');
       return;
     }
 
     if (!agreeToTerms) {
-      alert('❌ Please agree to the terms and conditions');
+      setError('Please agree to the terms and conditions');
+      return;
+    }
+
+    if (formData.password.length < 8) {
+      setError('Password must be at least 8 characters');
       return;
     }
 
     setIsLoading(true);
-    
-    // TODO: Implement signup functionality
-    setTimeout(() => {
+
+    try {
+      const response = await fetch('/api/auth/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          firstName: formData.firstName,
+          lastName: formData.lastName,
+          email: formData.email,
+          phone: formData.phone || null,
+          password: formData.password,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error || 'Failed to create account');
+        return;
+      }
+
+      // Store token in localStorage
+      localStorage.setItem('authToken', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+
+      setSuccess(true);
+      setFormData({
+        firstName: '',
+        lastName: '',
+        email: '',
+        phone: '',
+        password: '',
+        confirmPassword: ''
+      });
+
+      // Redirect to login or home after 2 seconds
+      setTimeout(() => {
+        router.push('/login');
+      }, 2000);
+    } catch (err: any) {
+      setError(err.message || 'An unexpected error occurred');
+    } finally {
       setIsLoading(false);
-      alert('✅ Signup functionality coming soon - Configure authentication in your backend');
-    }, 1000);
+    }
   };
 
   const handleGoogleSignup = () => {
-    // TODO: Implement Google signup
     alert('🔐 Google signup coming soon - Configure Google OAuth in your application');
   };
 
@@ -81,6 +131,24 @@ export default function Signup() {
               Join VisionPub and explore amazing content
             </Text>
           </Stack>
+
+          {/* Error Message */}
+          {error && (
+            <Box bg="red.50" border="1px solid" borderColor="red.300" p="4" borderRadius="md">
+              <Text color="red.700" fontSize="sm" fontWeight="500">
+                ❌ {error}
+              </Text>
+            </Box>
+          )}
+
+          {/* Success Message */}
+          {success && (
+            <Box bg="green.50" border="1px solid" borderColor="green.300" p="4" borderRadius="md">
+              <Text color="green.700" fontSize="sm" fontWeight="500">
+                ✅ Account created successfully! Please check your email to verify your account.
+              </Text>
+            </Box>
+          )}
 
           {/* Signup Form */}
           <Box as="form" onSubmit={handleSignup}>
@@ -145,6 +213,26 @@ export default function Signup() {
                     boxShadow: '0 0 0 1px rgb(66, 153, 225)'
                   }}
                   required
+                />
+              </Box>
+
+              {/* Phone Field */}
+              <Box>
+                <Text fontWeight="bold" color="gray.700" mb="2">
+                  Phone Number (Optional)
+                </Text>
+                <Input
+                  type="tel"
+                  name="phone"
+                  placeholder="+92 300 1234567"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  size="lg"
+                  borderColor="gray.300"
+                  _focus={{
+                    borderColor: 'blue.500',
+                    boxShadow: '0 0 0 1px rgb(66, 153, 225)'
+                  }}
                 />
               </Box>
 
