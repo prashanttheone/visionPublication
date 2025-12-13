@@ -2,91 +2,15 @@
 
 import { Box, Container, Text, Grid } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
-import { HiCheckCircle, HiSparkles, HiUserGroup, HiLightBulb, HiHeart } from 'react-icons/hi2';
-import { HiTrendingUp } from 'react-icons/hi';
+import { HiCheckCircle } from 'react-icons/hi2';
+import StatisticsSection from './StatisticsSection';
+import TeamSection from './TeamSection';
+import DifferentiatorSection from './DifferentiatorSection';
+import CTASection from './CTASection';
+import WhatWeDoSection from './WhatWeDoSection';
 
 const MotionBox = motion.create(Box);
 const MotionText = motion.create(Text);
-
-interface TeamMember {
-  name: string;
-  role: string;
-  team: string;
-  image: string;
-  bio: string;
-}
-
-interface StatItem {
-  label: string;
-  value: string;
-  icon: any;
-}
-
-const teamMembers: TeamMember[] = [
-  {
-    name: 'Dr. Sharma',
-    role: 'Editor-in-Chief',
-    team: 'Editorial Team',
-    image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop',
-    bio: '20+ years in medical publishing',
-  },
-  {
-    name: 'Priya Verma',
-    role: 'Senior Editor',
-    team: 'Editorial Team',
-    image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop',
-    bio: 'Expert in health sciences content',
-  },
-  {
-    name: 'Rajesh Design',
-    role: 'Creative Director',
-    team: 'Design Team',
-    image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&h=400&fit=crop',
-    bio: 'Award-winning publication design',
-  },
-  {
-    name: 'Sarah Khan',
-    role: 'Lead Designer',
-    team: 'Design Team',
-    image: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&h=400&fit=crop',
-    bio: 'Specializes in educational materials',
-  },
-  {
-    name: 'Amit Patel',
-    role: 'Operations Manager',
-    team: 'Publishing & Operations',
-    image: 'https://images.unsplash.com/photo-1507527173202-83c92705a63b?w=400&h=400&fit=crop',
-    bio: 'Streamlining publishing workflows',
-  },
-  {
-    name: 'Lisa Anderson',
-    role: 'Publishing Director',
-    team: 'Publishing & Operations',
-    image: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&h=400&fit=crop',
-    bio: 'Leading digital transformation',
-  },
-  {
-    name: 'Dr. Vikram Singh',
-    role: 'Chief Executive Officer',
-    team: 'Leadership',
-    image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&h=400&fit=crop',
-    bio: 'Visionary leader in healthcare publishing',
-  },
-  {
-    name: 'Neha Gupta',
-    role: 'Chief Operating Officer',
-    team: 'Leadership',
-    image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop',
-    bio: 'Building scalable publishing solutions',
-  },
-];
-
-const stats: StatItem[] = [
-  { label: 'Books Published', value: '500+', icon: HiSparkles },
-  { label: 'Happy Readers', value: '100K+', icon: HiHeart },
-  { label: 'Expert Authors', value: '200+', icon: HiUserGroup },
-  { label: 'Growth Rate', value: '45%', icon: HiTrendingUp },
-];
 
 const values = [
   {
@@ -294,45 +218,7 @@ export default function About() {
       </Box>
 
       {/* What We Do Section */}
-      <Box py={{ base: '60px', md: '80px' }} position="relative" zIndex={1} borderTop="1px solid" borderColor="rgba(100, 181, 246, 0.1)">
-        <Container maxW="1200px" px={{ base: '20px', md: '40px' }}>
-          <MotionBox textAlign="center" mb="60px" variants={containerVariants} initial="hidden" whileInView="visible" viewport={{ once: true }}>
-            <MotionBox variants={itemVariants}>
-              <Text fontSize="sm" fontWeight="700" color="#FF8C00" mb="12px" textTransform="uppercase" letterSpacing="1px">
-                Our Services
-              </Text>
-              <Text fontSize={{ base: '32px', md: '48px' }} fontWeight="900" color="white">
-                What We Do & Our Expertise
-              </Text>
-            </MotionBox>
-          </MotionBox>
-
-          <Grid gridTemplateColumns={{ base: '1fr', md: 'repeat(3, 1fr)' }} gap="24px">
-            {[
-              { icon: '✍️', title: 'Content Development', desc: 'Expert writing and content creation for healthcare publications' },
-              { icon: '📐', title: 'Editorial Services', desc: 'Comprehensive editing and quality assurance processes' },
-              { icon: '🎨', title: 'Design & Layout', desc: 'Professional design and publication formatting' },
-              { icon: '💻', title: 'Digital Publishing', desc: 'E-books and digital-first publishing solutions' },
-              { icon: '🔍', title: 'Author Support', desc: 'Complete guidance from manuscript to publication' },
-              { icon: '📊', title: 'Distribution', desc: 'Wide distribution through multiple channels' },
-            ].map((service, i) => (
-              <MotionBox key={i} variants={cardVariants} initial="hidden" whileInView="visible" viewport={{ once: true }} whileHover="hover">
-                <Box bg="rgba(30, 41, 59, 0.6)" border="1px solid" borderColor="rgba(100, 181, 246, 0.2)" borderRadius="16px" p="24px" backdropFilter="blur(10px)" cursor="pointer" transition="all 0.3s ease" _hover={{ borderColor: 'rgba(100, 181, 246, 0.4)' }} height="100%">
-                  <Box fontSize="40px" mb="12px">
-                    {service.icon}
-                  </Box>
-                  <Text fontSize="lg" fontWeight="700" color="white" mb="8px">
-                    {service.title}
-                  </Text>
-                  <Text fontSize="sm" color="gray.400">
-                    {service.desc}
-                  </Text>
-                </Box>
-              </MotionBox>
-            ))}
-          </Grid>
-        </Container>
-      </Box>
+      <WhatWeDoSection />
 
       {/* Author Support Section */}
       <Box py={{ base: '60px', md: '80px' }} position="relative" zIndex={1} borderTop="1px solid" borderColor="rgba(100, 181, 246, 0.1)">
@@ -402,86 +288,10 @@ export default function About() {
       </Box>
 
       {/* Statistics Section */}
-      <Box py={{ base: '60px', md: '80px' }} position="relative" zIndex={1} borderTop="1px solid" borderColor="rgba(100, 181, 246, 0.1)">
-        <Container maxW="1200px" px={{ base: '20px', md: '40px' }}>
-          <MotionBox textAlign="center" mb="60px" variants={containerVariants} initial="hidden" whileInView="visible" viewport={{ once: true }}>
-            <MotionBox variants={itemVariants}>
-              <Text fontSize="sm" fontWeight="700" color="#FF8C00" mb="12px" textTransform="uppercase" letterSpacing="1px">
-                Our Impact
-              </Text>
-              <Text fontSize={{ base: '32px', md: '48px' }} fontWeight="900" color="white">
-                By The Numbers
-              </Text>
-            </MotionBox>
-          </MotionBox>
-
-          <Grid gridTemplateColumns={{ base: '1fr 1fr', md: 'repeat(4, 1fr)' }} gap="24px">
-            {stats.map((stat, i) => {
-              const Icon = stat.icon;
-              return (
-                <MotionBox key={i} variants={cardVariants} initial="hidden" whileInView="visible" viewport={{ once: true }} whileHover="hover">
-                  <Box bg="linear-gradient(135deg, rgba(100, 181, 246, 0.1), rgba(66, 165, 245, 0.05))" border="1px solid" borderColor="rgba(100, 181, 246, 0.2)" borderRadius="16px" p="32px" backdropFilter="blur(10px)" textAlign="center" cursor="pointer" transition="all 0.3s ease" _hover={{ borderColor: 'rgba(100, 181, 246, 0.4)' }}>
-                    <Box fontSize="40px" mb="16px" display="inline-block" color="#64B5F6">
-                      <Icon size={40} />
-                    </Box>
-                    <Text fontSize={{ base: '32px', md: '40px' }} fontWeight="900" color="#FF8C00" mb="8px">
-                      {stat.value}
-                    </Text>
-                    <Text fontSize="sm" color="gray.400" fontWeight="600">
-                      {stat.label}
-                    </Text>
-                  </Box>
-                </MotionBox>
-              );
-            })}
-          </Grid>
-        </Container>
-      </Box>
+      <StatisticsSection />
 
       {/* Team Section */}
-      <Box py={{ base: '60px', md: '80px' }} position="relative" zIndex={1} borderTop="1px solid" borderColor="rgba(100, 181, 246, 0.1)">
-        <Container maxW="1200px" px={{ base: '20px', md: '40px' }}>
-          <MotionBox textAlign="center" mb="60px" variants={containerVariants} initial="hidden" whileInView="visible" viewport={{ once: true }}>
-            <MotionBox variants={itemVariants}>
-              <Text fontSize="sm" fontWeight="700" color="#FF8C00" mb="12px" textTransform="uppercase" letterSpacing="1px">
-                Our Team
-              </Text>
-              <Text fontSize={{ base: '32px', md: '48px' }} fontWeight="900" color="white" mb="20px">
-                Meet Our Leadership & Experts
-              </Text>
-              <Text fontSize="md" color="gray.300" maxW="600px" mx="auto">
-                Experienced professionals dedicated to excellence in healthcare publishing
-              </Text>
-            </MotionBox>
-          </MotionBox>
-
-          <Grid gridTemplateColumns={{ base: '1fr', md: 'repeat(2, 1fr)', lg: 'repeat(4, 1fr)' }} gap="24px">
-            {teamMembers.map((member, i) => (
-              <MotionBox key={i} variants={cardVariants} initial="hidden" whileInView="visible" viewport={{ once: true }} whileHover="hover">
-                <Box bg="rgba(30, 41, 59, 0.6)" border="1px solid" borderColor="rgba(100, 181, 246, 0.2)" borderRadius="16px" overflow="hidden" backdropFilter="blur(10px)" cursor="pointer" transition="all 0.3s ease" _hover={{ borderColor: 'rgba(100, 181, 246, 0.4)' }}>
-                  <Box width="100%" height="200px" overflow="hidden" bg="rgba(100, 181, 246, 0.1)">
-                    <Box backgroundImage={`url(${member.image})`} backgroundSize="cover" backgroundPosition="center" width="100%" height="100%" />
-                  </Box>
-                  <Box p="20px">
-                    <Text fontSize="lg" fontWeight="700" color="white" mb="4px">
-                      {member.name}
-                    </Text>
-                    <Text fontSize="sm" fontWeight="600" color="#FF8C00" mb="4px">
-                      {member.role}
-                    </Text>
-                    <Text fontSize="xs" color="gray.400" mb="8px">
-                      {member.team}
-                    </Text>
-                    <Text fontSize="xs" color="gray.500">
-                      {member.bio}
-                    </Text>
-                  </Box>
-                </Box>
-              </MotionBox>
-            ))}
-          </Grid>
-        </Container>
-      </Box>
+      <TeamSection />
 
       {/* Editorial Process Section */}
       <Box py={{ base: '60px', md: '80px' }} position="relative" zIndex={1} borderTop="1px solid" borderColor="rgba(100, 181, 246, 0.1)">
@@ -525,71 +335,10 @@ export default function About() {
       </Box>
 
       {/* Differentiators Section */}
-      <Box py={{ base: '60px', md: '80px' }} position="relative" zIndex={1} borderTop="1px solid" borderColor="rgba(100, 181, 246, 0.1)">
-        <Container maxW="1200px" px={{ base: '20px', md: '40px' }}>
-          <MotionBox textAlign="center" mb="60px" variants={containerVariants} initial="hidden" whileInView="visible" viewport={{ once: true }}>
-            <MotionBox variants={itemVariants}>
-              <Text fontSize="sm" fontWeight="700" color="#FF8C00" mb="12px" textTransform="uppercase" letterSpacing="1px">
-                Why Choose Us
-              </Text>
-              <Text fontSize={{ base: '32px', md: '48px' }} fontWeight="900" color="white">
-                What Sets Us Apart
-              </Text>
-            </MotionBox>
-          </MotionBox>
-
-          <Grid gridTemplateColumns={{ base: '1fr', md: '1fr 1fr' }} gap="32px">
-            {[
-              { icon: '🎓', title: 'Academic Excellence', desc: 'Rigorous peer review and expert-authored content' },
-              { icon: '🌍', title: 'Global Reach', desc: 'Distributed and trusted by educators worldwide' },
-              { icon: '💼', title: 'Industry Expertise', desc: '14+ years of specialized healthcare publishing' },
-              { icon: '🚀', title: 'Innovation', desc: 'Pioneering digital and interactive learning solutions' },
-              { icon: '💰', title: 'Value for Money', desc: 'Affordable pricing without compromising quality' },
-              { icon: '🤝', title: 'Author Focus', desc: 'Dedicated support from conception to publication' },
-            ].map((diff, i) => (
-              <MotionBox key={i} variants={cardVariants} initial="hidden" whileInView="visible" viewport={{ once: true }} whileHover="hover">
-                <Box bg="rgba(30, 41, 59, 0.6)" border="1px solid" borderColor="rgba(100, 181, 246, 0.2)" borderRadius="16px" p="32px" backdropFilter="blur(10px)" cursor="pointer" transition="all 0.3s ease" _hover={{ borderColor: 'rgba(100, 181, 246, 0.4)' }}>
-                  <Box fontSize="48px" mb="16px">
-                    {diff.icon}
-                  </Box>
-                  <Text fontSize="lg" fontWeight="700" color="white" mb="12px">
-                    {diff.title}
-                  </Text>
-                  <Text fontSize="sm" color="gray.400">
-                    {diff.desc}
-                  </Text>
-                </Box>
-              </MotionBox>
-            ))}
-          </Grid>
-        </Container>
-      </Box>
+      <DifferentiatorSection />
 
       {/* CTA Section */}
-      <Box py={{ base: '60px', md: '100px' }} position="relative" zIndex={1} borderTop="1px solid" borderColor="rgba(100, 181, 246, 0.1)">
-        <Container maxW="1200px" px={{ base: '20px', md: '40px' }}>
-          <MotionBox textAlign="center" variants={containerVariants} initial="hidden" whileInView="visible" viewport={{ once: true }}>
-            <MotionBox variants={itemVariants} mb="40px">
-              <Text fontSize={{ base: '32px', md: '48px' }} fontWeight="900" color="white" mb="20px">
-                Ready to Make an Impact?
-              </Text>
-              <Text fontSize="md" color="gray.300" maxW="600px" mx="auto" mb="40px">
-                Join our community of authors, educators, and students transforming healthcare education
-              </Text>
-            </MotionBox>
-
-            <MotionBox variants={itemVariants} display="flex" gap="20px" justifyContent="center" flexWrap="wrap">
-              <motion.button whileHover={{ scale: 1.05, boxShadow: '0 20px 40px rgba(255, 140, 0, 0.3)' }} whileTap={{ scale: 0.95 }} style={{ padding: '16px 48px', fontSize: '16px', fontWeight: '600', border: 'none', borderRadius: '8px', background: 'linear-gradient(135deg, #FF8C00, #FFA500)', color: 'white', cursor: 'pointer', boxShadow: '0 10px 30px rgba(255, 140, 0, 0.2)' }}>
-                Publish With Us
-              </motion.button>
-
-              <motion.button whileHover={{ scale: 1.05, borderColor: '#64B5F6', boxShadow: '0 0 20px rgba(100, 181, 246, 0.3)' }} whileTap={{ scale: 0.95 }} style={{ padding: '16px 48px', fontSize: '16px', fontWeight: '600', border: '2px solid rgba(100, 181, 246, 0.5)', borderRadius: '8px', background: 'transparent', color: 'white', cursor: 'pointer', transition: 'all 0.3s ease' }}>
-                Explore Our Books
-              </motion.button>
-            </MotionBox>
-          </MotionBox>
-        </Container>
-      </Box>
+      <CTASection />
     </Box>
   );
 }
