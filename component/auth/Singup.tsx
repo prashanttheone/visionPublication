@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import {
   Box,
   Container,
@@ -14,11 +13,11 @@ import {
 } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
 import { FiEye, FiEyeOff } from 'react-icons/fi';
+import { authUtils } from '@/lib/auth';
 
 const MotionBox = motion.create(Box);
 
 export default function Signup() {
-  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [formData, setFormData] = useState({
@@ -66,6 +65,7 @@ export default function Signup() {
     try {
       const response = await fetch('/api/auth/signup', {
         method: 'POST',
+        credentials: 'include', // Include cookies in request
         headers: {
           'Content-Type': 'application/json',
         },
@@ -85,9 +85,8 @@ export default function Signup() {
         return;
       }
 
-      // Store token in localStorage
-      localStorage.setItem('authToken', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
+      // Store token and user data using auth utility
+      authUtils.setAuthToken(data.token, data.user);
 
       setSuccess(true);
       setFormData({
@@ -99,9 +98,9 @@ export default function Signup() {
         confirmPassword: ''
       });
 
-      // Redirect to login or home after 2 seconds
+      // Redirect to login page after showing success message
       setTimeout(() => {
-        router.push('/login');
+        window.location.href = '/login';
       }, 2000);
     } catch (err: any) {
       setError(err.message || 'An unexpected error occurred');

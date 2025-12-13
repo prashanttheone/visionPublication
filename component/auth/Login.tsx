@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import {
   Box,
   Container,
@@ -14,11 +13,11 @@ import {
 } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
 import { FiEye, FiEyeOff } from 'react-icons/fi';
+import { authUtils } from '@/lib/auth';
 
 const MotionBox = motion.create(Box);
 
 export default function Login() {
-  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -34,6 +33,7 @@ export default function Login() {
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
+        credentials: 'include', // Include cookies in request
         headers: {
           'Content-Type': 'application/json',
         },
@@ -50,16 +50,19 @@ export default function Login() {
         return;
       }
 
-      // Store token in localStorage
-      localStorage.setItem('authToken', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
+      // Store token and user data using auth utility
+      authUtils.setAuthToken(data.token, data.user);
 
-      // Redirect to home or dashboard
-      if (data.user.role === 'admin') {
-        router.push('/admin');
-      } else {
-        router.push('/');
-      }
+      // Small delay to ensure cookies are set before redirect
+      setTimeout(() => {
+        // Check user role and redirect accordingly
+        if (data.user.role === 'admin') {
+          // Force refresh to ensure middleware can check cookies
+          window.location.href = '/admin/dashboard';
+        } else {
+          window.location.href = '/';
+        }
+      }, 300);
     } catch (err: any) {
       setError(err.message || 'An unexpected error occurred');
     } finally {
