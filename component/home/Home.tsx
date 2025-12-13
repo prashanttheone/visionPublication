@@ -2,12 +2,15 @@
 
 import { Box, Container, Text } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
+import { useRouter } from 'next/navigation';
 import Carousel from './Carousel';
 
 const MotionBox = motion.create(Box);
 const MotionText = motion.create(Text);
 
 export default function Home() {
+  const router = useRouter();
+  
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -195,6 +198,7 @@ export default function Home() {
             <motion.button
               whileHover={{ scale: 1.05, boxShadow: '0 20px 40px rgba(255, 140, 0, 0.3)' }}
               whileTap={{ scale: 0.95 }}
+              onClick={() => router.push('/books')}
               style={{
                 padding: '14px 32px',
                 fontSize: '16px',
