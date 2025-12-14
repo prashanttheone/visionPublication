@@ -1,6 +1,7 @@
 'use client';
 
 import { ChakraProvider, defaultSystem } from '@chakra-ui/react';
+import { Toaster } from '@/component/ui/toaster';
 
 export default function ClientLayout({
   children,
@@ -10,6 +11,7 @@ export default function ClientLayout({
   return (
     <ChakraProvider value={defaultSystem}>
       {children}
+      <Toaster />
     </ChakraProvider>
   );
 }

@@ -8,14 +8,15 @@ import { ReactNode } from 'react';
 export default function LayoutWrapper({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const isShopLayout = pathname.startsWith('/books');
+  const isAdminLayout = pathname.startsWith('/admin');
 
   return (
     <>
-      {!isShopLayout && <Header />}
+      {!isShopLayout && !isAdminLayout && <Header />}
       <main>
         {children}
       </main>
-      {!isShopLayout && <Footer />}
+      {!isShopLayout && !isAdminLayout && <Footer />}
     </>
   );
 }

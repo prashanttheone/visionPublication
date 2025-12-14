@@ -50,7 +50,7 @@ export const authUtils = {
       // Always clear local storage regardless of API response
       authUtils.clearAuth();
       // Redirect to login page
-      window.location.href = '/login';
+      window.location.href = '/';
     }
   },
 
