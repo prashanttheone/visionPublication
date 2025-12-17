@@ -12,6 +12,7 @@ const navItems = [
   { label: 'About', href: '/about' },
   { label: 'Blog', href: '/blog' },
   { label: 'Resources', href: '/resources' },
+  { label: 'Books', href: '/books' },
   { label: 'Contact', href: '/contact' },
   { label: 'Join As Author', href: '/join-as-author' },
 ];

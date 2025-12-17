@@ -104,11 +104,16 @@ export default function Contact() {
   };
 
   const socialLinks = [
-    { icon: FaFacebook, href: '#', label: 'Facebook', color: '#1877F2' },
-    { icon: FaTwitter, href: '#', label: 'Twitter', color: '#1DA1F2' },
-    { icon: FaLinkedin, href: '#', label: 'LinkedIn', color: '#0A66C2' },
-    { icon: FaInstagram, href: '#', label: 'Instagram', color: '#E4405F' },
-    { icon: FaYoutube, href: '#', label: 'YouTube', color: '#FF0000' },
+    { icon: FaFacebook,
+      href: 'https://www.facebook.com/share/1VnEKH4zfG/', label: 'Facebook', color: '#1877F2' },
+    { icon: FaTwitter,
+      href: 'https://twitter.com/visionhealthsciences', label: 'Twitter', color: '#1DA1F2' },
+    { icon: FaLinkedin, href: 'https://www.linkedin.com/in/vision-health-sciences-publishers-03617b310/', 
+      label: 'LinkedIn', color: '#0A66C2' },
+    { icon: FaInstagram, href: 'https://www.instagram.com/visionhealthsciences?igsh=YnZ3eDF1ZDdjaG4z',
+       label: 'Instagram', color: '#E4405F' },
+    { icon: FaYoutube, href: 'https://youtube.com/@visionhealthsciencespublishers?si=V97ljSuMGXS3jAE0',
+       label: 'YouTube', color: '#FF0000' },
   ];
 
   const contactInfo = [
