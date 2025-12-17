@@ -1,141 +1,143 @@
 'use client';
 
-import { Box, Container, Text, Badge, Input } from '@chakra-ui/react';
+import { Box, Container, Text, Badge, Input, Button } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
-import { useState, useMemo, ChangeEvent } from 'react';
-import { HiMagnifyingGlass } from 'react-icons/hi2';
+import { useState, useEffect, useCallback, useMemo, ChangeEvent } from 'react';
+import { HiMagnifyingGlass, HiLink, HiChevronDown, HiChevronUp } from 'react-icons/hi2';
 import { HiOutlineBookOpen } from 'react-icons/hi';
-import { INC_EBOOKS } from './data';
 
 const MotionBox = motion.create(Box);
 
-type ProgramKey = 'BSc_Nursing' | 'PostBasic_BSc_Nursing' | 'GNM';
+interface Course {
+  id: number;
+  name: string;
+  description?: string;
+  semesters?: Semester[];
+}
 
-interface FilteredSubject {
-  subject: string;
-  approvedBooks: string[];
-  year?: string;
-  semester?: string;
+interface Semester {
+  id: number;
+  course_id: number;
+  semester_number: number;
+  description: string;
+}
+
+interface EResourceChapter {
+  id: number;
+  eresource_book_id: number;
+  chapter_number: number;
+  chapter_name: string;
+  doc_link?: string;
+}
+
+interface EResourceBook {
+  id: number;
+  course_id: number;
+  semester_id: number;
+  book_name: string;
+  description?: string;
+  course_name: string;
+  semester_name: string;
+  chapters: EResourceChapter[];
 }
 
 export default function Eresource() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedProgram, setSelectedProgram] = useState<ProgramKey>('BSc_Nursing');
-  const [selectedYear, setSelectedYear] = useState('');
-  const [selectedSemester, setSelectedSemester] = useState('');
-  const [sortBy, setSortBy] = useState<'name' | 'books'>('name');
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [semesters, setSemesters] = useState<Semester[]>([]);
+  const [eresources, setEresources] = useState<EResourceBook[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  const [selectedCourseId, setSelectedCourseId] = useState<number | null>(null);
+  const [selectedSemesterId, setSelectedSemesterId] = useState<number | null>(null);
+  const [expandedBookId, setExpandedBookId] = useState<number | null>(null);
+  const [sortBy, setSortBy] = useState<'name' | 'chapters'>('name');
 
-  // Get program data
-  const programData = INC_EBOOKS[selectedProgram];
-
-  // Get available years
-  const availableYears = useMemo(() => {
-    if (!programData) return [];
-    return Object.keys(programData).filter((key) => key.startsWith('Year'));
-  }, [programData]);
-
-  // Get available semesters based on selected year
-  const availableSemesters = useMemo(() => {
-    if (!selectedYear || !programData) return [];
-    const yearData = programData[selectedYear as keyof typeof programData];
-    if (!yearData || typeof yearData !== 'object') return [];
-    if (Array.isArray(yearData)) return [];
-    return Object.keys(yearData).filter((key) => key.startsWith('Semester'));
-  }, [selectedYear, programData]);
-
-  // Get all subjects based on filters
-  const filteredSubjects: FilteredSubject[] = useMemo(() => {
-    if (!programData) return [];
-
-    const subjects: FilteredSubject[] = [];
-
-    if (selectedYear && selectedSemester) {
-      // Specific semester selected
-      const yearData = programData[selectedYear as keyof typeof programData];
-      if (yearData && typeof yearData === 'object' && !Array.isArray(yearData)) {
-        const semesterData = yearData[selectedSemester as keyof typeof yearData];
-        if (Array.isArray(semesterData)) {
-          (semesterData as any[]).forEach((subject: any) => {
-            subjects.push({
-              ...subject,
-              year: selectedYear,
-              semester: selectedSemester,
-            });
-          });
-        }
-      }
-    } else if (selectedYear) {
-      // All subjects in selected year
-      const yearData = programData[selectedYear as keyof typeof programData];
-      if (yearData && typeof yearData === 'object') {
-        if (Array.isArray(yearData)) {
-          (yearData as any[]).forEach((subject: any) => {
-            subjects.push({
-              ...subject,
-              year: selectedYear,
-            });
-          });
-        } else {
-          // Handle semester structure
-          Object.entries(yearData).forEach(([semKey, semData]: [string, any]) => {
-            if (Array.isArray(semData)) {
-              (semData as any[]).forEach((subject: any) => {
-                subjects.push({
-                  ...subject,
-                  year: selectedYear,
-                  semester: semKey,
-                });
-              });
-            }
-          });
-        }
-      }
-    } else {
-      // All subjects in program
-      Object.entries(programData).forEach(([yearKey, yearData]: [string, any]) => {
-        if (yearData && typeof yearData === 'object') {
-          if (Array.isArray(yearData)) {
-            (yearData as any[]).forEach((subject: any) => {
-              subjects.push({
-                ...subject,
-                year: yearKey,
-              });
-            });
-          } else {
-            Object.entries(yearData).forEach(([semKey, semData]: [string, any]) => {
-              if (Array.isArray(semData)) {
-                (semData as any[]).forEach((subject: any) => {
-                  subjects.push({
-                    ...subject,
-                    year: yearKey,
-                    semester: semKey,
-                  });
-                });
-              }
-            });
+  // Fetch courses and semesters
+  const fetchCourses = useCallback(async () => {
+    try {
+      const response = await fetch('/api/course?includeSemesters=true');
+      const result = await response.json();
+      if (result.success) {
+        setCourses(result.data || []);
+        const allSems: Semester[] = [];
+        result.data?.forEach((course: Course) => {
+          if (course.semesters) {
+            allSems.push(...course.semesters);
           }
-        }
-      });
+        });
+        setSemesters(allSems);
+      }
+    } catch (error) {
+      console.error('Error fetching courses:', error);
+    }
+  }, []);
+
+  // Fetch e-resources
+  const fetchEresources = useCallback(async () => {
+    try {
+      const response = await fetch('/api/eresource?includeChapters=true');
+      const result = await response.json();
+      if (result.success) {
+        setEresources(result.data || []);
+      }
+    } catch (error) {
+      console.error('Error fetching e-resources:', error);
+    }
+  }, []);
+
+  useEffect(() => {
+    const init = async () => {
+      setIsLoading(true);
+      await Promise.all([fetchCourses(), fetchEresources()]);
+      setIsLoading(false);
+    };
+    init();
+  }, [fetchCourses, fetchEresources]);
+
+  // Get semesters for selected course
+  const availableSemesters = useMemo(() => {
+    if (!selectedCourseId) return [];
+    return semesters.filter(s => s.course_id === selectedCourseId);
+  }, [selectedCourseId, semesters]);
+
+  // Filter e-resources
+  const filteredEresources = useMemo(() => {
+    let filtered = [...eresources];
+
+    // Filter by course
+    if (selectedCourseId) {
+      filtered = filtered.filter(e => e.course_id === selectedCourseId);
     }
 
-    // Apply search filter
-    let filtered = subjects.filter(
-      (subject) =>
-        subject.subject.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        subject.approvedBooks.some((book) => book.toLowerCase().includes(searchTerm.toLowerCase()))
-    );
+    // Filter by semester
+    if (selectedSemesterId) {
+      filtered = filtered.filter(e => e.semester_id === selectedSemesterId);
+    }
 
-    // Apply sorting
+    // Search filter
+    if (searchTerm) {
+      const search = searchTerm.toLowerCase();
+      filtered = filtered.filter(
+        e =>
+          e.book_name.toLowerCase().includes(search) ||
+          e.course_name.toLowerCase().includes(search) ||
+          e.semester_name.toLowerCase().includes(search) ||
+          e.chapters.some(ch => ch.chapter_name.toLowerCase().includes(search))
+      );
+    }
+
+    // Sort
     filtered.sort((a, b) => {
       if (sortBy === 'name') {
-        return a.subject.localeCompare(b.subject);
+        return a.book_name.localeCompare(b.book_name);
       } else {
-        return b.approvedBooks.length - a.approvedBooks.length;
+        return b.chapters.length - a.chapters.length;
       }
     });
 
     return filtered;
-  }, [programData, selectedYear, selectedSemester, searchTerm, sortBy]);
+  }, [eresources, selectedCourseId, selectedSemesterId, searchTerm, sortBy]);
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -170,12 +172,6 @@ export default function Eresource() {
       transition: { duration: 0.3 },
     },
   };
-
-  const programOptions = [
-    { value: 'BSc_Nursing', label: 'B.Sc Nursing' },
-    { value: 'PostBasic_BSc_Nursing', label: 'Post-Basic B.Sc Nursing' },
-    { value: 'GNM', label: 'GNM (General Nursing & Midwifery)' },
-  ];
 
   const selectStyle = {
     padding: '10px 12px',
@@ -215,7 +211,7 @@ export default function Eresource() {
 
           <MotionBox variants={itemVariants} mb="20px">
             <Text fontSize={{ base: '42px', md: '56px', lg: '64px' }} fontWeight="900" lineHeight="1.2" color="white" mb="20px">
-              Approved Curriculum
+              Digital Study
             </Text>
             <Text fontSize={{ base: '42px', md: '56px', lg: '64px' }} fontWeight="900" lineHeight="1.2" bgGradient="linear(to-r, #64B5F6, #90CAF9)" bgClip="text">
               Resources
@@ -224,7 +220,7 @@ export default function Eresource() {
 
           <MotionBox variants={itemVariants} maxW="700px" mx="auto">
             <Text fontSize={{ base: '16px', md: '18px' }} color="gray.300" lineHeight="1.6">
-              Access comprehensive e-books and approved resources for all nursing programs and specializations.
+              Access comprehensive e-books and chapter resources for all courses and semesters.
             </Text>
           </MotionBox>
         </MotionBox>
@@ -239,48 +235,28 @@ export default function Eresource() {
             p={{ base: '24px', md: '32px' }}
             backdropFilter="blur(10px)"
           >
-            {/* Program Selection */}
-            <Box mb={{ base: '20px', md: '24px' }} position="relative" zIndex={5}>
-              <Text fontSize="sm" fontWeight="700" color="gray.300" mb="12px" textTransform="uppercase" letterSpacing="1px">
-                Select Program
-              </Text>
-              <select
-                value={selectedProgram}
-                onChange={(e: ChangeEvent<HTMLSelectElement>) => {
-                  setSelectedProgram(e.target.value as ProgramKey);
-                  setSelectedYear('');
-                  setSelectedSemester('');
-                }}
-                style={selectStyle}
-              >
-                {programOptions.map((option) => (
-                  <option key={option.value} value={option.value} style={{ background: '#1a2332', color: 'white', padding: '8px' }}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </Box>
-
-            {/* Grid for other filters */}
+            {/* Grid for filters */}
             <Box display="grid" gridTemplateColumns={{ base: '1fr', md: 'repeat(3, 1fr)' }} gap={{ base: '12px', md: '16px' }} position="relative" zIndex={4}>
+              {/* Course Selection */}
               <Box>
                 <Text fontSize="sm" fontWeight="700" color="gray.300" mb="12px" textTransform="uppercase" letterSpacing="1px">
-                  Year
+                  Course
                 </Text>
                 <select
-                  value={selectedYear}
+                  value={selectedCourseId || ''}
                   onChange={(e: ChangeEvent<HTMLSelectElement>) => {
-                    setSelectedYear(e.target.value);
-                    setSelectedSemester('');
+                    const value = e.target.value ? parseInt(e.target.value) : null;
+                    setSelectedCourseId(value);
+                    setSelectedSemesterId(null);
                   }}
                   style={selectStyle}
                 >
                   <option value="" style={{ background: '#1a2332', color: 'white', padding: '8px' }}>
-                    All Years
+                    All Courses
                   </option>
-                  {availableYears.map((year) => (
-                    <option key={year} value={year} style={{ background: '#1a2332', color: 'white', padding: '8px' }}>
-                      {year.replace('_', ' ')}
+                  {courses.map((course) => (
+                    <option key={course.id} value={course.id} style={{ background: '#1a2332', color: 'white', padding: '8px' }}>
+                      {course.name}
                     </option>
                   ))}
                 </select>
@@ -292,21 +268,24 @@ export default function Eresource() {
                   Semester
                 </Text>
                 <select
-                  value={selectedSemester}
-                  onChange={(e: ChangeEvent<HTMLSelectElement>) => setSelectedSemester(e.target.value)}
-                  disabled={!selectedYear || availableSemesters.length === 0}
+                  value={selectedSemesterId || ''}
+                  onChange={(e: ChangeEvent<HTMLSelectElement>) => {
+                    const value = e.target.value ? parseInt(e.target.value) : null;
+                    setSelectedSemesterId(value);
+                  }}
+                  disabled={!selectedCourseId || availableSemesters.length === 0}
                   style={{
                     ...selectStyle,
-                    opacity: !selectedYear || availableSemesters.length === 0 ? 0.5 : 1,
-                    cursor: !selectedYear || availableSemesters.length === 0 ? 'not-allowed' : 'pointer',
+                    opacity: !selectedCourseId || availableSemesters.length === 0 ? 0.5 : 1,
+                    cursor: !selectedCourseId || availableSemesters.length === 0 ? 'not-allowed' : 'pointer',
                   }}
                 >
                   <option value="" style={{ background: '#1a2332', color: 'white', padding: '8px' }}>
                     All Semesters
                   </option>
                   {availableSemesters.map((semester) => (
-                    <option key={semester} value={semester} style={{ background: '#1a2332', color: 'white', padding: '8px' }}>
-                      {semester.replace('_', ' ')}
+                    <option key={semester.id} value={semester.id} style={{ background: '#1a2332', color: 'white', padding: '8px' }}>
+                      {semester.description || `Semester ${semester.semester_number}`}
                     </option>
                   ))}
                 </select>
@@ -319,14 +298,14 @@ export default function Eresource() {
                 </Text>
                 <select
                   value={sortBy}
-                  onChange={(e: ChangeEvent<HTMLSelectElement>) => setSortBy(e.target.value as 'name' | 'books')}
+                  onChange={(e: ChangeEvent<HTMLSelectElement>) => setSortBy(e.target.value as 'name' | 'chapters')}
                   style={selectStyle}
                 >
                   <option value="name" style={{ background: '#1a2332', color: 'white', padding: '8px' }}>
-                    Subject Name (A-Z)
+                    Book Name (A-Z)
                   </option>
-                  <option value="books" style={{ background: '#1a2332', color: 'white', padding: '8px' }}>
-                    Most Books
+                  <option value="chapters" style={{ background: '#1a2332', color: 'white', padding: '8px' }}>
+                    Most Chapters
                   </option>
                 </select>
               </Box>
@@ -336,7 +315,7 @@ export default function Eresource() {
             <Box mt={{ base: '16px', md: '24px' }} position="relative">
               <HiMagnifyingGlass size={20} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: '#64B5F6' }} />
               <Input
-                placeholder="Search subjects or books..."
+                placeholder="Search books or chapters..."
                 value={searchTerm}
                 onChange={(e: ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
                 pl="40px"
@@ -355,15 +334,20 @@ export default function Eresource() {
         {/* Results Count */}
         <MotionBox variants={itemVariants} initial="hidden" whileInView="visible" viewport={{ once: true }} mb="30px">
           <Text fontSize="sm" color="gray.400">
-            Showing <Text as="span" color="#64B5F6" fontWeight="700">{filteredSubjects.length}</Text> {filteredSubjects.length === 1 ? 'subject' : 'subjects'}
+            Showing <Text as="span" color="#64B5F6" fontWeight="700">{filteredEresources.length}</Text> {filteredEresources.length === 1 ? 'book' : 'books'}
           </Text>
         </MotionBox>
 
-        {/* Subjects Grid */}
-        {filteredSubjects.length > 0 ? (
+        {/* Loading State */}
+        {isLoading ? (
+          <Box textAlign="center" py="60px">
+            <Text fontSize="18px" color="gray.400">Loading e-resources...</Text>
+          </Box>
+        ) : filteredEresources.length > 0 ? (
+          /* E-Resources Grid */
           <Box display="grid" gridTemplateColumns={{ base: '1fr', md: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)' }} gap={{ base: '24px', md: '32px' }}>
-            {filteredSubjects.map((subjectData, index) => (
-              <MotionBox key={`${subjectData.subject}-${index}`} variants={cardVariants} initial="hidden" whileInView="visible" viewport={{ once: true }} whileHover="hover">
+            {filteredEresources.map((book, index) => (
+              <MotionBox key={book.id} variants={cardVariants} initial="hidden" whileInView="visible" viewport={{ once: true }} whileHover="hover">
                 <Box
                   bg="rgba(30, 41, 59, 0.6)"
                   border="1px solid"
@@ -396,63 +380,169 @@ export default function Eresource() {
                     </Box>
                     <Box flex="1">
                       <Text fontSize={{ base: '16px', md: '18px' }} fontWeight="800" color="white" lineHeight="1.3">
-                        {subjectData.subject}
+                        {book.book_name}
                       </Text>
+                      {book.description && (
+                        <Text fontSize="sm" color="gray.400" mt="4px">{book.description}</Text>
+                      )}
                     </Box>
                   </Box>
 
                   {/* Metadata Badges */}
                   <Box display="flex" gap="8px" flexWrap="wrap" mb="20px">
-                    {subjectData.year && (
-                      <Badge bg="rgba(255, 140, 0, 0.2)" color="#FF8C00" px="10px" py="4px" borderRadius="6px" fontSize="xs" fontWeight="600">
-                        {subjectData.year.replace('_', ' ')}
-                      </Badge>
-                    )}
-                    {subjectData.semester && (
-                      <Badge bg="rgba(100, 181, 246, 0.2)" color="#64B5F6" px="10px" py="4px" borderRadius="6px" fontSize="xs" fontWeight="600">
-                        {subjectData.semester.replace('_', ' ')}
-                      </Badge>
-                    )}
+                    <Badge bg="rgba(255, 140, 0, 0.2)" color="#FF8C00" px="10px" py="4px" borderRadius="6px" fontSize="xs" fontWeight="600">
+                      {book.course_name}
+                    </Badge>
+                    <Badge bg="rgba(100, 181, 246, 0.2)" color="#64B5F6" px="10px" py="4px" borderRadius="6px" fontSize="xs" fontWeight="600">
+                      {book.semester_name}
+                    </Badge>
                     <Badge bg="rgba(139, 92, 246, 0.2)" color="#A78BFA" px="10px" py="4px" borderRadius="6px" fontSize="xs" fontWeight="600">
-                      {subjectData.approvedBooks.length} Books
+                      {book.chapters.length} Chapters
                     </Badge>
                   </Box>
 
                   {/* Divider */}
-                  <Box height="1px" bg="linear-gradient(to-r, transparent, rgba(100, 181, 246, 0.2), transparent)" my="20px" />
+                  <Box height="1px" bg="linear-gradient(to-r, transparent, rgba(100, 181, 246, 0.2), transparent)" my="16px" />
 
-                  {/* Approved Books */}
+                  {/* Chapters Section */}
                   <Box flex="1">
-                    <Text fontSize="xs" fontWeight="700" color="gray.400" mb="12px" textTransform="uppercase" letterSpacing="1px">
-                      Approved Books
-                    </Text>
-                    <Box display="flex" flexDirection="column" gap="10px">
-                      {subjectData.approvedBooks.map((book, idx) => (
-                        <Box key={idx} display="flex" gap="8px" alignItems="flex-start">
-                          <Text color="#FF8C00" fontWeight="900" fontSize="sm" mt="2px">
-                            •
-                          </Text>
-                          <Text fontSize="sm" color="gray.300" lineHeight="1.5">
-                            {book}
-                          </Text>
-                        </Box>
-                      ))}
+                    <Box 
+                      display="flex" 
+                      justifyContent="space-between" 
+                      alignItems="center" 
+                      mb="12px"
+                      cursor="pointer"
+                      onClick={() => setExpandedBookId(expandedBookId === book.id ? null : book.id)}
+                    >
+                      <Text fontSize="xs" fontWeight="700" color="gray.400" textTransform="uppercase" letterSpacing="1px">
+                        Chapters & Resources
+                      </Text>
+                      {expandedBookId === book.id ? (
+                        <HiChevronUp size={18} color="#64B5F6" />
+                      ) : (
+                        <HiChevronDown size={18} color="#64B5F6" />
+                      )}
                     </Box>
+
+                    {/* Collapsed: Show first 3 chapters */}
+                    {expandedBookId !== book.id && book.chapters.length > 0 && (
+                      <Box display="flex" flexDirection="column" gap="8px">
+                        {book.chapters.slice(0, 3).map((chapter) => (
+                          <Box key={chapter.id} display="flex" gap="8px" alignItems="center" justifyContent="space-between">
+                            <Box display="flex" gap="8px" alignItems="center" flex="1">
+                              <Text color="#FF8C00" fontWeight="900" fontSize="sm">•</Text>
+                              <Text fontSize="sm" color="gray.300" lineHeight="1.5" noOfLines={1}>
+                                {chapter.chapter_name}
+                              </Text>
+                            </Box>
+                            {chapter.doc_link && (
+                              <a
+                                href={chapter.doc_link}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  padding: '4px 8px',
+                                  fontSize: '11px',
+                                  fontWeight: '600',
+                                  color: 'white',
+                                  backgroundColor: '#319795',
+                                  borderRadius: '4px',
+                                  textDecoration: 'none',
+                                  flexShrink: 0
+                                }}
+                              >
+                                <HiLink style={{ marginRight: '4px' }} />
+                                View
+                              </a>
+                            )}
+                          </Box>
+                        ))}
+                        {book.chapters.length > 3 && (
+                          <Text fontSize="xs" color="#64B5F6" fontWeight="600" cursor="pointer" onClick={() => setExpandedBookId(book.id)}>
+                            + {book.chapters.length - 3} more chapters
+                          </Text>
+                        )}
+                      </Box>
+                    )}
+
+                    {/* Expanded: Show all chapters */}
+                    {expandedBookId === book.id && book.chapters.length > 0 && (
+                      <Box display="flex" flexDirection="column" gap="10px">
+                        {book.chapters.map((chapter) => (
+                          <Box 
+                            key={chapter.id} 
+                            display="flex" 
+                            gap="10px" 
+                            alignItems="center" 
+                            justifyContent="space-between"
+                            p="10px"
+                            bg="rgba(15, 23, 42, 0.4)"
+                            borderRadius="8px"
+                          >
+                            <Box display="flex" gap="10px" alignItems="center" flex="1">
+                              <Badge bg="rgba(139, 92, 246, 0.3)" color="#A78BFA" px="8px" py="2px" borderRadius="4px" fontSize="xs" fontWeight="700">
+                                {chapter.chapter_number}
+                              </Badge>
+                              <Text fontSize="sm" color="gray.200" lineHeight="1.4">
+                                {chapter.chapter_name}
+                              </Text>
+                            </Box>
+                            {chapter.doc_link ? (
+                              <a
+                                href={chapter.doc_link}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  padding: '6px 12px',
+                                  fontSize: '12px',
+                                  fontWeight: '600',
+                                  color: 'white',
+                                  backgroundColor: '#319795',
+                                  borderRadius: '6px',
+                                  textDecoration: 'none',
+                                  flexShrink: 0
+                                }}
+                              >
+                                <HiLink style={{ marginRight: '6px' }} />
+                                View Doc
+                              </a>
+                            ) : (
+                              <Badge bg="rgba(113, 128, 150, 0.3)" color="gray.400" px="8px" py="4px" borderRadius="4px" fontSize="xs">
+                                No Link
+                              </Badge>
+                            )}
+                          </Box>
+                        ))}
+                      </Box>
+                    )}
+
+                    {book.chapters.length === 0 && (
+                      <Text fontSize="sm" color="gray.500" fontStyle="italic">
+                        No chapters available
+                      </Text>
+                    )}
                   </Box>
                 </Box>
               </MotionBox>
             ))}
           </Box>
         ) : (
+          /* Empty State */
           <MotionBox variants={itemVariants} initial="hidden" whileInView="visible" viewport={{ once: true }} textAlign="center" py="60px">
             <Box mb="24px">
               <HiMagnifyingGlass size={64} style={{ margin: '0 auto', color: 'rgba(100, 181, 246, 0.3)' }} />
             </Box>
             <Text fontSize="24px" fontWeight="800" color="white" mb="12px">
-              No Resources Found
+              No E-Resources Found
             </Text>
             <Text fontSize="16px" color="gray.400">
-              Try adjusting your filters or search terms to find what you're looking for.
+              {eresources.length === 0 
+                ? 'No e-resources have been added yet. Check back later!' 
+                : 'Try adjusting your filters or search terms to find what you\'re looking for.'}
             </Text>
           </MotionBox>
         )}
