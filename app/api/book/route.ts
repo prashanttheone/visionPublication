@@ -194,6 +194,30 @@ export async function POST(request: NextRequest) {
 
     // Insert course mappings if provided
     if (courseMappings.length > 0) {
+      // Validate that all referenced semesters exist
+      const semesterIds = courseMappings.map(m => m.semester_id);
+      const uniqueSemesterIds = [...new Set(semesterIds)];
+      
+      if (uniqueSemesterIds.length > 0) {
+        const semesterCheck = await client.query(
+          'SELECT id FROM semesters WHERE id = ANY($1)',
+          [uniqueSemesterIds]
+        );
+        
+        const existingSemesterIds = new Set(semesterCheck.rows.map(row => row.id));
+        const missingSemesterIds = uniqueSemesterIds.filter(id => !existingSemesterIds.has(id));
+        
+        if (missingSemesterIds.length > 0) {
+          return NextResponse.json(
+            {
+              success: false,
+              error: `Referenced semester IDs do not exist: ${missingSemesterIds.join(', ')}`
+            },
+            { status: 400 }
+          );
+        }
+      }
+      
       const mappingInserts = courseMappings.map(mapping =>
         client.query<BookCourseMap>(
           `INSERT INTO book_course_map (book_id, course_id, semester_id, is_required, is_recommended, created_at, updated_at)
