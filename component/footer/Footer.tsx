@@ -52,36 +52,14 @@ export default function Footer() {
       <Container maxW="full" px={{ base: '16px', md: '32px' }}>
         {/* Logo and Description */}
         <MotionBox variants={itemVariants} mb="48px">
-          <Box display="flex" gap="12px" mb="16px">
-            <Box
-              w="48px"
-              h="48px"
-              bgGradient="linear(to-br, #64B5F6, #42A5F5)"
-              borderRadius="lg"
-              display="flex"
-              alignItems="center"
-              justifyContent="center"
-              fontSize="20px"
-              fontWeight="bold"
-              color="white"
-              boxShadow="0 4px 12px rgba(100, 181, 246, 0.3)"
-              flexShrink={0}
-            >
-              VP
-            </Box>
-            <Box>
-              <Box
-                fontSize="22px"
-                fontWeight="800"
-                bgGradient="linear(to-r, #64B5F6, #90CAF9)"
-                bgClip="text"
-              >
-                VISIONPUBLICATIONS
-              </Box>
-              <Text fontSize="sm" color="gray.400" mt="4px">
-                Empowering Knowledge & Innovation
-              </Text>
-            </Box>
+          <Box display="flex" gap="16px" mb="16px" alignItems="center" ml="20px">
+            <a href="/" style={{ display: 'block', flexShrink: 0 }}>
+              <img
+                src="/logopng.png"
+                alt="Vision Publications Logo"
+                style={{ height: '50px', width: 'auto', objectFit: 'contain', scale: 4 }}
+              />
+            </a>
           </Box>
           <Text color="gray.400" fontSize="sm" maxW="300px" lineHeight="tall">
             Dedicated to publishing quality content and resources that inspire and educate our global community.

@@ -431,7 +431,7 @@ export default function Eresource() {
                           <Box key={chapter.id} display="flex" gap="8px" alignItems="center" justifyContent="space-between">
                             <Box display="flex" gap="8px" alignItems="center" flex="1">
                               <Text color="#FF8C00" fontWeight="900" fontSize="sm">•</Text>
-                              <Text fontSize="sm" color="gray.300" lineHeight="1.5" noOfLines={1}>
+                              <Text fontSize="sm" color="gray.300" lineHeight="1.5" overflow="hidden" textOverflow="ellipsis" whiteSpace="nowrap">
                                 {chapter.chapter_name}
                               </Text>
                             </Box>
