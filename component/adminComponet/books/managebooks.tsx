@@ -128,9 +128,7 @@ export default function ManageBooks() {
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const [formData, setFormData] = useState<Book>(initialFormState);
-  const [courseMapping, setCourseMapping] = useState<BookCourseMap[]>([
-    { course_id: 1, semester_id: 1, is_required: true, is_recommended: false }
-  ]);
+  const [courseMapping, setCourseMapping] = useState<BookCourseMap[]>([]);
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -183,6 +181,8 @@ export default function ManageBooks() {
       }
       try {
         await fetchCoursesAndSemesters();
+        // Initialize course mapping with first available course and semester
+        // This will be updated after courses are loaded
         const booksResponse = await fetch('/api/book');
         const booksResult = await booksResponse.json();
         if (booksResult.success) {
@@ -200,6 +200,22 @@ export default function ManageBooks() {
     };
     initializeData();
   }, []);
+
+  // Initialize courseMapping when courses and semesters are loaded
+  useEffect(() => {
+    if (courses.length > 0 && semesters.length > 0 && courseMapping.length === 0) {
+      const firstCourse = courses[0];
+      const courseSems = semesters.filter(s => s.course_id === firstCourse.id);
+      if (courseSems.length > 0) {
+        setCourseMapping([{
+          course_id: firstCourse.id,
+          semester_id: courseSems[0].id,
+          is_required: true,
+          is_recommended: false
+        }]);
+      }
+    }
+  }, [courses, semesters, courseMapping.length]);
 
   const calculateDiscount = useCallback((actual: number, offer: number) => {
     if (actual <= 0) return 0;
@@ -251,7 +267,7 @@ export default function ManageBooks() {
         setBooks(prev => [...prev, result.data.book]);
         setFormData(initialFormState);
         setUploadedImageUrl('');
-        setCourseMapping([{ course_id: 1, semester_id: 1, is_required: true, is_recommended: false }]);
+        setCourseMapping(getDefaultCourseMapping());
         setActiveView('list');
         alert('✅ Book created successfully!');
       } else {
@@ -290,7 +306,7 @@ export default function ManageBooks() {
         setBooks(prev => prev.map(book => book.id === editingId ? result.data.book : book));
         setFormData(initialFormState);
         setUploadedImageUrl('');
-        setCourseMapping([{ course_id: 1, semester_id: 1, is_required: true, is_recommended: false }]);
+        setCourseMapping(getDefaultCourseMapping());
         setIsEditing(false);
         setEditingId(null);
         setActiveView('list');
@@ -324,27 +340,41 @@ export default function ManageBooks() {
     }
   }, []);
 
-  const handleEdit = useCallback((book: Book) => {
-    setFormData(book);
-    setUploadedImageUrl('');
-    setCourseMapping([{ course_id: 1, semester_id: 1, is_required: true, is_recommended: false }]);
-    setEditingId(book.id!);
-    setIsEditing(true);
-    setActiveView('form');
-  }, []);
-
   const getSemestersForCourse = useCallback((courseId: number) => {
     return semesters.filter(s => s.course_id === courseId);
   }, [semesters]);
 
+  // Get default course mapping using first available course and its first semester
+  const getDefaultCourseMapping = useCallback((): BookCourseMap[] => {
+    if (courses.length === 0) return [];
+    const firstCourse = courses[0];
+    const courseSemesters = semesters.filter(s => s.course_id === firstCourse.id);
+    if (courseSemesters.length === 0) return [];
+    return [{
+      course_id: firstCourse.id,
+      semester_id: courseSemesters[0].id,
+      is_required: true,
+      is_recommended: false
+    }];
+  }, [courses, semesters]);
+
+  const handleEdit = useCallback((book: Book) => {
+    setFormData(book);
+    setUploadedImageUrl('');
+    setCourseMapping(getDefaultCourseMapping());
+    setEditingId(book.id!);
+    setIsEditing(true);
+    setActiveView('form');
+  }, [getDefaultCourseMapping]);
+
   const handleCancel = useCallback(() => {
     setFormData(initialFormState);
     setUploadedImageUrl('');
-    setCourseMapping([{ course_id: 1, semester_id: 1, is_required: true, is_recommended: false }]);
+    setCourseMapping(getDefaultCourseMapping());
     setIsEditing(false);
     setEditingId(null);
     setActiveView('list');
-  }, []);
+  }, [getDefaultCourseMapping]);
 
   // Render form field dynamically
   const renderField = (field: any) => {
@@ -572,8 +602,14 @@ export default function ManageBooks() {
                         <select
                           value={mapping.course_id}
                           onChange={(e) => {
+                            const newCourseId = parseInt(e.target.value);
                             const newMappings = [...courseMapping];
-                            newMappings[index].course_id = parseInt(e.target.value);
+                            newMappings[index].course_id = newCourseId;
+                            // Auto-select first semester of the new course
+                            const courseSems = semesters.filter(s => s.course_id === newCourseId);
+                            if (courseSems.length > 0) {
+                              newMappings[index].semester_id = courseSems[0].id;
+                            }
                             setCourseMapping(newMappings);
                           }}
                           style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e0', fontSize: '16px' }}
@@ -653,7 +689,12 @@ export default function ManageBooks() {
                   size="sm"
                   colorScheme="blue"
                   variant="outline"
-                  onClick={() => setCourseMapping(prev => [...prev, { course_id: 1, semester_id: 1, is_required: true, is_recommended: false }])}
+                  onClick={() => {
+                    const defaultMapping = getDefaultCourseMapping();
+                    if (defaultMapping.length > 0) {
+                      setCourseMapping(prev => [...prev, defaultMapping[0]]);
+                    }
+                  }}
                 >
                   ➕ Add Another Course Mapping
                 </Button>
