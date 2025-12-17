@@ -104,35 +104,15 @@ export default function Header() {
               variants={itemVariants}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
+              style={{ marginLeft: '20px' }}
             >
-              <Box
-                fontSize={{ base: '20px', md: '24px' }}
-                fontWeight="800"
-                bgGradient="linear(to-r, #64B5F6, #90CAF9, #BBDEFB)"
-                bgClip="text"
-                cursor="pointer"
-                display="flex"
-                alignItems="center"
-                gap="8px"
-              >
-                <Box
-                  w="40px"
-                  h="40px"
-                  bgGradient="linear(to-br, #64B5F6, #42A5F5)"
-                  borderRadius="lg"
-                  display="flex"
-                  alignItems="center"
-                  justifyContent="center"
-                  fontSize="18px"
-                  fontWeight="bold"
-                  color="white"
-                >
-                  VP
-                </Box>
-                <Box display={{ base: 'none', sm: 'block' }}>
-                  VISIONPUBLICATIONS
-                </Box>
-              </Box>
+              <a href="/" style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                <img
+                  src="/logopng.png"
+                  alt="Vision Publications Logo"
+                  style={{ height: '50px', width: 'auto', objectFit: 'contain', scale:4}}
+                />
+              </a>
             </motion.div>
 
             {/* Desktop Navigation */}

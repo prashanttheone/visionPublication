@@ -4,7 +4,7 @@ import { Box, Container, Text, Grid, Button } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { HiMiniEye, HiMiniNewspaper, HiMiniAcademicCap, HiMiniPlayCircle, HiMiniQuestionMarkCircle } from 'react-icons/hi2';
+import { HiMiniEye, HiMiniNewspaper, HiMiniAcademicCap, HiMiniPlayCircle, HiMiniQuestionMarkCircle, HiMiniBookOpen } from 'react-icons/hi2';
 
 const MotionBox = motion.create(Box);
 
@@ -14,6 +14,7 @@ interface AdminStats {
   totalBlogs: number;
   totalSliders: number;
   totalYoutubeVideos: number;
+  totalEresources: number;
 }
 
 const adminSections = [
@@ -59,7 +60,7 @@ const adminSections = [
     title: 'YouTube Videos',
     description: 'Manage educational video content',
     icon: HiMiniPlayCircle,
-    route: '/admin/youtube',
+    route: '/admin/yt',
     color: '#FF8C00',
     bgGradient: 'linear(135deg, rgba(255, 140, 0, 0.2) 0%, rgba(255, 165, 0, 0.1) 100%)',
     subsections: [
@@ -78,6 +79,18 @@ const adminSections = [
       { label: 'All Enquiries', route: '/admin/enquiryforms' },
     ],
   },
+  {
+    id: 'eresources',
+    title: 'E-Resources',
+    description: 'Manage digital study materials and chapter links',
+    icon: HiMiniBookOpen,
+    route: '/admin/eresource',
+    color: '#00BCD4',
+    bgGradient: 'linear(135deg, rgba(0, 188, 212, 0.2) 0%, rgba(0, 151, 167, 0.1) 100%)',
+    subsections: [
+      { label: 'All E-Resources', route: '/admin/eresource' },
+    ],
+  },
 ];
 
 export default function AdminHome() {
@@ -88,6 +101,7 @@ export default function AdminHome() {
     totalBlogs: 0,
     totalSliders: 0,
     totalYoutubeVideos: 0,
+    totalEresources: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -113,12 +127,17 @@ export default function AdminHome() {
         const videosRes = await fetch('/api/youtube');
         const videosData = await videosRes.json();
 
+        // Fetch e-resources count
+        const eresourcesRes = await fetch('/api/eresource');
+        const eresourcesData = await eresourcesRes.json();
+
         setStats({
           totalBooks: booksData.count || 0,
           totalCourses: coursesData.count || 0,
           totalBlogs: 0, // Add blog count endpoint if needed
           totalSliders: slidersData.count || 0,
           totalYoutubeVideos: videosData.count || 0,
+          totalEresources: eresourcesData.count || 0,
         });
 
         setError(null);
@@ -207,13 +226,14 @@ export default function AdminHome() {
         )}
 
         {/* Statistics Cards */}
-        <Grid gridTemplateColumns={{ base: '1fr', sm: 'repeat(2, 1fr)', lg: 'repeat(5, 1fr)' }} gap={{ base: '16px', md: '20px' }} mb="60px">
+        <Grid gridTemplateColumns={{ base: '1fr', sm: 'repeat(2, 1fr)', lg: 'repeat(6, 1fr)' }} gap={{ base: '16px', md: '20px' }} mb="60px">
           {[
             { label: 'Total Books', value: stats.totalBooks, color: '#64B5F6' },
             { label: 'Total Courses', value: stats.totalCourses, color: '#90CAF9' },
             { label: 'Book Sliders', value: stats.totalSliders, color: '#4CAF50' },
             { label: 'YouTube Videos', value: stats.totalYoutubeVideos, color: '#FF8C00' },
             { label: 'Total Blogs', value: stats.totalBlogs, color: '#9C27B0' },
+            { label: 'E-Resources', value: stats.totalEresources, color: '#00BCD4' },
           ].map((stat, index) => (
             <MotionBox key={index} variants={cardVariants} initial="hidden" animate="visible">
               <Box

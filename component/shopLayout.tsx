@@ -62,36 +62,15 @@ export default function ShopLayout({ children, onSearch, cartCount = 0 }: ShopLa
             <motion.div
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
+              style={{ marginLeft: '20px' }}
             >
-              <Box
-                fontSize={{ base: '16px', md: '20px' }}
-                fontWeight="800"
-                bgGradient="linear(to-r, #64B5F6, #90CAF9, #BBDEFB)"
-                bgClip="text"
-                cursor="pointer"
-                display="flex"
-                alignItems="center"
-                gap="8px"
-                whiteSpace="nowrap"
-              >
-                <Box
-                  w={{ base: '32px', md: '40px' }}
-                  h={{ base: '32px', md: '40px' }}
-                  bgGradient="linear(to-br, #64B5F6, #42A5F5)"
-                  borderRadius="lg"
-                  display="flex"
-                  alignItems="center"
-                  justifyContent="center"
-                  fontSize={{ base: '14px', md: '18px' }}
-                  fontWeight="bold"
-                  color="white"
-                >
-                  VP
-                </Box>
-                <Box display={{ base: 'none', sm: 'block' }}>
-                  VISIONPUBLICATIONS
-                </Box>
-              </Box>
+            <a href="/" style={{ display: 'block', flexShrink: 0 }}>
+              <img
+                src="/logopng.png"
+                alt="Vision Publications Logo"
+                style={{ height: '50px', width: 'auto', objectFit: 'contain', scale: 4 }}
+              />
+            </a>
             </motion.div>
 
             {/* Search Bar */}
