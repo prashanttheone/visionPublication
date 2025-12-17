@@ -1,6 +1,24 @@
 'use client';
 
-import Navbar from '@/component/navbar/Navbar';
+import { useState } from 'react';
+import { Box, Container } from '@chakra-ui/react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { HiMenuAlt3, HiX } from 'react-icons/hi';
+
+const MotionBox = motion.create(Box);
+
+const navItems = [
+  { label: 'Home', href: '/' },
+  { label: 'About', href: '/about' },
+  { label: 'Blog', href: '/blog' },
+  { label: 'Resources', href: '/resources' },
+  { label: 'Books', href: '/books' },
+  { label: 'Contact', href: '/contact' },
+  { label: 'Join As Author', href: '/join-as-author' },
+];
+
+// PDF Catalog link - replace with your actual Google Drive or PDF link
+const CATALOG_PDF_LINK = 'https://drive.google.com/file/d/13fzHOMvpP4K6YP3z99HOekh6vjQphCbZ/view';
 
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false);

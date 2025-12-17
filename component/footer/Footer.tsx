@@ -23,6 +23,12 @@ const footerLinks = {
     { label: 'Cookie Policy', href: '/cookies' },
   ],
 };
+const socialLinks = [
+  { name: 'Facebook', url: 'https://www.facebook.com/share/1VnEKH4zfG/' },
+  { name: 'YouTube', url: 'https://youtube.com/@visionhealthsciencespublishers?si=V97ljSuMGXS3jAE0' },
+  { name: 'LinkedIn', url: 'https://www.linkedin.com/in/vision-health-sciences-publishers-03617b310/' },
+  { name: 'Instagram', url: 'https://www.instagram.com/visionhealthsciences?igsh=YnZ3eDF1ZDdjaG4z' },
+];
 
 export default function Footer() {
   const itemVariants = {
@@ -139,17 +145,17 @@ export default function Footer() {
             <Box display="flex" flexDirection="column" gap="12px">
               <Box display="flex" alignItems="center" gap="8px" color="gray.400" fontSize="sm">
                 <HiOutlineEnvelope size={16} />
-                <Link href="mailto:info@visionpublications.com" _hover={{ textDecoration: 'none' }}>
-                  info@visionpublications.com
+                <Link href="mailto:visionhealthsciencespublisher@gmail.com" _hover={{ textDecoration: 'none' }}>
+                  visionhealthsciencespublisher@gmail.com
                 </Link>
               </Box>
               <Box display="flex" alignItems="center" gap="8px" color="gray.400" fontSize="sm">
                 <HiOutlinePhone size={16} />
-                <Link href="tel:+1234567890" _hover={{ textDecoration: 'none' }}>+1 (234) 567-890</Link>
+                <Link href="tel:+1234567890" _hover={{ textDecoration: 'none' }}>+91 9646927599</Link>
               </Box>
               <Box display="flex" alignItems="center" gap="8px" color="gray.400" fontSize="sm">
                 <HiOutlineMapPin size={16} />
-                <Text>New York, USA</Text>
+                <Text>F 260, 8B, Phase 1, Industrial Area, Sahibzada Ajit Singh Nagar, Punjab 160055</Text>
               </Box>
             </Box>
           </MotionBox>
@@ -175,10 +181,12 @@ export default function Footer() {
               © 2025 VisionPublications. All rights reserved.
             </Text>
             <Box display="flex" gap="24px">
-              {['Facebook', 'Twitter', 'LinkedIn', 'Instagram'].map((social) => (
+              {socialLinks.map(({ name, url }) => (
                 <motion.a
-                  key={social}
-                  href="#"
+                  key={name}
+                  href={url}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   whileHover={{ scale: 1.2 }}
                   whileTap={{ scale: 0.95 }}
                   style={{
@@ -187,9 +195,10 @@ export default function Footer() {
                     fontWeight: '500',
                     cursor: 'pointer',
                     transition: 'all 0.3s ease',
+                    textDecoration: 'none',
                   }}
                 >
-                  {social}
+                  {name}
                 </motion.a>
               ))}
             </Box>
