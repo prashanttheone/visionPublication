@@ -41,10 +41,10 @@ const containerVariants = {
 
 export default function WhatWeDoSection() {
   const services = [
-    { icon: '✍️', title: 'Content Development', desc: 'Expert writing and content creation for healthcare publications' },
-    { icon: '📐', title: 'Editorial Services', desc: 'Comprehensive editing and quality assurance processes' },
-    { icon: '🎨', title: 'Design & Layout', desc: 'Professional design and publication formatting' },
-    { icon: '💻', title: 'Digital Publishing', desc: 'E-books and digital-first publishing solutions' },
+    { icon: '✍️', title: 'VISION CSR', desc: 'We reach out not just with our books, but also with our heart.' },
+    { icon: '📐', title: 'VIDEO LECTURES', desc: 'TRANSFORM YOUR LEARNING EXPERIENCE WITH VISION ONLINE CLASSES' },
+    { icon: '🎨', title: 'KNOCK OUT NOTES', desc: 'Professional design and publication formatting' },
+    { icon: '💻', title: 'E RESOURCES', desc: 'ACCESS YOUR FAVOURITE POWER POINT LECTURES WITH EASY STEPS' },
     { icon: '🔍', title: 'Author Support', desc: 'Complete guidance from manuscript to publication' },
     { icon: '📊', title: 'Distribution', desc: 'Wide distribution through multiple channels' },
   ];

@@ -145,7 +145,7 @@ export default function Footer() {
             <Box display="flex" flexDirection="column" gap="12px">
               <Box display="flex" alignItems="center" gap="8px" color="gray.400" fontSize="sm">
                 <HiOutlineEnvelope size={16} />
-                <Link href="mailto:visionhealthsciencespublisher@gmail.com" _hover={{ textDecoration: 'none' }}>
+                <Link href="mailto:visionhealthsciencespublisher@gmail.com" _hover={{ textDecoration: 'none' }} >
                   visionhealthsciencespublisher@gmail.com
                 </Link>
               </Box>

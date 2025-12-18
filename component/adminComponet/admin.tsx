@@ -230,7 +230,7 @@ export default function AdminHome() {
           {[
             { label: 'Total Books', value: stats.totalBooks, color: '#64B5F6' },
             { label: 'Total Courses', value: stats.totalCourses, color: '#90CAF9' },
-            { label: 'Total Revenue', value: `₹${stats.totalRevenue}`, color: '#00E676' },
+            // { label: 'Total Revenue', value: `₹${stats.totalRevenue}`, color: '#00E676' },
             { label: 'YouTube Videos', value: stats.totalYoutubeVideos, color: '#FF8C00' },
             { label: 'Total Blogs', value: stats.totalBlogs, color: '#9C27B0' },
             { label: 'E-Resources', value: stats.totalEresources, color: '#00BCD4' },

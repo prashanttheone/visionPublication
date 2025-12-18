@@ -1,9 +1,13 @@
 'use client';
 
-import { Box, Container } from '@chakra-ui/react';
-import { ReactNode } from 'react';
+import { Box, Container, Input, Badge } from '@chakra-ui/react';
+import { ReactNode, useState } from 'react';
+import { motion } from 'framer-motion';
+import { HiMagnifyingGlass, HiXMark, HiUser, HiShoppingCart } from 'react-icons/hi2';
 import Footer from '@/component/footer/Footer';
-import Navbar from '@/component/navbar/Navbar';
+
+// Create motion components
+const MotionBox = motion.create(Box);
 
 interface ShopLayoutProps {
   children: ReactNode;
@@ -11,7 +15,26 @@ interface ShopLayoutProps {
   cartCount?: number;
 }
 
-export default function ShopLayout({ children, onSearch, cartCount }: ShopLayoutProps) {
+// Animation variants
+const navVariants = {
+  hidden: { y: -20, opacity: 0 },
+  visible: {
+    y: 0,
+    opacity: 1,
+    transition: { duration: 0.5, ease: 'easeOut' },
+  },
+};
+
+export default function ShopLayout({ children, onSearch, cartCount = 0 }: ShopLayoutProps) {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isFocused, setIsFocused] = useState(false);
+
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+    if (onSearch) {
+      onSearch(query);
+    }
+  };
   return (
     <Box bg="linear-gradient(135deg, #0f172a 0%, #1a2332 50%, #0f172a 100%)" minH="100vh" display="flex" flexDirection="column">
       {/* Shop Navbar */}

@@ -19,10 +19,10 @@ const navItems = [
     { label: 'Home', href: '/' },
     { label: 'About', href: '/about' },
     { label: 'Books', href: '/books' },
-    { label: 'Blog', href: '/blog' },
-    { label: 'Resources', href: '/resources' },
-    { label: 'Contact', href: '/contact' },
+    { label: 'E-Resources', href: '/resources' },
     { label: 'Join As Author', href: '/join-as-author' },
+    { label: 'Blog', href: '/blog' },
+     { label: 'Contact', href: '/contact' },
 ];
 
 const CATALOG_PDF_LINK = 'https://drive.google.com/file/d/13fzHOMvpP4K6YP3z99HOekh6vjQphCbZ/view';

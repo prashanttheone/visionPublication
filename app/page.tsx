@@ -11,11 +11,13 @@ export default function Page() {
       <div  style={{
     background: "linear-gradient(135deg, #0f172a 0%, #1a2332 50%, #0f172a 100%)",
   }}>  <Home />
-        <Youtube />
-          <DifferentiatorSection />
+      
+          {/* <DifferentiatorSection /> */}
+               <StatisticsSection/>
+            <Youtube />
          <TeamSection />
         <Review/>
-        <StatisticsSection/>
+   
         </div>
     </>
   

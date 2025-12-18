@@ -85,33 +85,174 @@ export default function Author() {
       <Box position="fixed" bottom="-50px" left="-50px" width="300px" height="300px" borderRadius="50%" bgGradient="radial(circle, rgba(255, 140, 0, 0.05) 0%, transparent 70%)" filter="blur(40px)" pointerEvents="none" zIndex={0} />
 
       <Container maxW="1200px" px={{ base: '20px', md: '40px' }} position="relative" zIndex={1}>
-        {/* Welcome Section */}
-        <MotionBox variants={containerVariants} initial="hidden" animate="visible" textAlign="center" mb={{ base: '60px', md: '80px' }}>
-          <MotionBox variants={itemVariants} mb="20px">
-            <Box display="inline-block" bg="rgba(255, 140, 0, 0.1)" border="2px solid" borderColor="rgba(255, 140, 0, 0.5)" px="16px" py="8px" borderRadius="50px">
-              <Text fontSize="sm" fontWeight="700" color="#FF8C00" textTransform="uppercase" letterSpacing="1px">
-                Join Our Authors
+        {/* Welcome Section with Image */}
+        <MotionBox variants={containerVariants} initial="hidden" animate="visible" mb={{ base: '60px', md: '80px' }}>
+          <Box 
+            display="grid" 
+            gridTemplateColumns={{ base: '1fr', lg: '1fr 1fr' }} 
+            gap={{ base: '40px', lg: '60px' }} 
+            alignItems="center"
+          >
+            {/* Left Side - Text Content */}
+            <MotionBox 
+              initial={{ opacity: 0, x: -80 }} 
+              animate={{ opacity: 1, x: 0 }} 
+              transition={{ duration: 0.8, ease: 'easeOut' }}
+            >
+              <Box display="inline-block" bg="rgba(255, 140, 0, 0.1)" border="2px solid" borderColor="rgba(255, 140, 0, 0.5)" px="16px" py="8px" borderRadius="50px" mb="24px">
+                <Text fontSize="sm" fontWeight="700" color="#FF8C00" textTransform="uppercase" letterSpacing="1px">
+                  Join Our Authors
+                </Text>
+              </Box>
+
+              <Text 
+                fontSize={{ base: '32px', md: '42px', lg: '52px' }} 
+                fontWeight="900" 
+                lineHeight="1.2" 
+                mb="24px"
+                style={{
+                  background: 'linear-gradient(135deg, #64B5F6 0%, #90CAF9 50%, #64B5F6 100%)',
+                  backgroundSize: '200% 200%',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text',
+                  filter: 'drop-shadow(0 0 20px rgba(100, 181, 246, 0.4))',
+                }}
+              >
+                Dear Nursing Professionals
               </Text>
-            </Box>
-          </MotionBox>
 
-          <MotionBox variants={itemVariants} mb="30px">
-            <Text fontSize={{ base: '36px', md: '52px', lg: '64px' }} fontWeight="900" lineHeight="1.2" color="white" mb="20px">
-              Welcome to
-            </Text>
-            <Text fontSize={{ base: '36px', md: '52px', lg: '64px' }} fontWeight="900" lineHeight="1.2" bgGradient="linear(to-r, #64B5F6, #90CAF9)" bgClip="text">
-              VisionPublications
-            </Text>
-          </MotionBox>
+              <Text fontSize={{ base: '16px', md: '18px' }} color="gray.300" lineHeight="1.9" mb="24px">
+                Vision Health Sciences Publisher invites researchers, writers, authors, and esteemed experts to contribute their valuable work for book publications in the field of nursing. We deeply value our relationship with our authors and are committed to publishing high-quality content for Nursing courses.
+              </Text>
 
-          <MotionBox variants={itemVariants} maxW="800px" mx="auto" mb="40px">
-            <Text fontSize={{ base: '16px', md: '18px' }} color="gray.300" lineHeight="1.8" mb="20px">
-              We believe in the power of knowledge and the importance of quality healthcare education. Our platform is dedicated to publishing exceptional works that advance nursing education, research, and practice.
-            </Text>
-            <Text fontSize={{ base: '16px', md: '18px' }} color="gray.300" lineHeight="1.8">
-              Whether you're an experienced author or publishing for the first time, VisionPublications provides the support, resources, and platform you need to share your expertise with the global healthcare community.
-            </Text>
-          </MotionBox>
+              <Text fontSize={{ base: '16px', md: '18px' }} color="white" fontWeight="600" mb="16px">
+                By collaborating with us, you will benefit from:
+              </Text>
+
+              {/* Benefits List */}
+              <Box mb="28px">
+                {[
+                  'A dedication to publishing high-quality content for nursing courses.',
+                  'Expert editorial support and resources.',
+                  'Targeted and effective book marketing strategies.',
+                ].map((item, index) => (
+                  <Box key={index} display="flex" alignItems="flex-start" gap="12px" mb="12px">
+                    <Box color="#22c55e" mt="4px" flexShrink={0}>
+                      <HiCheckCircle size={22} />
+                    </Box>
+                    <Text fontSize="16px" color="gray.300" lineHeight="1.6">
+                      {item}
+                    </Text>
+                  </Box>
+                ))}
+              </Box>
+
+              <Text fontSize={{ base: '16px', md: '18px' }} color="gray.300" lineHeight="1.9" mb="20px">
+                If you are interested in working with us, we encourage you to explore our publishing program. To submit a sample chapter, please email your proposal to:
+              </Text>
+
+              {/* Email Link */}
+              <Box 
+                display="inline-block"
+                bg="rgba(100, 181, 246, 0.1)" 
+                border="1px solid" 
+                borderColor="rgba(100, 181, 246, 0.3)" 
+                px="20px" 
+                py="12px" 
+                borderRadius="10px"
+                mb="24px"
+              >
+                <a 
+                  href="mailto:visionhealthsciencespublisher@gmail.com"
+                  style={{
+                    color: '#64B5F6',
+                    fontSize: '16px',
+                    fontWeight: '600',
+                    textDecoration: 'none',
+                  }}
+                >
+                  visionhealthsciencespublisher@gmail.com
+                </a>
+              </Box>
+
+              <Text fontSize="16px" color="gray.400" fontStyle="italic">
+                Thanks & Regards
+              </Text>
+            </MotionBox>
+
+            {/* Right Side - Author Image */}
+            <MotionBox 
+              initial={{ opacity: 0, x: 80 }} 
+              animate={{ opacity: 1, x: 0 }} 
+              transition={{ duration: 0.8, ease: 'easeOut', delay: 0.2 }}
+            >
+              <Box 
+                bg="linear-gradient(135deg, rgba(100, 181, 246, 0.15), rgba(255, 140, 0, 0.1))" 
+                border="2px solid" 
+                borderColor="rgba(255, 140, 0, 0.3)" 
+                borderRadius="24px" 
+                p={{ base: '16px', md: '20px' }} 
+                backdropFilter="blur(10px)"
+                boxShadow="0 20px 60px rgba(0, 0, 0, 0.3), 0 0 40px rgba(255, 140, 0, 0.15)"
+                position="relative"
+                overflow="hidden"
+              >
+                {/* Author Image */}
+                <Box 
+                  borderRadius="16px"
+                  overflow="hidden"
+                  boxShadow="0 10px 30px rgba(0, 0, 0, 0.4)"
+                >
+                  <img 
+                    src="/authormam.jpeg" 
+                    alt="Author - Vision Health Sciences Publisher"
+                    style={{
+                      width: '100%',
+                      height: 'auto',
+                      display: 'block',
+                      objectFit: 'cover',
+                    }}
+                  />
+                </Box>
+
+                {/* Caption */}
+                <Box textAlign="center" mt="20px">
+                  <Text 
+                    fontSize={{ base: 'lg', md: 'xl' }} 
+                    fontWeight="800" 
+                    color="#FF8C00"
+                    mb="4px"
+                  >
+                    Meenakshi Soni
+                  </Text>
+                  <Text fontSize="md" color="white" fontWeight="900" mb="8px">
+                    Managing Editor
+                  </Text>
+                  <Box 
+                    display="flex" 
+                    flexDirection="column" 
+                    alignItems="center" 
+                    gap="4px"
+                    bg="rgba(100, 181, 246, 0.1)"
+                    border="1px solid"
+                    borderColor="rgba(100, 181, 246, 0.2)"
+                    borderRadius="10px"
+                    py="10px"
+                    px="16px"
+                    mt="12px"
+                  >
+                    <Text fontSize="sm" color="gray.400">
+                      Mobile
+                    </Text>
+                    <Text fontSize="md" color="#64B5F6" fontWeight="600">
+                      9914583417 | 9816773505
+                    </Text>
+                  </Box>
+                </Box>
+              </Box>
+            </MotionBox>
+          </Box>
         </MotionBox>
 
         {/* Why Join Section */}

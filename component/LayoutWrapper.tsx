@@ -3,20 +3,26 @@
 import { usePathname } from 'next/navigation';
 import Header from '@/component/header/Header';
 import Footer from '@/component/footer/Footer';
-import { ReactNode } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 
 export default function LayoutWrapper({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const isShopLayout = pathname.startsWith('/books');
-  const isAdminLayout = pathname.startsWith('/admin');
+  const [isMounted, setIsMounted] = useState(false);
+  
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  const isShopLayout = pathname?.startsWith('/books') || false;
+  const isAdminLayout = pathname?.startsWith('/admin') || false;
 
   return (
     <>
-      {!isShopLayout && !isAdminLayout && <Header />}
+      {isMounted && !isShopLayout && !isAdminLayout && <Header />}
       <main>
         {children}
       </main>
-      {!isShopLayout && !isAdminLayout && <Footer />}
+      {isMounted && !isShopLayout && !isAdminLayout && <Footer />}
     </>
   );
 }

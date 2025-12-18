@@ -10,11 +10,12 @@ const MotionBox = motion.create(Box);
 const navItems = [
   { label: 'Home', href: '/' },
   { label: 'About', href: '/about' },
-  { label: 'Blog', href: '/blog' },
-  { label: 'Resources', href: '/resources' },
   { label: 'Books', href: '/books' },
-  { label: 'Contact', href: '/contact' },
-  { label: 'Join As Author', href: '/join-as-author' },
+  { label: 'E-Resources', href: '/resources' },
+   { label: 'Join As Author', href: '/join-as-author' },
+   { label: 'Event/Vision CSR', href: '/blog' },
+  { label: 'Contact Us', href: '/contact' },
+
 ];
 
 // PDF Catalog link - replace with your actual Google Drive or PDF link
@@ -122,6 +123,9 @@ export default function Header() {
               display={{ base: 'none', md: 'flex' }}
               gap="4px"
               alignItems="center"
+              justifyContent="center"
+              flex="1"
+              mx="20px"
             >
               {navItems.map((item) => (
                 <motion.a
@@ -130,71 +134,65 @@ export default function Header() {
                   variants={itemVariants}
                   whileHover={{ scale: 1.05 }}
                   style={{
-                    padding: '8px 16px',
-                    borderRadius: '8px',
+                    padding: '2px',
+                    borderRadius: '10px',
+                    background: 'linear-gradient(135deg, rgba(100, 181, 246, 0.5), rgba(255, 140, 0, 0.5))',
                     position: 'relative',
                     overflow: 'hidden',
                   }}
                 >
                   <Box
+                    bg="linear-gradient(135deg, #0f172a 0%, #1e293b 100%)"
+                    borderRadius="8px"
+                    px="14px"
+                    py="8px"
                     position="relative"
                     color="white"
                     fontSize="md"
                     fontWeight="500"
                     cursor="pointer"
-                    _before={{
-                      content: '""',
-                      position: 'absolute',
-                      bottom: 0,
-                      left: 0,
-                      width: '100%',
-                      height: '2px',
-                      bgGradient: 'linear(to-r, #64B5F6, #42A5F5)',
-                      transform: 'scaleX(0)',
-                      transformOrigin: 'right',
-                      transition: 'transform 0.3s ease',
-                    }}
+                    transition="all 0.3s ease"
                     _hover={{
-                      _before: {
-                        transform: 'scaleX(1)',
-                        transformOrigin: 'left',
-                      },
+                      bg: 'linear-gradient(135deg, #1e293b 0%, #2d3a4f 100%)',
                     }}
                   >
                     {item.label}
                   </Box>
                 </motion.a>
               ))}
+            </Box>
 
-              {/* Catalog Button */}
-              <motion.button
+            {/* Catalog Button with Glowing Gradient - Right Side */}
+            <Box display={{ base: 'none', md: 'flex' }} alignItems="center">
+              <motion.div
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => window.open(CATALOG_PDF_LINK, '_blank')}
                 style={{
-                  padding: '10px 20px',
-                  marginLeft: '12px',
-                  borderRadius: '10px',
-                  border: '2px solid white',
-                  backgroundColor: 'white',
-                  color: '#0f172a',
-                  fontSize: '14px',
-                  fontWeight: '700',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s ease',
-                }}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.backgroundColor = '#f0f0f0';
-                  (e.currentTarget as HTMLButtonElement).style.boxShadow = '0 8px 20px rgba(255, 255, 255, 0.2)';
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.backgroundColor = 'white';
-                  (e.currentTarget as HTMLButtonElement).style.boxShadow = 'none';
+                  padding: '2px',
+                  borderRadius: '12px',
+                  background: 'linear-gradient(135deg, #FF8C00, #FFA500, #FFD700, #FF8C00)',
+                  backgroundSize: '300% 300%',
+                  animation: 'gradientGlow 3s ease infinite',
+                  boxShadow: '0 0 20px rgba(255, 140, 0, 0.5), 0 0 40px rgba(255, 140, 0, 0.3)',
                 }}
               >
-                Get Catalouge
-              </motion.button>
-              
+                <button
+                  onClick={() => window.open(CATALOG_PDF_LINK, '_blank')}
+                  style={{
+                    padding: '10px 24px',
+                    borderRadius: '10px',
+                    border: 'none',
+                    background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+                    color: 'white',
+                    fontSize: '14px',
+                    fontWeight: '700',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease',
+                  }}
+                >
+                  Get Catalouge
+                </button>
+              </motion.div>
             </Box>
 
             {/* Mobile Menu Button */}
@@ -291,31 +289,42 @@ export default function Header() {
                   </motion.a>
                 ))}
 
-                {/* Mobile Catalog Button */}
-                <motion.button
+                {/* Mobile Catalog Button with Glowing Gradient */}
+                <motion.div
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  onClick={() => {
-                    window.open(CATALOG_PDF_LINK, '_blank');
-                    setIsOpen(false);
-                  }}
                   style={{
-                    padding: '12px 20px',
-                    marginTop: '8px',
-                    borderRadius: '10px',
-                    border: '2px solid white',
-                    backgroundColor: 'white',
-                    color: '#0f172a',
-                    fontSize: '14px',
-                    fontWeight: '700',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s ease',
-                    width: '100%',
-                    textAlign: 'center',
+                    marginTop: '16px',
+                    padding: '2px',
+                    borderRadius: '12px',
+                    background: 'linear-gradient(135deg, #FF8C00, #FFA500, #FFD700, #FF8C00)',
+                    backgroundSize: '300% 300%',
+                    animation: 'gradientGlow 3s ease infinite',
+                    boxShadow: '0 0 20px rgba(255, 140, 0, 0.5), 0 0 40px rgba(255, 140, 0, 0.3)',
                   }}
                 >
-                  Catalog
-                </motion.button>
+                  <button
+                    onClick={() => {
+                      window.open(CATALOG_PDF_LINK, '_blank');
+                      setIsOpen(false);
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '12px 20px',
+                      borderRadius: '10px',
+                      border: 'none',
+                      background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+                      color: 'white',
+                      fontSize: '14px',
+                      fontWeight: '700',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease',
+                      textAlign: 'center',
+                    }}
+                  >
+                    Get Catalouge
+                  </button>
+                </motion.div>
               </Box>
             </MotionBox>
           </>
