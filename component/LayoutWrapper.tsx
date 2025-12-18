@@ -15,14 +15,15 @@ export default function LayoutWrapper({ children }: { children: ReactNode }) {
 
   const isShopLayout = pathname?.startsWith('/books') || false;
   const isAdminLayout = pathname?.startsWith('/admin') || false;
+  const showHeaderFooter = isMounted && !isShopLayout && !isAdminLayout;
 
   return (
-    <>
-      {isMounted && !isShopLayout && !isAdminLayout && <Header />}
-      <main>
+    <div suppressHydrationWarning>
+      {showHeaderFooter && <Header />}
+      <main suppressHydrationWarning>
         {children}
       </main>
-      {isMounted && !isShopLayout && !isAdminLayout && <Footer />}
-    </>
+      {showHeaderFooter && <Footer />}
+    </div>
   );
 }
