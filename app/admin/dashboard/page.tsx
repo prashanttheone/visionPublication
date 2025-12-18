@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import AdminHome from "@/component/adminComponet/admin";
 
 export default function Page() {

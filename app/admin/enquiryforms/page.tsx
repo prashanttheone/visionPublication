@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import FormView from "@/component/adminComponet/formData/FormView";
 
 export default function EnquiryFormsPage() {

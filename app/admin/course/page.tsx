@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import ManageCourse from "@/component/adminComponet/course/ManageCourse";
 
 export default function CoursePage() {

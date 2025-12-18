@@ -1,5 +1,7 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import { useState, useEffect } from 'react';
 import { Box, Container, Heading, Table, Badge, Text, Spinner } from '@chakra-ui/react';
 // Assuming layout exists, or we might need to wrap it. Admin pages usually have sidebar.
