@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Box, Container, Stack, Heading, Text, Input, Button, Flex, Grid, useToast } from '@chakra-ui/react';
+import { Box, Container, Stack, Heading, Text, Input, Button, Flex, Grid } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
 import { useCart } from '@/context/CartContext';
 import { useRouter } from 'next/navigation';
@@ -184,7 +184,7 @@ export default function CheckoutPage() {
                                     colorScheme="blue"
                                     size="lg"
                                     mt={4}
-                                    isLoading={isLoading}
+                                    loading={isLoading}
                                     bgGradient="linear(to-r, #3B82F6, #06B6D4)"
                                     _hover={{ bgGradient: 'linear(to-r, #2563EB, #0891B2)' }}
                                 >
@@ -215,7 +215,7 @@ export default function CheckoutPage() {
                                                     <img src={item.image_url} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                                                 </Box>
                                                 <Box>
-                                                    <Text color="white" fontWeight="600" noOfLines={1}>{item.name}</Text>
+                                                    <Text color="white" fontWeight="600" lineClamp={1}>{item.name}</Text>
                                                     <Text color="gray.400" fontSize="sm">Qty: {item.quantity}</Text>
                                                 </Box>
                                             </Flex>
