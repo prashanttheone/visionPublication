@@ -96,7 +96,7 @@ export default function Users() {
                     backdropFilter="blur(10px)"
                 >
                     <Box overflowX="auto">
-                        <Box as="table" width="100%" sx={{ borderCollapse: 'collapse' }}>
+                        <Box as="table" width="100%" style={{ borderCollapse: 'collapse' }}>
                             <Box as="thead" bg="rgba(0, 0, 0, 0.2)">
                                 <Box as="tr">
                                     <Box as="th" color="gray.400" borderBottom="1px solid rgba(100, 181, 246, 0.1)" p={4} textAlign="left">User</Box>
