@@ -253,7 +253,7 @@ export default function Login() {
                       id="rememberMe"
                       checked={rememberMe}
                       onChange={(e: React.ChangeEvent<HTMLInputElement>) => setRememberMe(e.target.checked)}
-                      style={{ AccentColor: '#3B82F6', cursor: 'pointer' }}
+                      style={{ accentColor: '#3B82F6', cursor: 'pointer' }}
                     />
                     <label htmlFor="rememberMe" style={{ fontSize: '13px', color: '#94a3b8', cursor: 'pointer' }}>
                       Remember me

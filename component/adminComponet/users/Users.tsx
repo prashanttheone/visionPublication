@@ -96,39 +96,39 @@ export default function Users() {
                     backdropFilter="blur(10px)"
                 >
                     <Box overflowX="auto">
-                        <Box as="table" width="100%" style={{ borderCollapse: 'collapse' }}>
-                            <Box as="thead" bg="rgba(0, 0, 0, 0.2)">
-                                <Box as="tr">
-                                    <Box as="th" color="gray.400" borderBottom="1px solid rgba(100, 181, 246, 0.1)" p={4} textAlign="left">User</Box>
-                                    <Box as="th" color="gray.400" borderBottom="1px solid rgba(100, 181, 246, 0.1)" p={4} textAlign="left">Role</Box>
-                                    <Box as="th" color="gray.400" borderBottom="1px solid rgba(100, 181, 246, 0.1)" p={4} textAlign="left">Status</Box>
-                                    <Box as="th" color="gray.400" borderBottom="1px solid rgba(100, 181, 246, 0.1)" p={4} textAlign="left">Joined Date</Box>
-                                    <Box as="th" color="gray.400" borderBottom="1px solid rgba(100, 181, 246, 0.1)" p={4} textAlign="right">Actions</Box>
-                                </Box>
-                            </Box>
-                            <Box as="tbody">
+                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                            <thead style={{ background: 'rgba(0, 0, 0, 0.2)' }}>
+                                <tr>
+                                    <th style={{ color: '#A0AEC0', borderBottom: '1px solid rgba(100, 181, 246, 0.1)', padding: '16px', textAlign: 'left' }}>User</th>
+                                    <th style={{ color: '#A0AEC0', borderBottom: '1px solid rgba(100, 181, 246, 0.1)', padding: '16px', textAlign: 'left' }}>Role</th>
+                                    <th style={{ color: '#A0AEC0', borderBottom: '1px solid rgba(100, 181, 246, 0.1)', padding: '16px', textAlign: 'left' }}>Status</th>
+                                    <th style={{ color: '#A0AEC0', borderBottom: '1px solid rgba(100, 181, 246, 0.1)', padding: '16px', textAlign: 'left' }}>Joined Date</th>
+                                    <th style={{ color: '#A0AEC0', borderBottom: '1px solid rgba(100, 181, 246, 0.1)', padding: '16px', textAlign: 'right' }}>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
                                 {isLoading ? (
-                                    <Box as="tr">
-                                        <Box as="td" colSpan={5} textAlign="center" py="40px" color="gray.400" borderBottom="none">
+                                    <tr>
+                                        <td colSpan={5} style={{ textAlign: 'center', padding: '40px 0', color: '#A0AEC0' }}>
                                             Loading users...
-                                        </Box>
-                                    </Box>
+                                        </td>
+                                    </tr>
                                 ) : filteredUsers.length === 0 ? (
-                                    <Box as="tr">
-                                        <Box as="td" colSpan={5} textAlign="center" py="40px" color="gray.400" borderBottom="none">
+                                    <tr>
+                                        <td colSpan={5} style={{ textAlign: 'center', padding: '40px 0', color: '#A0AEC0' }}>
                                             No users found.
-                                        </Box>
-                                    </Box>
+                                        </td>
+                                    </tr>
                                 ) : (
                                     filteredUsers.map((user) => (
-                                        <Box as="tr" key={user.id} _hover={{ bg: 'whiteAlpha.50' }} transition="background 0.2s">
-                                            <Box as="td" borderBottom="1px solid rgba(100, 181, 246, 0.1)" p={4}>
+                                        <tr key={user.id} style={{ transition: 'background 0.2s' }}>
+                                            <td style={{ borderBottom: '1px solid rgba(100, 181, 246, 0.1)', padding: '16px' }}>
                                                 <Box>
                                                     <Text color="white" fontWeight="600">{user.full_name}</Text>
                                                     <Text color="gray.400" fontSize="13px">{user.email}</Text>
                                                 </Box>
-                                            </Box>
-                                            <Box as="td" borderBottom="1px solid rgba(100, 181, 246, 0.1)" p={4}>
+                                            </td>
+                                            <td style={{ borderBottom: '1px solid rgba(100, 181, 246, 0.1)', padding: '16px' }}>
                                                 <Badge
                                                     colorScheme={user.role === 'admin' ? 'purple' : 'blue'}
                                                     variant="subtle"
@@ -137,8 +137,8 @@ export default function Users() {
                                                 >
                                                     {user.role}
                                                 </Badge>
-                                            </Box>
-                                            <Box as="td" borderBottom="1px solid rgba(100, 181, 246, 0.1)" p={4}>
+                                            </td>
+                                            <td style={{ borderBottom: '1px solid rgba(100, 181, 246, 0.1)', padding: '16px' }}>
                                                 <Badge
                                                     colorScheme={user.is_active ? 'green' : 'red'}
                                                     variant="subtle"
@@ -147,11 +147,11 @@ export default function Users() {
                                                 >
                                                     {user.is_active ? 'Active' : 'Inactive'}
                                                 </Badge>
-                                            </Box>
-                                            <Box as="td" borderBottom="1px solid rgba(100, 181, 246, 0.1)" color="gray.300" p={4}>
+                                            </td>
+                                            <td style={{ borderBottom: '1px solid rgba(100, 181, 246, 0.1)', padding: '16px', color: '#CBD5E0' }}>
                                                 {new Date(user.created_at).toLocaleDateString()}
-                                            </Box>
-                                            <Box as="td" borderBottom="1px solid rgba(100, 181, 246, 0.1)" textAlign="right" p={4}>
+                                            </td>
+                                            <td style={{ borderBottom: '1px solid rgba(100, 181, 246, 0.1)', padding: '16px', textAlign: 'right' }}>
                                                 <IconButton
                                                     aria-label="Delete user"
                                                     size="sm"
@@ -161,12 +161,12 @@ export default function Users() {
                                                 >
                                                     <HiTrash />
                                                 </IconButton>
-                                            </Box>
-                                        </Box>
+                                            </td>
+                                        </tr>
                                     ))
                                 )}
-                            </Box>
-                        </Box>
+                            </tbody>
+                        </table>
                     </Box>
                 </MotionBox>
             </Container>
