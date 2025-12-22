@@ -15,6 +15,7 @@ export default function Home() {
   const router = useRouter();
   const fullText = "Welcome to India's Leading Publishing VisionPublication";
   const [showBook, setShowBook] = useState(false);
+  const [imageError, setImageError] = useState(false);
   
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -120,52 +121,57 @@ export default function Home() {
                   h={{ base: '300px', sm: '350px', md: '450px', lg: '500px', xl: '600px' }}
                 >
                   {/* Book Cover Image - Base Layer */}
-                  <Image
-                    src="/HeroBook.jpeg"
-                    alt="VisionPublication Book Cover"
-                    w="100%"
-                    h="100%"
-                    objectFit="contain"
-                    borderRadius={{ base: '8px', md: '12px' }}
-                    boxShadow="2xl"
-                    position="absolute"
-                    top={0}
-                    left={0}
-                    fallback={
-                      <Box
-                        w="100%"
-                        h="100%"
-                        bg="white"
-                        borderRadius={{ base: '8px', md: '12px' }}
-                        display="flex"
-                        alignItems="center"
-                        justifyContent="center"
-                        flexDirection="column"
-                        p={{ base: 4, md: 8 }}
-                        boxShadow="2xl"
+                  {imageError ? (
+                    <Box
+                      w="100%"
+                      h="100%"
+                      bg="white"
+                      borderRadius={{ base: '8px', md: '12px' }}
+                      display="flex"
+                      alignItems="center"
+                      justifyContent="center"
+                      flexDirection="column"
+                      p={{ base: 4, md: 8 }}
+                      boxShadow="2xl"
+                      position="absolute"
+                      top={0}
+                      left={0}
+                    >
+                      <Text fontSize={{ base: '4xl', md: '6xl' }} mb={{ base: 2, md: 4 }}>📚</Text>
+                      <Text 
+                        fontSize={{ base: 'xl', md: '2xl' }} 
+                        fontWeight="bold" 
+                        color="purple.600" 
+                        textAlign="center"
+                        px={2}
                       >
-                        <Text fontSize={{ base: '4xl', md: '6xl' }} mb={{ base: 2, md: 4 }}>📚</Text>
-                        <Text 
-                          fontSize={{ base: 'xl', md: '2xl' }} 
-                          fontWeight="bold" 
-                          color="purple.600" 
-                          textAlign="center"
-                          px={2}
-                        >
-                          VisionPublication
-                        </Text>
-                        <Text 
-                          fontSize={{ base: 'sm', md: 'lg' }} 
-                          color="gray.600" 
-                          mt={2} 
-                          textAlign="center"
-                          px={2}
-                        >
-                          Quality Educational Books
-                        </Text>
-                      </Box>
-                    }
-                  />
+                        VisionPublication
+                      </Text>
+                      <Text 
+                        fontSize={{ base: 'sm', md: 'lg' }} 
+                        color="gray.600" 
+                        mt={2} 
+                        textAlign="center"
+                        px={2}
+                      >
+                        Quality Educational Books
+                      </Text>
+                    </Box>
+                  ) : (
+                    <Image
+                      src="/HeroBook.jpeg"
+                      alt="VisionPublication Book Cover"
+                      w="100%"
+                      h="100%"
+                      objectFit="contain"
+                      borderRadius={{ base: '8px', md: '12px' }}
+                      boxShadow="2xl"
+                      position="absolute"
+                      top={0}
+                      left={0}
+                      onError={() => setImageError(true)}
+                    />
+                  )}
                   
                   {/* 5 Colored Cards that disappear one by one from left to right */}
                   {[0, 1, 2, 3, 4].map((index) => (
