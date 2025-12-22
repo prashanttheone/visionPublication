@@ -1,7 +1,7 @@
 'use client';
 
 import { Box, Container, Input, Badge } from '@chakra-ui/react';
-import { ReactNode, useState } from 'react';
+import { ReactNode, useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { HiMagnifyingGlass, HiXMark, HiUser, HiShoppingCart } from 'react-icons/hi2';
 import Footer from '@/component/footer/Footer';
@@ -12,6 +12,7 @@ const MotionBox = motion.create(Box);
 interface ShopLayoutProps {
   children: ReactNode;
   onSearch?: (query: string) => void;
+  onFilterChange?: (filters: { courseId: string; semesterId: string }) => void;
   cartCount?: number;
 }
 
@@ -25,9 +26,57 @@ const navVariants = {
   },
 };
 
-export default function ShopLayout({ children, onSearch, cartCount = 0 }: ShopLayoutProps) {
+export default function ShopLayout({ children, onSearch, onFilterChange, cartCount = 0 }: ShopLayoutProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [isFocused, setIsFocused] = useState(false);
+  const [selectedCourse, setSelectedCourse] = useState('');
+  const [selectedSemester, setSelectedSemester] = useState('');
+  const [courses, setCourses] = useState<{ id: number; name: string }[]>([]);
+  const [semesters, setSemesters] = useState<{ id: number; semester_number: number; description: string }[]>([]);
+
+  // Fetch courses on mount
+  useEffect(() => {
+    const fetchCourses = async () => {
+      try {
+        const response = await fetch('/api/course');
+        const data = await response.json();
+        if (data.success) {
+          setCourses(data.data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch courses:', error);
+      }
+    };
+    fetchCourses();
+  }, []);
+
+  // Fetch semesters when course is selected
+  useEffect(() => {
+    if (selectedCourse) {
+      const fetchSemesters = async () => {
+        try {
+          const response = await fetch(`/api/course/${selectedCourse}`);
+          const data = await response.json();
+          if (data.success && data.data.semesters) {
+            setSemesters(data.data.semesters);
+          }
+        } catch (error) {
+          console.error('Failed to fetch semesters:', error);
+        }
+      };
+      fetchSemesters();
+    } else {
+      setSemesters([]);
+      setSelectedSemester('');
+    }
+  }, [selectedCourse]);
+
+  // Notify parent component of filter changes
+  useEffect(() => {
+    if (onFilterChange) {
+      onFilterChange({ courseId: selectedCourse, semesterId: selectedSemester });
+    }
+  }, [selectedCourse, selectedSemester, onFilterChange]);
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
@@ -153,6 +202,110 @@ export default function ShopLayout({ children, onSearch, cartCount = 0 }: ShopLa
                   <HiXMark size={18} color="#64B5F6" />
                 </motion.button>
               )}
+            </Box>
+
+            {/* Filter: Course */}
+            <Box
+              w={{ base: '100%', sm: 'calc(50% - 6px)', lg: '180px' }}
+            >
+              <select
+                value={selectedCourse}
+                onChange={(e) => setSelectedCourse(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '10px 12px',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  background: 'rgba(30, 41, 59, 0.6)',
+                  border: '1px solid rgba(100, 181, 246, 0.2)',
+                  color: 'white',
+                  borderRadius: '10px',
+                  backdropFilter: 'blur(10px)',
+                  cursor: 'pointer',
+                  outline: 'none',
+                  transition: 'all 0.2s ease',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = 'rgba(100, 181, 246, 0.3)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = 'rgba(100, 181, 246, 0.2)';
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.borderColor = 'rgba(100, 181, 246, 0.5)';
+                  e.currentTarget.style.background = 'rgba(30, 41, 59, 0.8)';
+                  e.currentTarget.style.boxShadow = '0 0 0 3px rgba(100, 181, 246, 0.2)';
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = 'rgba(100, 181, 246, 0.2)';
+                  e.currentTarget.style.background = 'rgba(30, 41, 59, 0.6)';
+                  e.currentTarget.style.boxShadow = 'none';
+                }}
+              >
+                <option value="" style={{ background: '#1e293b', color: 'white' }}>
+                  Select Course
+                </option>
+                {courses.map((course) => (
+                  <option key={course.id} value={course.id} style={{ background: '#1e293b', color: 'white' }}>
+                    {course.name}
+                  </option>
+                ))}
+              </select>
+            </Box>
+
+            {/* Filter: Semester */}
+            <Box
+              w={{ base: '100%', sm: 'calc(50% - 6px)', lg: '180px' }}
+            >
+              <select
+                value={selectedSemester}
+                onChange={(e) => setSelectedSemester(e.target.value)}
+                disabled={!selectedCourse || semesters.length === 0}
+                style={{
+                  width: '100%',
+                  padding: '10px 12px',
+                  fontSize: '14px',
+                  fontWeight: '500',
+                  background: 'rgba(30, 41, 59, 0.6)',
+                  border: '1px solid rgba(100, 181, 246, 0.2)',
+                  color: 'white',
+                  borderRadius: '10px',
+                  backdropFilter: 'blur(10px)',
+                  cursor: !selectedCourse || semesters.length === 0 ? 'not-allowed' : 'pointer',
+                  outline: 'none',
+                  opacity: !selectedCourse || semesters.length === 0 ? 0.5 : 1,
+                  transition: 'all 0.2s ease',
+                }}
+                onMouseEnter={(e) => {
+                  if (selectedCourse && semesters.length > 0) {
+                    e.currentTarget.style.borderColor = 'rgba(100, 181, 246, 0.3)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = 'rgba(100, 181, 246, 0.2)';
+                }}
+                onFocus={(e) => {
+                  if (selectedCourse && semesters.length > 0) {
+                    e.currentTarget.style.borderColor = 'rgba(100, 181, 246, 0.5)';
+                    e.currentTarget.style.background = 'rgba(30, 41, 59, 0.8)';
+                    e.currentTarget.style.boxShadow = '0 0 0 3px rgba(100, 181, 246, 0.2)';
+                  }
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.borderColor = 'rgba(100, 181, 246, 0.2)';
+                  e.currentTarget.style.background = 'rgba(30, 41, 59, 0.6)';
+                  e.currentTarget.style.boxShadow = 'none';
+                }}
+              >
+                <option value="" style={{ background: '#1e293b', color: 'white' }}>
+                  Select Semester
+                </option>
+                {semesters.map((semester) => (
+                  <option key={semester.id} value={semester.id} style={{ background: '#1e293b', color: 'white' }}>
+                    {semester.description || `Semester ${semester.semester_number}`}
+                  </option>
+                ))}
+              </select>
             </Box>
 
             {/* Right Actions */}

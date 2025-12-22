@@ -138,14 +138,32 @@ export default function Book() {
   }, []);
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [filterCourseId, setFilterCourseId] = useState('');
+  const [filterSemesterId, setFilterSemesterId] = useState('');
 
   const filteredBooks = useMemo(() => {
     let filtered = books;
 
-    // Filter by Course
-    if (selectedCourseId && courseMappings.length) {
+    // Filter by Course from filter dropdown (priority over tab selection)
+    if (filterCourseId) {
+      const courseId = parseInt(filterCourseId);
+      const bookIds = courseMappings
+        .filter((mapping) => mapping.course_id === courseId)
+        .map((mapping) => mapping.book_id);
+      filtered = filtered.filter((book) => bookIds.includes(book.id));
+    } else if (selectedCourseId && courseMappings.length) {
+      // Fallback to tab selection if no filter
       const bookIds = courseMappings
         .filter((mapping) => mapping.course_id === selectedCourseId)
+        .map((mapping) => mapping.book_id);
+      filtered = filtered.filter((book) => bookIds.includes(book.id));
+    }
+
+    // Filter by Semester
+    if (filterSemesterId) {
+      const semesterId = parseInt(filterSemesterId);
+      const bookIds = courseMappings
+        .filter((mapping) => mapping.semester_id === semesterId)
         .map((mapping) => mapping.book_id);
       filtered = filtered.filter((book) => bookIds.includes(book.id));
     }
@@ -161,10 +179,15 @@ export default function Book() {
     }
 
     return filtered;
-  }, [books, courseMappings, selectedCourseId, searchQuery]);
+  }, [books, courseMappings, selectedCourseId, filterCourseId, filterSemesterId, searchQuery]);
 
   const handleBookClick = (bookId: number) => {
     router.push(`/books/store/${bookId}`);
+  };
+
+  const handleFilterChange = (filters: { courseId: string; semesterId: string }) => {
+    setFilterCourseId(filters.courseId);
+    setFilterSemesterId(filters.semesterId);
   };
 
   const toggleWishlist = (e: React.MouseEvent, bookId: number) => {
@@ -292,7 +315,7 @@ export default function Book() {
   }
 
   return (
-    <ShopLayout onSearch={setSearchQuery} cartCount={0}>
+    <ShopLayout onSearch={setSearchQuery} onFilterChange={handleFilterChange} cartCount={0}>
       <Box bg="linear-gradient(135deg, #0f172a 0%, #1a2332 50%, #0f172a 100%)" py={{ base: '60px', md: '80px' }} position="relative" overflow="hidden">
         {/* Background Elements */}
         <Box
@@ -491,8 +514,24 @@ export default function Book() {
             {/* Results Info */}
             <MotionBox variants={itemVariants} initial="hidden" animate="visible" mb="24px">
               <Text fontSize="15px" color="gray.300" fontWeight="500">
-                Showing <strong>{isLoading ? 0 : filteredBooks.length}</strong> books in{' '}
-                <strong>{courses.find((c) => c.id === selectedCourseId)?.name || 'Selected Course'}</strong>
+                Showing <strong>{isLoading ? 0 : filteredBooks.length}</strong> books
+                {(filterCourseId || filterSemesterId) && (
+                  <>
+                    {' in '}
+                    {filterCourseId && (
+                      <strong>{courses.find((c) => c.id === parseInt(filterCourseId))?.name || 'Selected Course'}</strong>
+                    )}
+                    {filterSemesterId && (
+                      <strong>{' - Semester ' + filterSemesterId}</strong>
+                    )}
+                  </>
+                )}
+                {!filterCourseId && !filterSemesterId && selectedCourseId && (
+                  <>
+                    {' in '}
+                    <strong>{courses.find((c) => c.id === selectedCourseId)?.name || 'Selected Course'}</strong>
+                  </>
+                )}
               </Text>
             </MotionBox>
 
