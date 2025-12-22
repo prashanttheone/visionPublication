@@ -6,6 +6,7 @@ import { AuthProvider } from "@/context/AuthProvider";
 import { CartProvider } from "@/context/CartContext";
 import Celebration from "@/utils/Celebration";
 import WhatsAppCTA from "@/component/whatsappCta";
+import AnnouncementBar from "@/component/AnnouncementBar";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -38,6 +39,7 @@ export default function RootLayout({
             <Celebration />
             <WhatsAppCTA />
             <ClientLayout>
+              <AnnouncementBar />
               <LayoutWrapper>
                 {children}
               </LayoutWrapper>
