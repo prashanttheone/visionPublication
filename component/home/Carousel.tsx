@@ -4,56 +4,97 @@ import { useState, useEffect } from 'react';
 import { Box, Container, Text } from '@chakra-ui/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { HiChevronLeft, HiChevronRight } from 'react-icons/hi';
+import { useRouter } from 'next/navigation';
 
 const MotionBox = motion.create(Box);
 
 interface CarouselItem {
   id: number;
-  image: string;
   title: string;
   description: string;
+  image_url: string;
+  link_url?: string;
+  display_order: number;
+  is_active: boolean;
 }
 
 const carouselItems: CarouselItem[] = [
   {
     id: 1,
-    image: 'https://images.unsplash.com/photo-1576091160550-112173f7f869?w=1200&h=600&fit=crop',
     title: 'Quality Education',
     description: 'Publishing innovative textbooks that shape the future of healthcare education',
+    image_url: 'https://images.unsplash.com/photo-1576091160550-112173f7f869?w=1200&h=600&fit=crop',
+    link_url: '/books',
+    display_order: 1,
+    is_active: true,
   },
   {
     id: 2,
-    image: 'https://images.unsplash.com/photo-1491841573634-28fb1df32293?w=1200&h=600&fit=crop',
     title: 'Expert Insights',
     description: 'Curated content from leading healthcare professionals and researchers',
+    image_url: 'https://images.unsplash.com/photo-1491841573634-28fb1df32293?w=1200&h=600&fit=crop',
+    link_url: '/about',
+    display_order: 2,
+    is_active: true,
   },
   {
     id: 3,
-    image: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=1200&h=600&fit=crop',
     title: 'Digital Innovation',
     description: 'Modern publishing solutions for the digital age of learning',
+    image_url: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=1200&h=600&fit=crop',
+    link_url: '/resources',
+    display_order: 3,
+    is_active: true,
   },
   {
     id: 4,
-    image: 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=1200&h=600&fit=crop',
     title: 'Global Reach',
     description: 'Serving healthcare professionals and students worldwide',
+    image_url: 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=1200&h=600&fit=crop',
+    link_url: '/about',
+    display_order: 4,
+    is_active: true,
   },
   {
     id: 5,
-    image: 'https://images.unsplash.com/photo-1516321318423-f06f70d504f0?w=1200&h=600&fit=crop',
     title: 'Knowledge Hub',
     description: 'Comprehensive resources for continuous learning and development',
+    image_url: 'https://images.unsplash.com/photo-1516321318423-f06f70d504f0?w=1200&h=600&fit=crop',
+    link_url: '/resources',
+    display_order: 5,
+    is_active: true,
   },
 ];
 
 export default function Carousel() {
+  const [carouselItems, setCarouselItems] = useState<CarouselItem[]>([]);
   const [current, setCurrent] = useState(0);
   const [isAutoPlay, setIsAutoPlay] = useState(true);
   const [direction, setDirection] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
+
+  // Fetch sliders from API
+  useEffect(() => {
+    const fetchSliders = async () => {
+      try {
+        const response = await fetch('/api/home/slider?active=true');
+        const data = await response.json();
+        if (data.success && data.data.length > 0) {
+          setCarouselItems(data.data);
+        }
+      } catch (error) {
+        console.error('Error fetching sliders:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSliders();
+  }, []);
 
   useEffect(() => {
-    if (!isAutoPlay) return;
+    if (!isAutoPlay || carouselItems.length === 0) return;
 
     const interval = setInterval(() => {
       setDirection(1);
@@ -61,7 +102,7 @@ export default function Carousel() {
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [isAutoPlay]);
+  }, [isAutoPlay, carouselItems.length]);
 
   const slideVariants = {
     enter: (dir: number) => ({
@@ -102,6 +143,16 @@ export default function Carousel() {
     inactive: { scale: 0.8, opacity: 0.5 },
   };
 
+  const handleLearnMore = (link_url?: string) => {
+    if (link_url) {
+      if (link_url.startsWith('http')) {
+        window.open(link_url, '_blank');
+      } else {
+        router.push(link_url);
+      }
+    }
+  };
+
   const handleNext = () => {
     setIsAutoPlay(false);
     setDirection(1);
@@ -131,7 +182,30 @@ export default function Carousel() {
       position="relative"
       overflow="hidden"
     >
-      <Container maxW="full" px={0}>
+      {loading ? (
+        <Container maxW="full" px={0}>
+          <Box
+            height={{ base: '350px', md: '500px', lg: '600px' }}
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+          >
+            <Text color="white" fontSize="xl">Loading sliders...</Text>
+          </Box>
+        </Container>
+      ) : carouselItems.length === 0 ? (
+        <Container maxW="full" px={0}>
+          <Box
+            height={{ base: '350px', md: '500px', lg: '600px' }}
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+          >
+            <Text color="white" fontSize="xl">No active sliders found</Text>
+          </Box>
+        </Container>
+      ) : (
+        <Container maxW="full" px={0}>
         {/* Main Carousel Container */}
         <Box
           position="relative"
@@ -166,7 +240,7 @@ export default function Carousel() {
                   >
                     {/* Background Image */}
                     <Box
-                      backgroundImage={`url(${item.image})`}
+                      backgroundImage={`url(${item.image_url})`}
                       backgroundSize="cover"
                       backgroundPosition="center"
                       width="100%"
@@ -224,6 +298,7 @@ export default function Carousel() {
 
                         {/* CTA Button */}
                         <motion.button
+                          onClick={() => handleLearnMore(item.link_url)}
                           whileHover={{
                             scale: 1.05,
                             boxShadow: '0 20px 40px rgba(100, 181, 246, 0.4)',
@@ -237,8 +312,9 @@ export default function Carousel() {
                             borderRadius: '8px',
                             background: 'linear-gradient(135deg, #64B5F6, #42A5F5)',
                             color: 'white',
-                            cursor: 'pointer',
+                            cursor: item.link_url ? 'pointer' : 'default',
                             boxShadow: '0 10px 30px rgba(100, 181, 246, 0.3)',
+                            opacity: item.link_url ? 1 : 0.5,
                           }}
                         >
                           Learn More
@@ -369,6 +445,7 @@ export default function Carousel() {
         >
         </Box>
       </Container>
+      )}
     </Box>
   );
 }
