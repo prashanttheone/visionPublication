@@ -120,7 +120,7 @@ export default function Home() {
                   h={{ base: '300px', sm: '350px', md: '450px', lg: '500px', xl: '600px' }}
                 >
                   {/* Book Cover Image - Base Layer */}
-                  <MotionImage
+                  <Image
                     src="/HeroBook.jpeg"
                     alt="VisionPublication Book Cover"
                     w="100%"
