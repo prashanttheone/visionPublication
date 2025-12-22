@@ -111,24 +111,26 @@ export default function ShopLayout({ children, onSearch, onFilterChange, cartCou
             flexWrap={{ base: 'wrap', lg: 'nowrap' }}
           >
             {/* Logo */}
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              style={{ marginLeft: '20px' }}
-            >
-            <a href="/" style={{ display: 'block', flexShrink: 0 }}>
-              <img
-                src="/logopng.png"
-                alt="Vision Publications Logo"
-                style={{ height: '50px', width: 'auto', objectFit: 'contain', scale: 4 }}
-              />
-            </a>
-            </motion.div>
+            <Box flexShrink={0} w={{ base: 'auto', lg: '200px',  }}>
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <a href="/" style={{ display: 'block', marginLeft: '20px' }}>
+                  <img
+                    src="/logopng.png"
+                    alt="Vision Publications Logo"
+                    style={{ height: '50px', width: 'auto', objectFit: 'contain', transform: 'scale(4)' }}
+                  />
+                </a>
+              </motion.div>
+            </Box>
 
             {/* Search Bar */}
             <Box
               flex={{ base: '0 0 100%', sm: '1', lg: '0 0 350px' }}
               position="relative"
+              ml={{ base: '0', lg: '60px' }}
             >
               <Box position="absolute" left="12px" top="50%" transform="translateY(-50%)" zIndex={2} color="gray.400">
                 <HiMagnifyingGlass size={18} />
