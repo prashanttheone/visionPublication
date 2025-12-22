@@ -197,7 +197,7 @@ const Celebration = () => {
             marginBottom: "30px",
           }}
         >
-          & Happy New Year 2025!
+          & Happy New Year 2026!
         </p>
 
         {/* Decorative Elements */}
