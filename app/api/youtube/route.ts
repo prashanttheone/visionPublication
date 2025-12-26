@@ -8,6 +8,9 @@ interface YouTubeVideo {
   video_id: string;
   thumbnail: string;
   duration: string;
+  description?: string;
+  playlist_id?: number;
+  video_order?: number;
   is_active?: boolean;
   display_order?: number;
   created_at?: string;
@@ -59,7 +62,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { title, headline, video_id, thumbnail, duration } = body;
+    const { title, headline, video_id, thumbnail, duration, description, playlist_id, video_order } = body;
 
     // Validation
     if (!title || !title.trim()) {
@@ -104,10 +107,20 @@ export async function POST(request: NextRequest) {
     const displayOrder = orderResult.rows[0].next_order;
 
     const result = await client.query<YouTubeVideo>(
-      `INSERT INTO youtube_videos (title, headline, video_id, thumbnail, duration, display_order)
-       VALUES ($1, $2, $3, $4, $5, $6)
+      `INSERT INTO youtube_videos (title, headline, video_id, thumbnail, duration, description, playlist_id, video_order, display_order)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
        RETURNING *`,
-      [title.trim(), headline.trim(), video_id.trim(), thumbnail.trim(), duration.trim(), displayOrder]
+      [
+        title.trim(),
+        headline.trim(),
+        video_id.trim(),
+        thumbnail.trim(),
+        duration.trim(),
+        description?.trim() || null,
+        playlist_id || null,
+        video_order || 0,
+        displayOrder,
+      ]
     );
 
     return NextResponse.json(

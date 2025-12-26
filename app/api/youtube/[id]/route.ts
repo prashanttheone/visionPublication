@@ -8,6 +8,9 @@ interface YouTubeVideo {
   video_id: string;
   thumbnail: string;
   duration: string;
+  description?: string;
+  playlist_id?: number;
+  video_order?: number;
   is_active?: boolean;
   display_order?: number;
   created_at?: string;
@@ -79,7 +82,7 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const { title, headline, video_id, thumbnail, duration, is_active, display_order } = body;
+    const { title, headline, video_id, thumbnail, duration, description, playlist_id, video_order, is_active, display_order } = body;
 
     // Dynamic query building for partial updates
     const updates: string[] = [];
@@ -111,6 +114,21 @@ export async function PUT(
       values.push(duration.trim());
     }
 
+    if (description !== undefined) {
+      updates.push(`description = $${paramCount++}`);
+      values.push(description ? description.trim() : null);
+    }
+
+    if (playlist_id !== undefined) {
+      updates.push(`playlist_id = $${paramCount++}`);
+      values.push(playlist_id || null);
+    }
+
+    if (video_order !== undefined) {
+      updates.push(`video_order = $${paramCount++}`);
+      values.push(video_order || 0);
+    }
+
     if (is_active !== undefined && is_active !== null) {
       updates.push(`is_active = $${paramCount++}`);
       values.push(is_active);
@@ -130,11 +148,12 @@ export async function PUT(
 
     updates.push(`updated_at = NOW()`);
     values.push(videoId);
+    const whereParamIndex = values.length; // This will be the parameter index for WHERE clause
 
     const result = await client.query<YouTubeVideo>(
       `UPDATE youtube_videos
        SET ${updates.join(', ')}
-       WHERE id = $${paramCount + 1}
+       WHERE id = $${whereParamIndex}
        RETURNING *`,
       values
     );

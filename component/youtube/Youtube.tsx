@@ -188,9 +188,7 @@ export default function Youtube() {
           <Box position="relative">
             {/* Carousel Navigation Buttons */}
             {canGoPrevious && (
-              <IconButton
-                aria-label="Previous"
-                icon={<HiChevronLeft />}
+              <Box
                 position="absolute"
                 left="-20px"
                 top="50%"
@@ -198,18 +196,23 @@ export default function Youtube() {
                 zIndex={2}
                 onClick={handlePrevious}
                 bg="rgba(100, 181, 246, 0.2)"
-                _hover={{ bg: 'rgba(100, 181, 246, 0.3)' }}
                 color="white"
-                size="lg"
                 borderRadius="full"
                 display={{ base: 'none', lg: 'flex' }}
-              />
+                alignItems="center"
+                justifyContent="center"
+                w="40px"
+                h="40px"
+                cursor="pointer"
+                _hover={{ bg: 'rgba(100, 181, 246, 0.3)' }}
+                aria-label="Previous"
+              >
+                <HiChevronLeft size={20} />
+              </Box>
             )}
 
             {canGoNext && (
-              <IconButton
-                aria-label="Next"
-                icon={<HiChevronRight />}
+              <Box
                 position="absolute"
                 right="-20px"
                 top="50%"
@@ -217,12 +220,19 @@ export default function Youtube() {
                 zIndex={2}
                 onClick={handleNext}
                 bg="rgba(100, 181, 246, 0.2)"
-                _hover={{ bg: 'rgba(100, 181, 246, 0.3)' }}
                 color="white"
-                size="lg"
                 borderRadius="full"
                 display={{ base: 'none', lg: 'flex' }}
-              />
+                alignItems="center"
+                justifyContent="center"
+                w="40px"
+                h="40px"
+                cursor="pointer"
+                _hover={{ bg: 'rgba(100, 181, 246, 0.3)' }}
+                aria-label="Next"
+              >
+                <HiChevronRight size={20} />
+              </Box>
             )}
 
             {/* Carousel Content */}
@@ -321,9 +331,9 @@ export default function Youtube() {
                         {playlist.title}
                       </Text>
 
-                      <Text fontSize="sm" color="gray.300" lineHeight="1.5" flex="1" noOfLines={2}>
+                      <Box fontSize="sm" color="gray.300" lineHeight="1.5" flex="1" display="-webkit-box" style={{ WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                         {playlist.description}
-                      </Text>
+                      </Box>
 
                       <Text fontSize="xs" color="gray.400" mt="12px">
                         {playlist.totalDuration} total

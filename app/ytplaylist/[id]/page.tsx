@@ -277,7 +277,8 @@ export default function PlaylistDetailPage() {
                 p={{ base: '16px', md: '20px' }}
                 maxH={{ base: 'auto', lg: '700px' }}
                 overflowY="auto"
-                sx={{
+                className="custom-scrollbar"
+                css={{
                   '&::-webkit-scrollbar': {
                     width: '6px',
                   },
@@ -369,12 +370,13 @@ export default function PlaylistDetailPage() {
                             fontWeight="700"
                             color="white"
                             lineHeight="1.4"
-                            noOfLines={2}
                             mb="4px"
+                            display="-webkit-box"
+                            style={{ WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}
                           >
                             {video.title}
                           </Text>
-                          <Text fontSize="xs" color="gray.400" noOfLines={1}>
+                          <Text fontSize="xs" color="gray.400" display="-webkit-box" style={{ WebkitLineClamp: 1, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                             {video.description}
                           </Text>
                         </Box>
