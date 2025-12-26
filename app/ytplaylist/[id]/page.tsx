@@ -36,97 +36,47 @@ export default function PlaylistDetailPage() {
   const [autoplay, setAutoplay] = useState(false);
 
   useEffect(() => {
-    // Dummy playlist data
-    const dummyPlaylists: Record<string, Playlist> = {
-      '1': {
-        id: 1,
-        title: 'Obstetrics and Midwifery Nursing',
-        description: 'Comprehensive guide to obstetrics and midwifery nursing practices covering prenatal care, labor management, and postpartum care.',
-        category: 'Clinical Nursing',
-        videos: [
-          {
-            id: 1,
-            title: 'Introduction to Obstetric Nursing',
-            description: 'Overview of obstetric nursing fundamentals and patient care principles',
-            thumbnail: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=400',
-            duration: '12:45',
-            videoId: 'dQw4w9WgXcQ',
-          },
-          {
-            id: 2,
-            title: 'Prenatal Care and Assessment',
-            description: 'Complete guide to prenatal assessments and monitoring techniques',
-            thumbnail: 'https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=400',
-            duration: '18:30',
-            videoId: 'dQw4w9WgXcQ',
-          },
-          {
-            id: 3,
-            title: 'Labor and Delivery Management',
-            description: 'Best practices for managing labor stages and delivery procedures',
-            thumbnail: 'https://images.unsplash.com/photo-1579684385127-1ef15d508118?w=400',
-            duration: '25:15',
-            videoId: 'dQw4w9WgXcQ',
-          },
-          {
-            id: 4,
-            title: 'Postpartum Care Essentials',
-            description: 'Essential postpartum care and recovery monitoring',
-            thumbnail: 'https://images.unsplash.com/photo-1584820927498-cfe5211fd8bf?w=400',
-            duration: '15:20',
-            videoId: 'dQw4w9WgXcQ',
-          },
-          {
-            id: 5,
-            title: 'High-Risk Pregnancy Management',
-            description: 'Managing high-risk pregnancies and complications',
-            thumbnail: 'https://images.unsplash.com/photo-1582719508461-905c673771fd?w=400',
-            duration: '22:10',
-            videoId: 'dQw4w9WgXcQ',
-          },
-        ],
-      },
-      '2': {
-        id: 2,
-        title: 'Psychology in Healthcare',
-        description: 'Understanding patient psychology and mental health in medical settings, therapeutic communication, and psychological assessment.',
-        category: 'Mental Health',
-        videos: [
-          {
-            id: 1,
-            title: 'Introduction to Healthcare Psychology',
-            description: 'Basic concepts of psychology in medical environments',
-            thumbnail: 'https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=400',
-            duration: '14:25',
-            videoId: 'f1qz8vn3XbY',
-          },
-          {
-            id: 2,
-            title: 'Patient Communication Techniques',
-            description: 'Effective communication strategies for patient care',
-            thumbnail: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=400',
-            duration: '16:40',
-            videoId: 'dQw4w9WgXcQ',
-          },
-          {
-            id: 3,
-            title: 'Mental Health Assessment',
-            description: 'Tools and methods for mental health evaluation',
-            thumbnail: 'https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=400',
-            duration: '20:15',
-            videoId: 'f1qz8vn3XbY',
-          },
-        ],
-      },
+    const fetchPlaylist = async () => {
+      try {
+        setIsLoading(true);
+        const response = await fetch(`/api/youtube/playlist?id=${playlistId}&includeVideos=true`);
+        const data = await response.json();
+        
+        if (data.success && data.data.length > 0) {
+          const playlistData = data.data[0];
+          
+          // Map the API response to match our interface
+          const mappedPlaylist: Playlist = {
+            id: playlistData.id,
+            title: playlistData.title,
+            description: playlistData.description,
+            category: playlistData.category,
+            videos: playlistData.videos ? playlistData.videos.map((video: any) => ({
+              id: video.id,
+              title: video.title,
+              description: video.description || video.headline,
+              thumbnail: video.thumbnail,
+              duration: video.duration,
+              videoId: video.video_id,
+            })) : [],
+          };
+          
+          setPlaylist(mappedPlaylist);
+          if (mappedPlaylist.videos.length > 0) {
+            setSelectedVideo(mappedPlaylist.videos[0]);
+            setAutoplay(false); // Don't autoplay the first video
+          }
+        } else {
+          console.error('Failed to fetch playlist:', data.error);
+        }
+      } catch (error) {
+        console.error('Error fetching playlist:', error);
+      } finally {
+        setIsLoading(false);
+      }
     };
 
-    const foundPlaylist = dummyPlaylists[playlistId];
-    if (foundPlaylist) {
-      setPlaylist(foundPlaylist);
-      setSelectedVideo(foundPlaylist.videos[0]);
-      setAutoplay(false); // Don't autoplay the first video
-    }
-    setIsLoading(false);
+    fetchPlaylist();
   }, [playlistId]);
 
   const handleVideoClick = (video: Video) => {

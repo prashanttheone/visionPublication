@@ -25,67 +25,40 @@ export default function Youtube() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [cardsPerView, setCardsPerView] = useState(4);
 
-  // Dummy playlist data
+  // Fetch playlist data from API
   useEffect(() => {
-    const dummyPlaylists: YouTubePlaylist[] = [
-      {
-        id: 1,
-        title: 'Obstetrics and Midwifery Nursing',
-        description: 'Comprehensive guide to obstetrics and midwifery nursing practices',
-        thumbnail: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=400',
-        videoCount: 85,
-        totalDuration: '12h 30m',
-        category: 'Clinical Nursing',
-      },
-      {
-        id: 2,
-        title: 'Psychology in Healthcare',
-        description: 'Understanding patient psychology and mental health in medical settings',
-        thumbnail: 'https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=400',
-        videoCount: 34,
-        totalDuration: '8h 15m',
-        category: 'Mental Health',
-      },
-      {
-        id: 3,
-        title: 'Community Health Nursing',
-        description: 'Public health nursing and community care strategies',
-        thumbnail: 'https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=400',
-        videoCount: 100,
-        totalDuration: '15h 45m',
-        category: 'Public Health',
-      },
-      {
-        id: 4,
-        title: 'Fundamental of Nursing',
-        description: 'Core nursing principles and basic patient care techniques',
-        thumbnail: 'https://images.unsplash.com/photo-1584820927498-cfe5211fd8bf?w=400',
-        videoCount: 90,
-        totalDuration: '14h 20m',
-        category: 'Basics',
-      },
-      {
-        id: 5,
-        title: 'Pathology & Genetics',
-        description: 'Disease mechanisms and genetic factors in healthcare',
-        thumbnail: 'https://images.unsplash.com/photo-1582719508461-905c673771fd?w=400',
-        videoCount: 21,
-        totalDuration: '5h 45m',
-        category: 'Medical Science',
-      },
-      {
-        id: 6,
-        title: 'Medical Surgical Nursing',
-        description: 'Surgical procedures and perioperative nursing care',
-        thumbnail: 'https://images.unsplash.com/photo-1579684385127-1ef15d508118?w=400',
-        videoCount: 175,
-        totalDuration: '22h 30m',
-        category: 'Surgical',
-      },
-    ];
-
-    setPlaylists(dummyPlaylists);
-    setIsLoading(false);
+    const fetchPlaylists = async () => {
+      try {
+        setIsLoading(true);
+        const response = await fetch('/api/youtube/playlist');
+        const data = await response.json();
+            
+        if (data.success) {
+          // Map the API response to match our interface
+          const mappedPlaylists: YouTubePlaylist[] = data.data.map((playlist: any) => ({
+            id: playlist.id,
+            title: playlist.title,
+            description: playlist.description,
+            thumbnail: playlist.thumbnail,
+            videoCount: playlist.video_count || 0,
+            totalDuration: playlist.total_duration || '0h 0m',
+            category: playlist.category,
+          }));
+              
+          setPlaylists(mappedPlaylists);
+        } else {
+          console.error('Failed to fetch playlists:', data.error);
+          setPlaylists([]);
+        }
+      } catch (error) {
+        console.error('Error fetching playlists:', error);
+        setPlaylists([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+  
+    fetchPlaylists();
   }, []);
 
   const handlePrevious = () => {
