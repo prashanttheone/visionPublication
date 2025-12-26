@@ -177,7 +177,7 @@ export default function BookDetailPage() {
                   style={{
                     width: '100%',
                     height: '100%',
-                    objectFit: 'cover',
+                    objectFit: 'fill',
                   }}
                 />
                 {calculateDiscount(book.actual_price, book.offer_price) > 0 && (
