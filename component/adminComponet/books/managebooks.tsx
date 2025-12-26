@@ -51,6 +51,7 @@ interface Book {
   category: string;
   created_at?: string;
   updated_at?: string;
+  courseMappings?: BookCourseMap[];
 }
 
 interface Course {
@@ -142,12 +143,18 @@ export default function ManageBooks() {
       }
       try {
         await fetchCoursesAndSemesters();
-        // Initialize course mapping with first available course and semester
-        // This will be updated after courses are loaded
-        const booksResponse = await fetch('/api/book');
+        // Fetch books with course mappings
+        const booksResponse = await fetch('/api/book?includeMappings=true');
         const booksResult = await booksResponse.json();
         if (booksResult.success) {
-          setBooks(booksResult.data || []);
+          // Ensure rating is a number
+          const booksWithParsedRatings = booksResult.data.map((book: Book) => ({
+            ...book,
+            rating: typeof book.rating === 'string' ? parseFloat(book.rating) : (book.rating || 0),
+            actual_price: typeof book.actual_price === 'string' ? parseFloat(book.actual_price) : book.actual_price,
+            offer_price: typeof book.offer_price === 'string' ? parseFloat(book.offer_price) : book.offer_price,
+          }));
+          setBooks(booksWithParsedRatings || []);
           setConnectionError(null);
         } else {
           setConnectionError('Failed to fetch books: ' + booksResult.error);
@@ -185,15 +192,32 @@ export default function ManageBooks() {
 
   const filteredBooks = useMemo(() => {
     return books.filter(book => {
+      // Search filter
       const matchesSearch = book.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         book.author.toLowerCase().includes(searchTerm.toLowerCase()) ||
         book.isbn.toLowerCase().includes(searchTerm.toLowerCase());
       
-      // Filter by course and semester will be done via API in real scenario
-      // For now, just using search
-      return matchesSearch;
+      if (!matchesSearch) return false;
+      
+      // Course filter
+      if (filterCourse !== null) {
+        const hasCourseMapping = book.courseMappings?.some(
+          mapping => mapping.course_id === filterCourse
+        );
+        if (!hasCourseMapping) return false;
+      }
+      
+      // Semester filter (only applies if course is selected)
+      if (filterSemester !== null && filterCourse !== null) {
+        const hasSemesterMapping = book.courseMappings?.some(
+          mapping => mapping.course_id === filterCourse && mapping.semester_id === filterSemester
+        );
+        if (!hasSemesterMapping) return false;
+      }
+      
+      return true;
     });
-  }, [books, searchTerm]);
+  }, [books, searchTerm, filterCourse, filterSemester]);
 
   const getDefaultCourseMapping = useCallback((): BookCourseMap[] => {
     if (courses.length === 0) return [];
@@ -230,6 +254,25 @@ export default function ManageBooks() {
     setIsModalOpen(false);
   }, [form, getDefaultCourseMapping]);
 
+  const refetchBooks = useCallback(async () => {
+    try {
+      const booksResponse = await fetch('/api/book?includeMappings=true');
+      const booksResult = await booksResponse.json();
+      if (booksResult.success) {
+        // Ensure rating is a number
+        const booksWithParsedRatings = booksResult.data.map((book: Book) => ({
+          ...book,
+          rating: typeof book.rating === 'string' ? parseFloat(book.rating) : (book.rating || 0),
+          actual_price: typeof book.actual_price === 'string' ? parseFloat(book.actual_price) : book.actual_price,
+          offer_price: typeof book.offer_price === 'string' ? parseFloat(book.offer_price) : book.offer_price,
+        }));
+        setBooks(booksWithParsedRatings || []);
+      }
+    } catch (error) {
+      console.error('Error refetching books:', error);
+    }
+  }, []);
+
   const handleSubmit = useCallback(async (values: Book) => {
     if (values.offer_price > values.actual_price) {
       message.error('Offer price cannot be greater than actual price');
@@ -254,12 +297,11 @@ export default function ManageBooks() {
       const result = await response.json();
       if (result.success) {
         if (editingId) {
-          setBooks(prev => prev.map(book => book.id === editingId ? result.data.book : book));
           message.success('Book updated successfully!');
         } else {
-          setBooks(prev => [...prev, result.data.book]);
           message.success('Book created successfully!');
         }
+        await refetchBooks(); // Refetch to get updated mappings
         handleCancel();
       } else {
         message.error(result.error || 'Operation failed');
@@ -269,7 +311,7 @@ export default function ManageBooks() {
     } finally {
       setIsLoading(false);
     }
-  }, [editingId, courseMapping, uploadedImageUrl, handleCancel]);
+  }, [editingId, courseMapping, uploadedImageUrl, handleCancel, refetchBooks]);
 
   const handleDelete = useCallback(async (id: number) => {
     Modal.confirm({
@@ -284,8 +326,8 @@ export default function ManageBooks() {
           const response = await fetch(`/api/book/${id}`, { method: 'DELETE' });
           const result = await response.json();
           if (result.success) {
-            setBooks(prev => prev.filter(book => book.id !== id));
             message.success('Book deleted successfully!');
+            await refetchBooks(); // Refetch to update list
           } else {
             message.error(result.error || 'Failed to delete book');
           }
@@ -296,7 +338,7 @@ export default function ManageBooks() {
         }
       }
     });
-  }, []);
+  }, [refetchBooks]);
 
   const getSemestersForCourse = useCallback((courseId: number) => {
     return semesters.filter(s => s.course_id === courseId);
@@ -370,7 +412,7 @@ export default function ManageBooks() {
       title: 'Rating',
       dataIndex: 'rating',
       key: 'rating',
-      render: (rating: number) => {
+      render: (rating: number, record: Book) => {
         const validRating = typeof rating === 'number' && !isNaN(rating) ? rating : 0;
         return `⭐ ${validRating.toFixed(1)}`;
       },
@@ -441,7 +483,10 @@ export default function ManageBooks() {
                     placeholder="Filter by Course"
                     style={{ width: '100%' }}
                     value={filterCourse}
-                    onChange={setFilterCourse}
+                    onChange={(value) => {
+                      setFilterCourse(value);
+                      setFilterSemester(null); // Reset semester when course changes
+                    }}
                     allowClear
                   >
                     {courses.map(course => (
