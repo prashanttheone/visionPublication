@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import jwt from 'jsonwebtoken';
+import AdminLayoutClient from '@/component/adminComponet/AdminLayoutClient';
 
 export default async function AdminLayout({
   children,
@@ -25,8 +26,8 @@ export default async function AdminLayout({
       redirect('/');
     }
 
-    // Token is valid and user is admin - render admin pages
-    return <>{children}</>;
+    // Token is valid and user is admin - render admin pages with Ant Design layout
+    return <AdminLayoutClient>{children}</AdminLayoutClient>;
   } catch (error) {
     console.error('Admin access denied:', error);
     redirect('/login');

@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { Box, Text } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
 import { HiMegaphone, HiSparkles } from 'react-icons/hi2';
@@ -36,6 +37,12 @@ const announcements: Announcement[] = [
 ];
 
 export default function AnnouncementBar() {
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   const getIcon = (iconType?: string) => {
     if (iconType === 'megaphone') {
       return <HiMegaphone size={16} />;
@@ -44,6 +51,29 @@ export default function AnnouncementBar() {
     }
     return null;
   };
+
+  if (!isMounted) {
+    return (
+      <Box
+        bg="linear-gradient(135deg, #FF8C00 0%, #FFA500 100%)"
+        py="10px"
+        borderBottom="2px solid"
+        borderColor="rgba(255, 255, 255, 0.3)"
+        zIndex={100}
+      >
+        <Box display="flex" gap="60px" color="white" px="20px">
+          {announcements.slice(0, 1).map((announcement) => (
+            <Box key={announcement.id} display="flex" alignItems="center" gap="8px">
+              {getIcon(announcement.icon)}
+              <Text fontSize={{ base: '13px', md: '14px' }} fontWeight="600" letterSpacing="0.3px">
+                {announcement.text}
+              </Text>
+            </Box>
+          ))}
+        </Box>
+      </Box>
+    );
+  }
 
   return (
     <Box

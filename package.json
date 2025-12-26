@@ -13,6 +13,7 @@
     "@supabase/auth-helpers-nextjs": "^0.15.0",
     "@supabase/supabase-js": "^2.87.1",
     "@types/jsonwebtoken": "^9.0.10",
+    "antd": "^6.1.2",
     "bcryptjs": "^3.0.3",
     "fireworks-js": "^2.10.8",
     "framer-motion": "^12.23.26",

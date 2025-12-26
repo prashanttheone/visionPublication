@@ -1,22 +1,38 @@
 'use client';
 
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import {
-  Box,
-  Container,
-  Input,
-  Textarea,
+  Table,
   Button,
-  Stack,
-  Heading,
-  Text,
-  Badge,
-  Separator
-} from '@chakra-ui/react';
-import { motion } from 'framer-motion';
+  Input,
+  Form,
+  InputNumber,
+  Select,
+  Switch,
+  Space,
+  Card,
+  Typography,
+  Row,
+  Col,
+  Tag,
+  Modal,
+  message,
+  Spin,
+  Alert,
+  Divider,
+  Checkbox,
+} from 'antd';
+import {
+  PlusOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  SearchOutlined,
+} from '@ant-design/icons';
 import CloudinaryImageUpload from '@/component/imageUpload/CloudinaryImageUpload';
 
-const MotionBox = motion.create(Box);
+const { Title, Text } = Typography;
+const { TextArea } = Input;
+const { Option } = Select;
 
 interface Book {
   id?: number;
@@ -59,67 +75,11 @@ interface BookCourseMap {
   is_recommended: boolean;
 }
 
-// Form field configuration - DRY approach
-const FORM_SECTIONS = {
-  basic: {
-    title: '📖 Basic Information',
-    color: 'blue.600',
-    fields: [
-      { name: 'name', label: 'Book Name', type: 'text', placeholder: 'Enter book title', required: true, width: 'full' },
-      { name: 'author', label: 'Author', type: 'text', placeholder: 'Enter author name', required: true, width: 'full' },
-      { name: 'isbn', label: 'ISBN', type: 'text', placeholder: '978-0-12-345678-1', required: true, width: 'half' },
-      { name: 'edition', label: 'Edition', type: 'text', placeholder: '3rd Edition', required: false, width: 'half' },
-      { name: 'category', label: 'Category', type: 'select', required: false, width: 'full', options: ['Nursing', 'Medical', 'Surgery', 'Pediatrics', 'Pharmacology', 'Anatomy', 'Physiology', 'Pathology'] },
-    ]
-  },
-  description: {
-    title: '📝 Description & Media',
-    color: 'blue.600',
-    fields: [
-      { name: 'description', label: 'Description', type: 'textarea', placeholder: 'Enter book description', rows: 4 },
-    ]
-  },
-  pricing: {
-    title: '💰 Pricing',
-    color: 'green.600',
-    fields: [
-      { name: 'actual_price', label: 'Actual Price', type: 'number', placeholder: '599', required: true, step: '0.01', width: 'half' },
-      { name: 'offer_price', label: 'Offer Price', type: 'number', placeholder: '450', required: true, step: '0.01', width: 'half' },
-    ]
-  },
-  stock: {
-    title: '📊 Stock & Ratings',
-    color: 'purple.600',
-    fields: [
-      { name: 'stock_quantity', label: 'Stock Quantity', type: 'number', placeholder: '0', width: 'half' },
-      { name: 'rating', label: 'Rating (0-5)', type: 'number', placeholder: '4.5', step: '0.1', min: '0', max: '5', width: 'half' },
-      { name: 'reviews_count', label: 'Number of Reviews', type: 'number', placeholder: '0', width: 'half' },
-      { name: 'in_stock', label: 'In Stock', type: 'select', width: 'half', options: ['Yes', 'No'] },
-    ]
-  }
-};
-
-// Table columns configuration
-const TABLE_COLUMNS = [
-  { key: 'name', label: 'Name', align: 'left' },
-  { key: 'author', label: 'Author', align: 'left' },
-  { key: 'isbn', label: 'ISBN', align: 'left' },
-  { key: 'category', label: 'Category', align: 'left', isBadge: true },
-  { key: 'actual_price', label: 'Actual Price', align: 'right', format: (v: any) => `₹${v}` },
-  { key: 'offer_price', label: 'Offer Price', align: 'right', format: (v: any) => `₹${v}`, color: '#22863a', fontWeight: 'bold' },
-  { key: 'discount', label: 'Discount', align: 'right', isCalculated: true },
-  { key: 'stock_quantity', label: 'Stock', align: 'right', isBadge: true },
-  { key: 'rating', label: 'Rating', align: 'left', format: (v: any) => `⭐ ${typeof v === 'number' ? v.toFixed(1) : parseFloat(v).toFixed(1)}` },
-];
-
 const initialFormState: Book = {
   name: '', author: '', isbn: '', edition: '', description: '', image_url: '',
   actual_price: 0, offer_price: 0, stock_quantity: 0, in_stock: true,
   rating: 0, reviews_count: 0, category: ''
 };
-
-const CustomFormControl = ({ children, ...props }: any) => <Box {...props}>{children}</Box>;
-const CustomFormLabel = (props: any) => <Box as="label" fontWeight="bold" mb={2} {...props} />;
 
 export default function ManageBooks() {
   const [books, setBooks] = useState<Book[]>([]);
@@ -127,14 +87,15 @@ export default function ManageBooks() {
   const [semesters, setSemesters] = useState<Semester[]>([]);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [connectionError, setConnectionError] = useState<string | null>(null);
-  const [formData, setFormData] = useState<Book>(initialFormState);
-  const [courseMapping, setCourseMapping] = useState<BookCourseMap[]>([]);
-  const [isEditing, setIsEditing] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeView, setActiveView] = useState<'list' | 'form'>('list');
+  const [filterCourse, setFilterCourse] = useState<number | null>(null);
+  const [filterSemester, setFilterSemester] = useState<number | null>(null);
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string>('');
+  const [courseMapping, setCourseMapping] = useState<BookCourseMap[]>([]);
+  const [form] = Form.useForm();
 
   const checkHealth = useCallback(async (): Promise<boolean> => {
     try {
@@ -223,128 +184,17 @@ export default function ManageBooks() {
   }, []);
 
   const filteredBooks = useMemo(() => {
-    return books.filter(book =>
-      book.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      book.author.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      book.isbn.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    return books.filter(book => {
+      const matchesSearch = book.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        book.author.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        book.isbn.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      // Filter by course and semester will be done via API in real scenario
+      // For now, just using search
+      return matchesSearch;
+    });
   }, [books, searchTerm]);
 
-  const handleInputChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-      const { name, value, type } = e.target;
-      setFormData(prev => ({
-        ...prev,
-        [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : 
-                type === 'number' ? parseFloat(value) || 0 : value
-      }));
-    },
-    []
-  );
-
-  const handleCreate = useCallback(async () => {
-    if (!formData.name.trim() || !formData.author.trim()) {
-      alert('Book name and author are required');
-      return;
-    }
-    if (formData.offer_price > formData.actual_price) {
-      alert('Offer price cannot be greater than actual price');
-      return;
-    }
-    setIsLoading(true);
-    try {
-      const bookData = {
-        ...formData,
-        image_url: uploadedImageUrl || formData.image_url
-      };
-      const response = await fetch('/api/book', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ book: bookData, courseMappings: courseMapping })
-      });
-      const result = await response.json();
-      if (result.success) {
-        setBooks(prev => [...prev, result.data.book]);
-        setFormData(initialFormState);
-        setUploadedImageUrl('');
-        setCourseMapping(getDefaultCourseMapping());
-        setActiveView('list');
-        alert('✅ Book created successfully!');
-      } else {
-        alert('❌ ' + (result.error || 'Failed to create book'));
-      }
-    } catch (error) {
-      alert('❌ ' + (error instanceof Error ? error.message : 'Failed to create book'));
-    } finally {
-      setIsLoading(false);
-    }
-  }, [formData, courseMapping, uploadedImageUrl]);
-
-  const handleUpdate = useCallback(async () => {
-    if (!editingId) return;
-    if (!formData.name.trim() || !formData.author.trim()) {
-      alert('Book name and author are required');
-      return;
-    }
-    if (formData.offer_price > formData.actual_price) {
-      alert('Offer price cannot be greater than actual price');
-      return;
-    }
-    setIsLoading(true);
-    try {
-      const bookData = {
-        ...formData,
-        image_url: uploadedImageUrl || formData.image_url
-      };
-      const response = await fetch(`/api/book/${editingId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ book: bookData, courseMappings: courseMapping })
-      });
-      const result = await response.json();
-      if (result.success) {
-        setBooks(prev => prev.map(book => book.id === editingId ? result.data.book : book));
-        setFormData(initialFormState);
-        setUploadedImageUrl('');
-        setCourseMapping(getDefaultCourseMapping());
-        setIsEditing(false);
-        setEditingId(null);
-        setActiveView('list');
-        alert('✅ Book updated successfully!');
-      } else {
-        alert('❌ ' + (result.error || 'Failed to update book'));
-      }
-    } catch (error) {
-      alert('❌ ' + (error instanceof Error ? error.message : 'Failed to update book'));
-    } finally {
-      setIsLoading(false);
-    }
-  }, [editingId, formData, courseMapping, uploadedImageUrl]);
-
-  const handleDelete = useCallback(async (id: number) => {
-    if (!confirm('Are you sure you want to delete this book?')) return;
-    setIsLoading(true);
-    try {
-      const response = await fetch(`/api/book/${id}`, { method: 'DELETE' });
-      const result = await response.json();
-      if (result.success) {
-        setBooks(prev => prev.filter(book => book.id !== id));
-        alert('✅ Book deleted successfully!');
-      } else {
-        alert('❌ ' + (result.error || 'Failed to delete book'));
-      }
-    } catch (error) {
-      alert('❌ ' + (error instanceof Error ? error.message : 'Failed to delete book'));
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  const getSemestersForCourse = useCallback((courseId: number) => {
-    return semesters.filter(s => s.course_id === courseId);
-  }, [semesters]);
-
-  // Get default course mapping using first available course and its first semester
   const getDefaultCourseMapping = useCallback((): BookCourseMap[] => {
     if (courses.length === 0) return [];
     const firstCourse = courses[0];
@@ -358,361 +208,541 @@ export default function ManageBooks() {
     }];
   }, [courses, semesters]);
 
-  const handleEdit = useCallback((book: Book) => {
-    setFormData(book);
+  const showModal = useCallback((book?: Book) => {
+    if (book) {
+      form.setFieldsValue(book);
+      setEditingId(book.id!);
+    } else {
+      form.resetFields();
+      form.setFieldsValue(initialFormState);
+      setEditingId(null);
+    }
     setUploadedImageUrl('');
     setCourseMapping(getDefaultCourseMapping());
-    setEditingId(book.id!);
-    setIsEditing(true);
-    setActiveView('form');
-  }, [getDefaultCourseMapping]);
+    setIsModalOpen(true);
+  }, [form, getDefaultCourseMapping]);
 
   const handleCancel = useCallback(() => {
-    setFormData(initialFormState);
+    form.resetFields();
     setUploadedImageUrl('');
     setCourseMapping(getDefaultCourseMapping());
-    setIsEditing(false);
     setEditingId(null);
-    setActiveView('list');
-  }, [getDefaultCourseMapping]);
+    setIsModalOpen(false);
+  }, [form, getDefaultCourseMapping]);
 
-  // Render form field dynamically
-  const renderField = (field: any) => {
-    const value = formData[field.name as keyof Book] || '';
-    
-    if (field.type === 'select') {
-      return (
-        <select
-          name={field.name}
-          value={String(field.name === 'in_stock' ? (formData.in_stock ? 'Yes' : 'No') : value)}
-          onChange={(e) => {
-            if (field.name === 'in_stock') {
-              setFormData(prev => ({ ...prev, in_stock: e.target.value === 'Yes' }));
-            } else {
-              handleInputChange(e as any);
-            }
-          }}
-          style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e0', fontSize: '16px' }}
-        >
-          <option value="">{field.label}</option>
-          {field.options?.map((opt: string) => <option key={opt} value={opt}>{opt}</option>)}
-        </select>
-      );
+  const handleSubmit = useCallback(async (values: Book) => {
+    if (values.offer_price > values.actual_price) {
+      message.error('Offer price cannot be greater than actual price');
+      return;
     }
-    
-    if (field.type === 'textarea') {
-      return (
-        <Textarea
-          name={field.name}
-          value={String(value)}
-          onChange={handleInputChange}
-          placeholder={field.placeholder}
-          rows={field.rows || 4}
-        />
-      );
+    setIsLoading(true);
+    try {
+      const bookData = {
+        ...values,
+        image_url: uploadedImageUrl || values.image_url || ''
+      };
+      
+      const url = editingId ? `/api/book/${editingId}` : '/api/book';
+      const method = editingId ? 'PUT' : 'POST';
+      
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ book: bookData, courseMappings: courseMapping })
+      });
+      
+      const result = await response.json();
+      if (result.success) {
+        if (editingId) {
+          setBooks(prev => prev.map(book => book.id === editingId ? result.data.book : book));
+          message.success('Book updated successfully!');
+        } else {
+          setBooks(prev => [...prev, result.data.book]);
+          message.success('Book created successfully!');
+        }
+        handleCancel();
+      } else {
+        message.error(result.error || 'Operation failed');
+      }
+    } catch (error) {
+      message.error(error instanceof Error ? error.message : 'Operation failed');
+    } finally {
+      setIsLoading(false);
     }
-    
-    return (
-      <Input
-        name={field.name}
-        value={String(value)}
-        onChange={handleInputChange}
-        placeholder={field.placeholder}
-        type={field.type}
-        step={field.step}
-        min={field.min}
-        max={field.max}
-      />
-    );
-  };
+  }, [editingId, courseMapping, uploadedImageUrl, handleCancel]);
 
-  // Render form section
-  const renderFormSection = (sectionKey: keyof typeof FORM_SECTIONS) => {
-    const section = FORM_SECTIONS[sectionKey];
-    return (
-      <Box key={sectionKey}>
-        <Heading size="sm" mb={4} color={section.color}>
-          {section.title}
-        </Heading>
-        <Stack direction={section.fields.some((f: any) => f.width === 'half') ? 'row' : 'column'} gap={4} mb={4} flexWrap="wrap">
-          {section.fields.map((field: any) => (
-            <CustomFormControl key={field.name} flex={(field.width as any) === 'half' ? 1 : undefined} mb={(field.width as any) !== 'half' ? 4 : 0}>
-              <CustomFormLabel>
-                {field.label} {field.required && '*'}
-              </CustomFormLabel>
-              {renderField(field)}
-            </CustomFormControl>
-          ))}
-        </Stack>
-        <Separator />
-      </Box>
-    );
-  };
+  const handleDelete = useCallback(async (id: number) => {
+    Modal.confirm({
+      title: 'Are you sure you want to delete this book?',
+      content: 'This action cannot be undone.',
+      okText: 'Yes, Delete',
+      okType: 'danger',
+      cancelText: 'Cancel',
+      onOk: async () => {
+        setIsLoading(true);
+        try {
+          const response = await fetch(`/api/book/${id}`, { method: 'DELETE' });
+          const result = await response.json();
+          if (result.success) {
+            setBooks(prev => prev.filter(book => book.id !== id));
+            message.success('Book deleted successfully!');
+          } else {
+            message.error(result.error || 'Failed to delete book');
+          }
+        } catch (error) {
+          message.error(error instanceof Error ? error.message : 'Failed to delete book');
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    });
+  }, []);
 
-  // Render table row
-  const renderTableRow = (book: Book) => {
-    const discount = calculateDiscount(book.actual_price, book.offer_price);
-    return (
-      <tr key={book.id} style={{ borderBottom: '1px solid #e2e8f0' }}>
-        {TABLE_COLUMNS.map(col => {
-          let cellValue: any = book[col.key as keyof Book];
-          if (col.isCalculated && col.key === 'discount') cellValue = `${discount}%`;
-          else if (col.format) cellValue = col.format(cellValue);
+  const getSemestersForCourse = useCallback((courseId: number) => {
+    return semesters.filter(s => s.course_id === courseId);
+  }, [semesters]);
 
-          return (
-            <td key={col.key} style={{ padding: '12px', textAlign: col.align as any, color: col.color, fontWeight: col.fontWeight }}>
-              {col.isBadge ? (
-                <Badge colorScheme={col.key === 'stock_quantity' ? (book.stock_quantity > 0 ? 'green' : 'red') : 'blue'}>
-                  {col.key === 'stock_quantity' ? book.stock_quantity : (col.key === 'category' ? book.category : cellValue)}
-                </Badge>
-              ) : cellValue}
-            </td>
-          );
-        })}
-        <td style={{ padding: '12px' }}>
-          <Stack direction="row" gap={2}>
-            <Button size="sm" colorScheme="blue" variant="ghost" onClick={() => handleEdit(book)}>
-              ✏️ Edit
-            </Button>
-            <Button size="sm" colorScheme="red" variant="ghost" onClick={() => handleDelete(book.id!)}>
-              🗑️ Delete
-            </Button>
-          </Stack>
-        </td>
-      </tr>
-    );
-  };
+  const columns = [
+    {
+      title: 'Name',
+      dataIndex: 'name',
+      key: 'name',
+      sorter: (a: Book, b: Book) => a.name.localeCompare(b.name),
+    },
+    {
+      title: 'Author',
+      dataIndex: 'author',
+      key: 'author',
+      sorter: (a: Book, b: Book) => a.author.localeCompare(b.author),
+    },
+    {
+      title: 'ISBN',
+      dataIndex: 'isbn',
+      key: 'isbn',
+    },
+    {
+      title: 'Category',
+      dataIndex: 'category',
+      key: 'category',
+      render: (category: string) => (
+        <Tag color="blue">{category || 'N/A'}</Tag>
+      ),
+    },
+    {
+      title: 'Actual Price',
+      dataIndex: 'actual_price',
+      key: 'actual_price',
+      align: 'right' as const,
+      render: (price: number) => `₹${price}`,
+      sorter: (a: Book, b: Book) => a.actual_price - b.actual_price,
+    },
+    {
+      title: 'Offer Price',
+      dataIndex: 'offer_price',
+      key: 'offer_price',
+      align: 'right' as const,
+      render: (price: number) => (
+        <Text strong style={{ color: '#52c41a' }}>
+          ₹{price}
+        </Text>
+      ),
+      sorter: (a: Book, b: Book) => a.offer_price - b.offer_price,
+    },
+    {
+      title: 'Discount',
+      key: 'discount',
+      align: 'right' as const,
+      render: (_: any, record: Book) => (
+        <Tag color="green">{calculateDiscount(record.actual_price, record.offer_price)}%</Tag>
+      ),
+    },
+    {
+      title: 'Stock',
+      dataIndex: 'stock_quantity',
+      key: 'stock_quantity',
+      align: 'right' as const,
+      render: (stock: number) => (
+        <Tag color={stock > 0 ? 'green' : 'red'}>{stock}</Tag>
+      ),
+      sorter: (a: Book, b: Book) => a.stock_quantity - b.stock_quantity,
+    },
+    {
+      title: 'Rating',
+      dataIndex: 'rating',
+      key: 'rating',
+      render: (rating: number) => {
+        const validRating = typeof rating === 'number' && !isNaN(rating) ? rating : 0;
+        return `⭐ ${validRating.toFixed(1)}`;
+      },
+      sorter: (a: Book, b: Book) => (a.rating || 0) - (b.rating || 0),
+    },
+    {
+      title: 'Actions',
+      key: 'actions',
+      render: (_: any, record: Book) => (
+        <Space>
+          <Button
+            type="link"
+            icon={<EditOutlined />}
+            onClick={() => showModal(record)}
+          >
+            Edit
+          </Button>
+          <Button
+            type="link"
+            danger
+            icon={<DeleteOutlined />}
+            onClick={() => handleDelete(record.id!)}
+          >
+            Delete
+          </Button>
+        </Space>
+      ),
+    },
+  ];
 
   return (
-    <Container maxW="100%" py={8}>
-      <MotionBox initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-        <Box mb={8}>
-          <Heading size="lg" mb={2}>📚 Books Management</Heading>
-          <Text color="gray.600">Manage your book catalog with complete CRUD operations</Text>
-        </Box>
+    <div style={{ padding: '24px' }}>
+      <Card>
+        <Space orientation="vertical" size="large" style={{ width: '100%', display: 'flex' }}>
+          <div>
+            <Title level={3}>📚 Books Management</Title>
+            <Text type="secondary">Manage your book catalog with complete CRUD operations</Text>
+          </div>
 
-        {connectionError && (
-          <Box mb={6} p={4} bg="red.50" borderLeft="4px solid" borderColor="red.500" borderRadius="md">
-            <Heading size="sm" color="red.700" mb={2}>⚠️ Connection Error</Heading>
-            <Text color="red.600" fontSize="sm">{connectionError}</Text>
-          </Box>
-        )}
+          {connectionError && (
+            <Alert
+              message="Connection Error"
+              description={connectionError}
+              type="error"
+              showIcon
+              closable
+            />
+          )}
 
-        {activeView === 'list' && (
-          <Stack gap={6}>
-            {isInitialLoading ? (
-              <Box p={8} textAlign="center">
-                <Text color="gray.600">Loading books...</Text>
-              </Box>
-            ) : (
-              <Box>
-                <Stack direction="row" gap={4} mb={4}>
+          {isInitialLoading ? (
+            <div style={{ textAlign: 'center', padding: '50px' }}>
+              <Spin size="large" />
+            </div>
+          ) : (
+            <>
+              <Row gutter={[16, 16]}>
+                <Col xs={24} sm={12} md={8}>
                   <Input
                     placeholder="Search by name, author, or ISBN..."
+                    prefix={<SearchOutlined />}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    size="lg"
+                    allowClear
                   />
-                  <Button colorScheme="green" onClick={() => { setFormData(initialFormState); setIsEditing(false); setActiveView('form'); }}>
-                    ➕ Add Book
+                </Col>
+                <Col xs={24} sm={12} md={6}>
+                  <Select
+                    placeholder="Filter by Course"
+                    style={{ width: '100%' }}
+                    value={filterCourse}
+                    onChange={setFilterCourse}
+                    allowClear
+                  >
+                    {courses.map(course => (
+                      <Option key={course.id} value={course.id}>
+                        {course.name}
+                      </Option>
+                    ))}
+                  </Select>
+                </Col>
+                <Col xs={24} sm={12} md={6}>
+                  <Select
+                    placeholder="Filter by Semester"
+                    style={{ width: '100%' }}
+                    value={filterSemester}
+                    onChange={setFilterSemester}
+                    allowClear
+                    disabled={!filterCourse}
+                  >
+                    {filterCourse && getSemestersForCourse(filterCourse).map(semester => (
+                      <Option key={semester.id} value={semester.id}>
+                        {semester.description || `Semester ${semester.semester_number}`}
+                      </Option>
+                    ))}
+                  </Select>
+                </Col>
+                <Col xs={24} sm={12} md={4}>
+                  <Button
+                    type="primary"
+                    icon={<PlusOutlined />}
+                    onClick={() => showModal()}
+                    block
+                  >
+                    Add Book
                   </Button>
-                </Stack>
+                </Col>
+              </Row>
 
-                {filteredBooks.length > 0 ? (
-                  <Box overflowX="auto" borderWidth={1} borderColor="gray.200" borderRadius="md">
-                    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                      <thead style={{ backgroundColor: '#f7fafc' }}>
-                        <tr style={{ borderBottom: '2px solid #e2e8f0' }}>
-                          {TABLE_COLUMNS.map(col => (
-                            <th key={col.key} style={{ padding: '12px', textAlign: col.align as any, fontWeight: 'bold' }}>
-                              {col.label}
-                            </th>
-                          ))}
-                          <th style={{ padding: '12px', textAlign: 'left', fontWeight: 'bold' }}>Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {filteredBooks.map(book => renderTableRow(book))}
-                      </tbody>
-                    </table>
-                  </Box>
-                ) : (
-                  <Box p={8} textAlign="center">
-                    <Text color="gray.600">
-                      {books.length === 0 ? 'No books yet. Create your first book!' : 'No books match your search.'}
-                    </Text>
-                  </Box>
-                )}
-              </Box>
-            )}
-          </Stack>
-        )}
+              <Table
+                columns={columns}
+                dataSource={filteredBooks}
+                rowKey="id"
+                loading={isLoading}
+                pagination={{
+                  pageSize: 10,
+                  showSizeChanger: true,
+                  showTotal: (total) => `Total ${total} books`,
+                }}
+                scroll={{ x: 1200 }}
+              />
+            </>
+          )}
+        </Space>
+      </Card>
 
-        {activeView === 'form' && (
-          <Box bg="white" p={8} borderRadius="lg" boxShadow="md">
-            <Heading size="md" mb={6}>
-              {isEditing ? '✏️ Edit Book' : '➕ Add New Book'}
-            </Heading>
+      <Modal
+        title={editingId ? '✏️ Edit Book' : '➕ Add New Book'}
+        open={isModalOpen}
+        onCancel={handleCancel}
+        footer={null}
+        width={800}
+      >
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={handleSubmit}
+          initialValues={initialFormState}
+        >
+          <Divider><strong>📖 Basic Information</strong></Divider>
+          <Row gutter={16}>
+            <Col span={24}>
+              <Form.Item
+                label="Book Name"
+                name="name"
+                rules={[{ required: true, message: 'Please enter book name' }]}
+              >
+                <Input placeholder="Enter book title" />
+              </Form.Item>
+            </Col>
+            <Col span={24}>
+              <Form.Item
+                label="Author"
+                name="author"
+                rules={[{ required: true, message: 'Please enter author name' }]}
+              >
+                <Input placeholder="Enter author name" />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                label="ISBN"
+                name="isbn"
+                rules={[{ required: true, message: 'Please enter ISBN' }]}
+              >
+                <Input placeholder="978-0-12-345678-1" />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item label="Edition" name="edition">
+                <Input placeholder="3rd Edition" />
+              </Form.Item>
+            </Col>
+            <Col span={24}>
+              <Form.Item label="Category" name="category">
+                <Select placeholder="Select category">
+                  {['Nursing', 'Medical', 'Surgery', 'Pediatrics', 'Pharmacology', 'Anatomy', 'Physiology', 'Pathology'].map(cat => (
+                    <Option key={cat} value={cat}>{cat}</Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
+          </Row>
 
-            <Stack gap={6} maxW="800px">
-              {Object.keys(FORM_SECTIONS).map(key => renderFormSection(key as keyof typeof FORM_SECTIONS))}
+          <Divider><strong>📝 Description</strong></Divider>
+          <Form.Item label="Description" name="description">
+            <TextArea rows={4} placeholder="Enter book description" />
+          </Form.Item>
 
-              {/* Cloudinary Image Upload */}
-              <Box>
-                <Heading size="sm" mb={4} color="blue.600">
-                  🖼️ Book Cover Image
-                </Heading>
-                <CloudinaryImageUpload onImageSelect={(secureUrl) => setUploadedImageUrl(secureUrl)} />
-                {uploadedImageUrl && (
-                  <Text fontSize="sm" color="green.600" mt={3}>
-                    ✅ Image URL saved: {uploadedImageUrl.substring(0, 50)}...
-                  </Text>
-                )}
-                {formData.image_url && !uploadedImageUrl && (
-                  <Text fontSize="sm" color="gray.600" mt={3}>
-                    📋 Current image: {formData.image_url.substring(0, 50)}...
-                  </Text>
-                )}
-              </Box>
+          <Divider><strong>💰 Pricing</strong></Divider>
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                label="Actual Price"
+                name="actual_price"
+                rules={[{ required: true, message: 'Please enter actual price' }]}
+              >
+                <InputNumber
+                  placeholder="599"
+                  style={{ width: '100%' }}
+                  min={0}
+                  precision={2}
+                  prefix="₹"
+                />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                label="Offer Price"
+                name="offer_price"
+                rules={[{ required: true, message: 'Please enter offer price' }]}
+              >
+                <InputNumber
+                  placeholder="450"
+                  style={{ width: '100%' }}
+                  min={0}
+                  precision={2}
+                  prefix="₹"
+                />
+              </Form.Item>
+            </Col>
+          </Row>
 
-              <Separator />
+          <Divider><strong>📊 Stock & Ratings</strong></Divider>
+          <Row gutter={16}>
+            <Col span={8}>
+              <Form.Item label="Stock Quantity" name="stock_quantity">
+                <InputNumber placeholder="0" style={{ width: '100%' }} min={0} />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item label="Rating (0-5)" name="rating">
+                <InputNumber
+                  placeholder="4.5"
+                  style={{ width: '100%' }}
+                  min={0}
+                  max={5}
+                  step={0.1}
+                />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item label="Reviews Count" name="reviews_count">
+                <InputNumber placeholder="0" style={{ width: '100%' }} min={0} />
+              </Form.Item>
+            </Col>
+            <Col span={24}>
+              <Form.Item label="In Stock" name="in_stock" valuePropName="checked">
+                <Switch checkedChildren="Yes" unCheckedChildren="No" />
+              </Form.Item>
+            </Col>
+          </Row>
 
-              {formData.actual_price > 0 && (
-                <Text fontSize="sm" color="green.600" mt={2}>
-                  💡 Discount: {calculateDiscount(formData.actual_price, formData.offer_price)}%
-                </Text>
-              )}
+          <Divider><strong>🖼️ Book Cover Image</strong></Divider>
+          <CloudinaryImageUpload onImageSelect={setUploadedImageUrl} />
+          {uploadedImageUrl && (
+            <Alert
+              message="Image uploaded successfully"
+              description={uploadedImageUrl.substring(0, 60) + '...'}
+              type="success"
+              style={{ marginTop: 16 }}
+              showIcon
+            />
+          )}
 
-              <Separator />
+          <Divider><strong>🎓 Course Mapping</strong></Divider>
+          <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
+            Map this book to academic courses, semesters, and specify if it's required or recommended.
+          </Text>
+          {courseMapping.map((mapping, index) => (
+            <Card key={index} size="small" style={{ marginBottom: 16 }}>
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Form.Item label="Course">
+                    <Select
+                      value={mapping.course_id}
+                      onChange={(courseId) => {
+                        const newMappings = [...courseMapping];
+                        newMappings[index].course_id = courseId;
+                        const courseSems = semesters.filter(s => s.course_id === courseId);
+                        if (courseSems.length > 0) {
+                          newMappings[index].semester_id = courseSems[0].id;
+                        }
+                        setCourseMapping(newMappings);
+                      }}
+                    >
+                      {courses.map(course => (
+                        <Option key={course.id} value={course.id}>
+                          {course.name}
+                        </Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item label="Semester">
+                    <Select
+                      value={mapping.semester_id}
+                      onChange={(semesterId) => {
+                        const newMappings = [...courseMapping];
+                        newMappings[index].semester_id = semesterId;
+                        setCourseMapping(newMappings);
+                      }}
+                    >
+                      {getSemestersForCourse(mapping.course_id).map(semester => (
+                        <Option key={semester.id} value={semester.id}>
+                          {semester.description || `Semester ${semester.semester_number}`}
+                        </Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                </Col>
+                <Col span={24}>
+                  <Space>
+                    <Checkbox
+                      checked={mapping.is_required}
+                      onChange={(e) => {
+                        const newMappings = [...courseMapping];
+                        newMappings[index].is_required = e.target.checked;
+                        setCourseMapping(newMappings);
+                      }}
+                    >
+                      Required
+                    </Checkbox>
+                    <Checkbox
+                      checked={mapping.is_recommended}
+                      onChange={(e) => {
+                        const newMappings = [...courseMapping];
+                        newMappings[index].is_recommended = e.target.checked;
+                        setCourseMapping(newMappings);
+                      }}
+                    >
+                      Recommended
+                    </Checkbox>
+                    {courseMapping.length > 1 && (
+                      <Button
+                        size="small"
+                        danger
+                        onClick={() => setCourseMapping(prev => prev.filter((_, i) => i !== index))}
+                      >
+                        Remove
+                      </Button>
+                    )}
+                  </Space>
+                </Col>
+              </Row>
+            </Card>
+          ))}
+          <Button
+            type="dashed"
+            icon={<PlusOutlined />}
+            onClick={() => {
+              const defaultMapping = getDefaultCourseMapping();
+              if (defaultMapping.length > 0) {
+                setCourseMapping(prev => [...prev, defaultMapping[0]]);
+              }
+            }}
+            block
+          >
+            Add Another Course Mapping
+          </Button>
 
-              {/* Course Mapping */}
-              <Box>
-                <Heading size="sm" mb={4} color="orange.600">
-                  🎓 Course Mapping
-                </Heading>
-                <Text fontSize="sm" color="gray.600" mb={4}>
-                  Map this book to academic courses, semesters, and specify if it's required or recommended.
-                </Text>
-
-                {courseMapping.map((mapping, index) => (
-                  <Box key={index} mb={4} p={4} borderWidth={1} borderRadius="md" borderColor="gray.200">
-                    <Stack direction="row" gap={4} mb={3}>
-                      <CustomFormControl flex={1}>
-                        <CustomFormLabel>Course</CustomFormLabel>
-                        <select
-                          value={mapping.course_id}
-                          onChange={(e) => {
-                            const newCourseId = parseInt(e.target.value);
-                            const newMappings = [...courseMapping];
-                            newMappings[index].course_id = newCourseId;
-                            // Auto-select first semester of the new course
-                            const courseSems = semesters.filter(s => s.course_id === newCourseId);
-                            if (courseSems.length > 0) {
-                              newMappings[index].semester_id = courseSems[0].id;
-                            }
-                            setCourseMapping(newMappings);
-                          }}
-                          style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e0', fontSize: '16px' }}
-                        >
-                          {courses.map(course => (
-                            <option key={course.id} value={course.id}>{course.name}</option>
-                          ))}
-                        </select>
-                      </CustomFormControl>
-
-                      <CustomFormControl flex={1}>
-                        <CustomFormLabel>Semester</CustomFormLabel>
-                        <select
-                          value={mapping.semester_id}
-                          onChange={(e) => {
-                            const newMappings = [...courseMapping];
-                            newMappings[index].semester_id = parseInt(e.target.value);
-                            setCourseMapping(newMappings);
-                          }}
-                          style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e0', fontSize: '16px' }}
-                        >
-                          {getSemestersForCourse(mapping.course_id).map(semester => (
-                            <option key={semester.id} value={semester.id}>
-                              {semester.description || `Semester ${semester.semester_number}`}
-                            </option>
-                          ))}
-                        </select>
-                      </CustomFormControl>
-                    </Stack>
-
-                    <Stack direction="row" gap={4}>
-                      <CustomFormControl>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <input
-                            type="checkbox"
-                            checked={mapping.is_required}
-                            onChange={(e) => {
-                              const newMappings = [...courseMapping];
-                              newMappings[index].is_required = e.target.checked;
-                              setCourseMapping(newMappings);
-                            }}
-                          />
-                          <span>Required</span>
-                        </label>
-                      </CustomFormControl>
-
-                      <CustomFormControl>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <input
-                            type="checkbox"
-                            checked={mapping.is_recommended}
-                            onChange={(e) => {
-                              const newMappings = [...courseMapping];
-                              newMappings[index].is_recommended = e.target.checked;
-                              setCourseMapping(newMappings);
-                            }}
-                          />
-                          <span>Recommended</span>
-                        </label>
-                      </CustomFormControl>
-
-                      {courseMapping.length > 1 && (
-                        <Button
-                          size="sm"
-                          colorScheme="red"
-                          variant="outline"
-                          onClick={() => setCourseMapping(prev => prev.filter((_, i) => i !== index))}
-                        >
-                          Remove
-                        </Button>
-                      )}
-                    </Stack>
-                  </Box>
-                ))}
-
-                <Button
-                  size="sm"
-                  colorScheme="blue"
-                  variant="outline"
-                  onClick={() => {
-                    const defaultMapping = getDefaultCourseMapping();
-                    if (defaultMapping.length > 0) {
-                      setCourseMapping(prev => [...prev, defaultMapping[0]]);
-                    }
-                  }}
-                >
-                  ➕ Add Another Course Mapping
-                </Button>
-              </Box>
-
-              <Separator />
-
-              {/* Action Buttons */}
-              <Stack direction="row" gap={4} justify="flex-end" pt={4}>
-                <Button variant="outline" onClick={handleCancel}>Cancel</Button>
-                <Button colorScheme={isEditing ? 'blue' : 'green'} onClick={isEditing ? handleUpdate : handleCreate} disabled={isLoading}>
-                  {isEditing ? '💾 Update Book' : '➕ Create Book'}
-                </Button>
-              </Stack>
-            </Stack>
-          </Box>
-        )}
-      </MotionBox>
-    </Container>
+          <Divider />
+          <Form.Item>
+            <Space style={{ float: 'right' }}>
+              <Button onClick={handleCancel}>Cancel</Button>
+              <Button type="primary" htmlType="submit" loading={isLoading}>
+                {editingId ? 'Update Book' : 'Create Book'}
+              </Button>
+            </Space>
+          </Form.Item>
+        </Form>
+      </Modal>
+    </div>
   );
 }
