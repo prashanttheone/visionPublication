@@ -177,7 +177,7 @@ export default function BookDetailPage() {
                   style={{
                     width: '100%',
                     height: '100%',
-                    objectFit: 'fill',
+                    objectFit: 'contain',
                   }}
                 />
                 {calculateDiscount(book.actual_price, book.offer_price) > 0 && (
@@ -414,9 +414,9 @@ export default function BookDetailPage() {
                         src={relatedBook.image_url || 'https://via.placeholder.com/500x700?text=No+Image'}
                         alt={relatedBook.name}
                         style={{
-                          width: '100%',
+                          width: '90%',
                           height: '100%',
-                          objectFit: 'cover',
+                          objectFit: 'contain',
                         }}
                       />
                     </Box>

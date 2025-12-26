@@ -587,7 +587,7 @@ export default function Book() {
                           style={{
                             width: '100%',
                             height: '100%',
-                            objectFit: '-moz-initial',
+                            objectFit: 'contain',
                             transition: 'transform 0.4s ease',
                           }}
                         />
