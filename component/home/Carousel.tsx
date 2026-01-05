@@ -18,54 +18,6 @@ interface CarouselItem {
   is_active: boolean;
 }
 
-const carouselItems: CarouselItem[] = [
-  {
-    id: 1,
-    title: 'Quality Education',
-    description: 'Publishing innovative textbooks that shape the future of healthcare education',
-    image_url: 'https://images.unsplash.com/photo-1576091160550-112173f7f869?w=1200&h=600&fit=crop',
-    link_url: '/books',
-    display_order: 1,
-    is_active: true,
-  },
-  {
-    id: 2,
-    title: 'Expert Insights',
-    description: 'Curated content from leading healthcare professionals and researchers',
-    image_url: 'https://images.unsplash.com/photo-1491841573634-28fb1df32293?w=1200&h=600&fit=crop',
-    link_url: '/about',
-    display_order: 2,
-    is_active: true,
-  },
-  {
-    id: 3,
-    title: 'Digital Innovation',
-    description: 'Modern publishing solutions for the digital age of learning',
-    image_url: 'https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=1200&h=600&fit=crop',
-    link_url: '/resources',
-    display_order: 3,
-    is_active: true,
-  },
-  {
-    id: 4,
-    title: 'Global Reach',
-    description: 'Serving healthcare professionals and students worldwide',
-    image_url: 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=1200&h=600&fit=crop',
-    link_url: '/about',
-    display_order: 4,
-    is_active: true,
-  },
-  {
-    id: 5,
-    title: 'Knowledge Hub',
-    description: 'Comprehensive resources for continuous learning and development',
-    image_url: 'https://images.unsplash.com/photo-1516321318423-f06f70d504f0?w=1200&h=600&fit=crop',
-    link_url: '/resources',
-    display_order: 5,
-    is_active: true,
-  },
-];
-
 export default function Carousel() {
   const [carouselItems, setCarouselItems] = useState<CarouselItem[]>([]);
   const [current, setCurrent] = useState(0);
@@ -241,11 +193,12 @@ export default function Carousel() {
                     {/* Background Image */}
                     <Box
                       backgroundImage={`url(${item.image_url})`}
-                      backgroundSize="cover"
+                      backgroundSize="100% 100%"
                       backgroundPosition="center"
                       width="100%"
                       height="100%"
                       position="absolute"
+                      backgroundRepeat="no-repeat"
                     />
 
                     {/* Overlay Gradient */}

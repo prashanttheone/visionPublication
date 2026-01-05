@@ -104,9 +104,9 @@ export default function Navbar({ onSearch }: NavbarProps) {
                 initial="hidden"
                 animate="visible"
                 variants={containerVariants}
-                bg="linear-gradient(135deg, #0f172a 0%, #1e293b 100%)"
+                bg="linear-gradient(135deg, #e7e7e7ff 0%, #c3c7ceff 100%)"
                 borderBottom="2px solid"
-                borderColor="rgba(100, 181, 246, 0.3)"
+                borderColor="rgba(151, 168, 181, 0.3)"
                 backdropFilter="blur(10px)"
                 position="sticky"
                 top="0"

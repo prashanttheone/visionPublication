@@ -1,11 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Box, Text } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
 import { HiMegaphone, HiSparkles } from 'react-icons/hi2';
-
-const MotionBox = motion.create(Box);
 
 interface Announcement {
   id: number;
@@ -45,128 +42,71 @@ export default function AnnouncementBar() {
 
   const getIcon = (iconType?: string) => {
     if (iconType === 'megaphone') {
-      return <HiMegaphone size={16} />;
+      return <HiMegaphone className="w-4 h-4" />;
     } else if (iconType === 'sparkles') {
-      return <HiSparkles size={16} />;
+      return <HiSparkles className="w-4 h-4" />;
     }
     return null;
   };
 
-  if (!isMounted) {
-    return (
-      <Box
-        bg="linear-gradient(135deg, #FF8C00 0%, #FFA500 100%)"
-        py="10px"
-        borderBottom="2px solid"
-        borderColor="rgba(255, 255, 255, 0.3)"
-        zIndex={100}
-      >
-        <Box display="flex" gap="60px" color="white" px="20px">
-          {announcements.slice(0, 1).map((announcement) => (
-            <Box key={announcement.id} display="flex" alignItems="center" gap="8px">
-              {getIcon(announcement.icon)}
-              <Text fontSize={{ base: '13px', md: '14px' }} fontWeight="600" letterSpacing="0.3px">
-                {announcement.text}
-              </Text>
-            </Box>
-          ))}
-        </Box>
-      </Box>
-    );
-  }
-
+  // Ensure server and client render the same basic structure
   return (
-    <Box
-      bg="linear-gradient(135deg, #FF8C00 0%, #FFA500 100%)"
-      position="relative"
-      overflow="hidden"
-      py="10px"
-      borderBottom="2px solid"
-      borderColor="rgba(255, 255, 255, 0.3)"
-      zIndex={100}
-    >
+    <div className="relative overflow-hidden bg-gradient-to-r from-orange-500 to-orange-400 py-2.5 border-b-2 border-white/30 z-[100]">
       {/* Animated Background Pattern */}
-      <Box
-        position="absolute"
-        inset={0}
-        opacity={0.1}
-        background="repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255, 255, 255, 0.1) 10px, rgba(255, 255, 255, 0.1) 20px)"
-        pointerEvents="none"
+      <div 
+        className="absolute inset-0 opacity-10 pointer-events-none"
+        style={{
+          background: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255, 255, 255, 0.1) 10px, rgba(255, 255, 255, 0.1) 20px)'
+        }}
       />
 
       {/* Marquee Container */}
-      <Box position="relative" overflow="hidden">
-        <MotionBox
-          display="flex"
-          gap="60px"
-          animate={{
-            x: [0, -1000],
-          }}
-          transition={{
-            x: {
-              repeat: Infinity,
-              repeatType: 'loop',
-              duration: 30,
-              ease: 'linear',
-            },
-          }}
-          whiteSpace="nowrap"
-        >
-          {/* Render announcements twice for seamless loop */}
-          {[...announcements, ...announcements].map((announcement, index) => (
-            <Box
-              key={`${announcement.id}-${index}`}
-              display="flex"
-              alignItems="center"
-              gap="8px"
-              color="white"
-            >
-              {/* Icon */}
-              {getIcon(announcement.icon)}
-
-              {/* Text */}
-              <Text
-                fontSize={{ base: '13px', md: '14px' }}
-                fontWeight="600"
-                letterSpacing="0.3px"
+      <div className="relative overflow-hidden">
+        {isMounted ? (
+          <motion.div
+            className="flex gap-[60px] whitespace-nowrap"
+            animate={{
+              x: [0, -1000],
+            }}
+            transition={{
+              x: {
+                repeat: Infinity,
+                repeatType: 'loop',
+                duration: 30,
+                ease: 'linear',
+              },
+            }}
+          >
+            {/* Render announcements twice for seamless loop */}
+            {[...announcements, ...announcements].map((announcement, index) => (
+              <div
+                key={`${announcement.id}-${index}`}
+                className="flex items-center gap-2 text-white"
               >
-                {announcement.text}
-              </Text>
-
-              {/* Separator */}
-              <Box
-                w="6px"
-                h="6px"
-                borderRadius="full"
-                bg="rgba(255, 255, 255, 0.5)"
-                ml="52px"
-              />
-            </Box>
-          ))}
-        </MotionBox>
-      </Box>
+                {getIcon(announcement.icon)}
+                <span className="text-[13px] md:text-sm font-semibold tracking-wide">
+                  {announcement.text}
+                </span>
+                {/* Separator */}
+                <div className="w-1.5 h-1.5 rounded-full bg-white/50 ml-[52px]" />
+              </div>
+            ))}
+          </motion.div>
+        ) : (
+          <div className="flex gap-[60px] whitespace-nowrap opacity-0">
+             {/* Placeholder for server render to maintain height/structure */}
+             <div className="flex items-center gap-2 text-white">
+                <span className="text-[13px] md:text-sm font-semibold tracking-wide">
+                  {announcements[0].text}
+                </span>
+             </div>
+          </div>
+        )}
+      </div>
 
       {/* Gradient Fade on Edges */}
-      <Box
-        position="absolute"
-        left={0}
-        top={0}
-        bottom={0}
-        w="40px"
-        bgGradient="linear(to-r, rgba(255, 140, 0, 1), transparent)"
-        pointerEvents="none"
-        zIndex={1}
-      />
-      <Box
-        position="absolute"
-        right={0}
-        top={0}
-        bottom={0}
-        w="40px"
-        bgGradient="linear(to-l, rgba(255, 140, 0, 1), transparent)"
-        pointerEvents="none"
-        zIndex={1}
-      />
-    </Box>
+      <div className="absolute left-0 top-0 bottom-0 w-10 bg-gradient-to-r from-orange-600 to-transparent pointer-events-none z-[1]" />
+      <div className="absolute right-0 top-0 bottom-0 w-10 bg-gradient-to-l from-orange-600 to-transparent pointer-events-none z-[1]" />
+    </div>
   );
 }
