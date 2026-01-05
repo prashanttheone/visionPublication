@@ -11,8 +11,7 @@ import { useRouter } from "next/navigation";
 const { Title, Paragraph, Text } = Typography;
 
 export default function Hero() {
-
-const router = useRouter();
+  const router = useRouter();
   return (
     <section className="relative bg-indigo overflow-hidden px-[20px]">
       <div className="max-w-7xl mx-auto">

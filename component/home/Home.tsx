@@ -2,7 +2,6 @@
 
 import Carousel from './Carousel';
 import Hero from './Hero';
-
 export default function Home() {
 
   return (
@@ -12,6 +11,8 @@ export default function Home() {
       
       {/* Carousel Section */}
       <Carousel />
+
+
 
     </>
   );

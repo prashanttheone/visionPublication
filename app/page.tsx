@@ -1,6 +1,7 @@
 import DifferentiatorSection from '@/component/about/DifferentiatorSection';
 import StatisticsSection from '@/component/about/StatisticsSection';
 import TeamSection from '@/component/about/TeamSection';
+import Gallery from '@/component/gallery/Gallery';
 import Home from '@/component/home/Home';
 import Review from '@/component/review/Review';
 import Youtube from '@/component/youtube/Youtube';
@@ -14,6 +15,8 @@ export default function Page() {
       
           {/* <DifferentiatorSection /> */}
                <StatisticsSection/>
+                     {/* Gallery Section */}
+      <Gallery />
             <Youtube />
          <TeamSection />
         <Review/>
