@@ -10,6 +10,7 @@ import {
   VideoCameraOutlined,
   FormOutlined,
   CloudOutlined,
+  ShoppingOutlined,
 } from '@ant-design/icons';
 
 interface AdminStats {
@@ -20,6 +21,7 @@ interface AdminStats {
   totalYoutubeVideos: number;
   totalEresources: number;
   totalHomeSliders: number;
+  totalOrders: number;
 }
 
 export default function Page() {
@@ -31,6 +33,7 @@ export default function Page() {
     totalYoutubeVideos: 0,
     totalEresources: 0,
     totalHomeSliders: 0,
+    totalOrders: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
 
@@ -39,7 +42,7 @@ export default function Page() {
       try {
         setIsLoading(true);
 
-        const [booksRes, coursesRes, slidersRes, videosRes, eresourcesRes, homeSlidersRes] =
+        const [booksRes, coursesRes, slidersRes, videosRes, eresourcesRes, homeSlidersRes, ordersRes] =
           await Promise.all([
             authUtils.fetchWithAuth('/api/book'),
             authUtils.fetchWithAuth('/api/course'),
@@ -47,9 +50,10 @@ export default function Page() {
             authUtils.fetchWithAuth('/api/youtube'),
             authUtils.fetchWithAuth('/api/eresource'),
             authUtils.fetchWithAuth('/api/home/slider'),
+            authUtils.fetchWithAuth('/api/orders'),
           ]);
 
-        const [booksData, coursesData, slidersData, videosData, eresourcesData, homeSlidersData] =
+        const [booksData, coursesData, slidersData, videosData, eresourcesData, homeSlidersData, ordersData] =
           await Promise.all([
             booksRes.json(),
             coursesRes.json(),
@@ -57,6 +61,7 @@ export default function Page() {
             videosRes.json(),
             eresourcesRes.json(),
             homeSlidersRes.json(),
+            ordersRes.json(),
           ]);
 
         setStats({
@@ -67,6 +72,7 @@ export default function Page() {
           totalYoutubeVideos: videosData.count || 0,
           totalEresources: eresourcesData.count || 0,
           totalHomeSliders: homeSlidersData.data?.length || 0,
+          totalOrders: Array.isArray(ordersData) ? ordersData.length : 0,
         });
       } catch (err) {
         console.error('Error fetching stats:', err);
@@ -127,6 +133,16 @@ export default function Page() {
               value={stats.totalYoutubeVideos}
               prefix={<VideoCameraOutlined />}
               valueStyle={{ color: '#fa8c16' }}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} lg={8}>
+          <Card>
+            <Statistic
+              title="Total Orders"
+              value={stats.totalOrders}
+              prefix={<ShoppingOutlined />}
+              valueStyle={{ color: '#eb2f96' }}
             />
           </Card>
         </Col>

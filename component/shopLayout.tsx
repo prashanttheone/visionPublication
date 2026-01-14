@@ -4,7 +4,10 @@ import { Box, Container, Input, Badge } from '@chakra-ui/react';
 import { ReactNode, useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { HiMagnifyingGlass, HiXMark, HiUser, HiShoppingCart } from 'react-icons/hi2';
+import { HiOutlineUserCircle } from 'react-icons/hi2';
 import Footer from '@/component/footer/Footer';
+import { authUtils } from '@/lib/auth';
+import { useRouter } from 'next/navigation';
 
 // Create motion components
 const MotionBox = motion.create(Box);
@@ -27,12 +30,19 @@ const navVariants = {
 };
 
 export default function ShopLayout({ children, onSearch, onFilterChange, cartCount = 0 }: ShopLayoutProps) {
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [isFocused, setIsFocused] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState('');
   const [selectedSemester, setSelectedSemester] = useState('');
   const [courses, setCourses] = useState<{ id: number; name: string }[]>([]);
   const [semesters, setSemesters] = useState<{ id: number; semester_number: number; description: string }[]>([]);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  // Check auth status on mount
+  useEffect(() => {
+    setIsLoggedIn(authUtils.isAuthenticated());
+  }, []);
 
   // Fetch courses on mount
   useEffect(() => {
@@ -320,36 +330,70 @@ export default function ShopLayout({ children, onSearch, onFilterChange, cartCou
               w={{ base: '100%', sm: 'auto' }}
               justifyContent={{ base: 'space-between', sm: 'flex-end' }}
             >
-              {/* Login Button */}
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: '8px 16px',
-                  borderRadius: '8px',
-                  border: '1px solid rgba(100, 181, 246, 0.3)',
-                  background: 'transparent',
-                  color: '#64B5F6',
-                  fontSize: '13px',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s ease',
-                }}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(100, 181, 246, 0.1)';
-                  (e.currentTarget as HTMLElement).style.borderColor = 'rgba(100, 181, 246, 0.5)';
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
-                  (e.currentTarget as HTMLElement).style.borderColor = 'rgba(100, 181, 246, 0.3)';
-                }}
-              >
-                <HiUser size={18} />
-                <Box display={{ base: 'none', sm: 'block' }}>Login</Box>
-              </motion.button>
+              {/* Login/Profile Button */}
+              {!isLoggedIn ? (
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => router.push('/login')}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '8px 16px',
+                    borderRadius: '8px',
+                    border: '1px solid rgba(100, 181, 246, 0.3)',
+                    background: 'transparent',
+                    color: '#64B5F6',
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease',
+                  }}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(100, 181, 246, 0.1)';
+                    (e.currentTarget as HTMLElement).style.borderColor = 'rgba(100, 181, 246, 0.5)';
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
+                    (e.currentTarget as HTMLElement).style.borderColor = 'rgba(100, 181, 246, 0.3)';
+                  }}
+                >
+                  <HiUser size={18} />
+                  <Box display={{ base: 'none', sm: 'block' }}>Login</Box>
+                </motion.button>
+              ) : (
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => router.push('/profile')}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '8px 16px',
+                    borderRadius: '8px',
+                    border: '1px solid rgba(100, 181, 246, 0.3)',
+                    background: 'rgba(100, 181, 246, 0.1)',
+                    color: '#64B5F6',
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease',
+                  }}
+                  onMouseEnter={(e) => {
+                    (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(100, 181, 246, 0.2)';
+                    (e.currentTarget as HTMLElement).style.borderColor = 'rgba(100, 181, 246, 0.6)';
+                  }}
+                  onMouseLeave={(e) => {
+                    (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(100, 181, 246, 0.1)';
+                    (e.currentTarget as HTMLElement).style.borderColor = 'rgba(100, 181, 246, 0.3)';
+                  }}
+                >
+                  <HiOutlineUserCircle size={20} />
+                  <Box display={{ base: 'none', sm: 'block' }}>Profile</Box>
+                </motion.button>
+              )}
 
               {/* Cart Button */}
               <motion.button

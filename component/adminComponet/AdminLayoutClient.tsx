@@ -10,6 +10,7 @@ import {
   FormOutlined,
   CloudOutlined,
   PictureOutlined,
+  ShoppingOutlined,
 } from '@ant-design/icons';
 import { useRouter, usePathname } from 'next/navigation';
 import type { MenuProps } from 'antd';
@@ -69,6 +70,11 @@ const menuItems: MenuItem[] = [
     key: '/admin/eresource',
     icon: <CloudOutlined />,
     label: 'E-Resources',
+  },
+  {
+    key: '/admin/orders',
+    icon: <ShoppingOutlined />,
+    label: 'Orders',
   },
 ];
 

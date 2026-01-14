@@ -4,7 +4,7 @@ import { Box, Container, Text, Grid, Button } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { HiMiniEye, HiMiniNewspaper, HiMiniAcademicCap, HiMiniPlayCircle, HiMiniQuestionMarkCircle, HiMiniBookOpen, HiMiniPhoto } from 'react-icons/hi2';
+import { HiMiniEye, HiMiniNewspaper, HiMiniAcademicCap, HiMiniPlayCircle, HiMiniQuestionMarkCircle, HiMiniBookOpen, HiMiniPhoto, HiMiniShoppingCart } from 'react-icons/hi2';
 
 const MotionBox = motion.create(Box);
 
@@ -16,6 +16,7 @@ interface AdminStats {
   totalYoutubeVideos: number;
   totalEresources: number;
   totalHomeSliders: number;
+  totalOrders: number;
 }
 
 const adminSections = [
@@ -104,6 +105,18 @@ const adminSections = [
       { label: 'All E-Resources', route: '/admin/eresource' },
     ],
   },
+  {
+    id: 'orders',
+    title: 'Order Management',
+    description: 'Track and manage customer orders and fulfillment',
+    icon: HiMiniShoppingCart,
+    route: '/admin/orders',
+    color: '#E91E63',
+    bgGradient: 'linear(135deg, rgba(233, 30, 99, 0.2) 0%, rgba(236, 64, 122, 0.1) 100%)',
+    subsections: [
+      { label: 'All Orders', route: '/admin/orders' },
+    ],
+  },
 ];
 
 export default function AdminHome() {
@@ -116,6 +129,7 @@ export default function AdminHome() {
     totalYoutubeVideos: 0,
     totalEresources: 0,
     totalHomeSliders: 0,
+    totalOrders: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -149,6 +163,10 @@ export default function AdminHome() {
         const homeSlidersRes = await fetch('/api/home/slider');
         const homeSlidersData = await homeSlidersRes.json();
 
+        // Fetch orders count
+        const ordersRes = await fetch('/api/orders');
+        const ordersData = await ordersRes.json();
+
         setStats({
           totalBooks: booksData.count || 0,
           totalCourses: coursesData.count || 0,
@@ -157,6 +175,7 @@ export default function AdminHome() {
           totalYoutubeVideos: videosData.count || 0,
           totalEresources: eresourcesData.count || 0,
           totalHomeSliders: homeSlidersData.data?.length || 0,
+          totalOrders: Array.isArray(ordersData) ? ordersData.length : 0,
         });
 
         setError(null);
@@ -253,6 +272,7 @@ export default function AdminHome() {
             { label: 'YouTube Videos', value: stats.totalYoutubeVideos, color: '#FF8C00' },
             { label: 'Total Blogs', value: stats.totalBlogs, color: '#9C27B0' },
             { label: 'E-Resources', value: stats.totalEresources, color: '#00BCD4' },
+            { label: 'Total Orders', value: stats.totalOrders, color: '#E91E63' },
           ].map((stat, index) => (
             <MotionBox key={index} variants={cardVariants} initial="hidden" animate="visible">
               <Box

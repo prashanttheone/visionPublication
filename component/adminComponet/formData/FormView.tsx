@@ -189,7 +189,7 @@ export default function FormView() {
                 <Title level={5} style={{ marginBottom: '4px', color: inquiry.is_read ? 'rgba(0,0,0,0.45)' : 'inherit' }}>
                   {inquiry.subject}
                 </Title>
-                <Space direction="vertical" size={0}>
+                <Space orientation="vertical" size={0}>
                   <Text type="secondary" style={{ fontSize: '12px' }}>
                     <UserOutlined /> From: <strong>{inquiry.full_name}</strong>
                   </Text>

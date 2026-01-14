@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import { HiMegaphone, HiSparkles } from 'react-icons/hi2';
 
 interface Announcement {
@@ -49,7 +48,13 @@ export default function AnnouncementBar() {
     return null;
   };
 
-  // Ensure server and client render the same basic structure
+  if (!isMounted) {
+    return (
+      <div className="relative overflow-hidden bg-gradient-to-r from-orange-500 to-orange-400 py-2.5 border-b-2 border-white/30 z-[100] h-[45px]">
+      </div>
+    );
+  }
+
   return (
     <div className="relative overflow-hidden bg-gradient-to-r from-orange-500 to-orange-400 py-2.5 border-b-2 border-white/30 z-[100]">
       {/* Animated Background Pattern */}
@@ -62,46 +67,22 @@ export default function AnnouncementBar() {
 
       {/* Marquee Container */}
       <div className="relative overflow-hidden">
-        {isMounted ? (
-          <motion.div
-            className="flex gap-[60px] whitespace-nowrap"
-            animate={{
-              x: [0, -1000],
-            }}
-            transition={{
-              x: {
-                repeat: Infinity,
-                repeatType: 'loop',
-                duration: 30,
-                ease: 'linear',
-              },
-            }}
-          >
-            {/* Render announcements twice for seamless loop */}
-            {[...announcements, ...announcements].map((announcement, index) => (
-              <div
-                key={`${announcement.id}-${index}`}
-                className="flex items-center gap-2 text-white"
-              >
-                {getIcon(announcement.icon)}
-                <span className="text-[13px] md:text-sm font-semibold tracking-wide">
-                  {announcement.text}
-                </span>
-                {/* Separator */}
-                <div className="w-1.5 h-1.5 rounded-full bg-white/50 ml-[52px]" />
-              </div>
-            ))}
-          </motion.div>
-        ) : (
-          <div className="flex gap-[60px] whitespace-nowrap opacity-0">
-             {/* Placeholder for server render to maintain height/structure */}
-             <div className="flex items-center gap-2 text-white">
-                <span className="text-[13px] md:text-sm font-semibold tracking-wide">
-                  {announcements[0].text}
-                </span>
-             </div>
-          </div>
-        )}
+        <div className="animate-marquee flex gap-[60px] whitespace-nowrap">
+          {/* Render announcements twice for seamless loop */}
+          {[...announcements, ...announcements].map((announcement, index) => (
+            <div
+              key={`${announcement.id}-${index}`}
+              className="flex items-center gap-2 text-white"
+            >
+              {getIcon(announcement.icon)}
+              <span className="text-[13px] md:text-sm font-semibold tracking-wide">
+                {announcement.text}
+              </span>
+              {/* Separator */}
+              <div className="w-1.5 h-1.5 rounded-full bg-white/50 ml-[52px]" />
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Gradient Fade on Edges */}
