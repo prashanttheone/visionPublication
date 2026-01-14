@@ -40,9 +40,12 @@ export const authUtils = {
   // Logout user - call API and clear local data
   async logout() {
     try {
+      const token = authUtils.getToken();
       await fetch('/api/auth/logout', {
         method: 'POST',
-        credentials: 'include',
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
+        }
       });
     } catch (error) {
       console.error('Logout API error:', error);
@@ -52,6 +55,20 @@ export const authUtils = {
       // Redirect to login page
       window.location.href = '/';
     }
+  },
+
+  // Helper for authenticated fetch calls
+  async fetchWithAuth(url: string, options: RequestInit = {}) {
+    const token = authUtils.getToken();
+    const headers = {
+      ...options.headers,
+      'Authorization': token ? `Bearer ${token}` : '',
+    };
+
+    return fetch(url, {
+      ...options,
+      headers,
+    });
   },
 
   // Check if token is valid and not expired

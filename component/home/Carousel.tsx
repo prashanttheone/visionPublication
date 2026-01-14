@@ -162,7 +162,8 @@ export default function Carousel() {
         <Box
           position="relative"
           width="100%"
-          maxW="100%"
+          // remaining: 500,
+          maxW="100vw"
           height={{ base: '350px', md: '500px', lg: '600px' }}
           overflow="hidden"
           borderRadius={{ base: '0', md: '16px' }}
@@ -187,7 +188,7 @@ export default function Carousel() {
                       opacity: { duration: 0.5 },
                     }}
                     position="absolute"
-                    width="100%"
+                    width="100vw"
                     height="100%"
                   >
                     {/* Background Image */}
@@ -195,7 +196,7 @@ export default function Carousel() {
                       backgroundImage={`url(${item.image_url})`}
                       backgroundSize="100% 100%"
                       backgroundPosition="center"
-                      width="100%"
+                      width="100vw"
                       height="100%"
                       position="absolute"
                       backgroundRepeat="no-repeat"

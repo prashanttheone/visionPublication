@@ -17,6 +17,7 @@ import { motion } from 'framer-motion';
 
 // Import the custom Quill wrapper
 import QuillEditor from './QuillEditor';
+import { authUtils } from '@/lib/auth';
 import { CreateBlogPostRequest } from '@/types/blog';
 import { BLOG_CATEGORIES, calculateReadTime, generateSlug, createExcerpt } from '@/types/blog';
 
@@ -138,7 +139,7 @@ export default function BlogPostEditor() {
 
     setIsLoading(true);
     try {
-      const response = await fetch('/api/blog/create', {
+      const response = await authUtils.fetchWithAuth('/api/blog/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -184,7 +185,7 @@ export default function BlogPostEditor() {
 
     setIsLoading(true);
     try {
-      const response = await fetch('/api/blog/create', {
+      const response = await authUtils.fetchWithAuth('/api/blog/create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

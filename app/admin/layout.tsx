@@ -1,35 +1,43 @@
-import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
-import jwt from 'jsonwebtoken';
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { authUtils } from '@/lib/auth';
 import AdminLayoutClient from '@/component/adminComponet/AdminLayoutClient';
 
-export default async function AdminLayout({
+export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  // Verify JWT token on the server side (Node.js runtime)
-  try {
-    const cookieStore = await cookies();
-    const authToken = cookieStore.get('authToken')?.value;
+  const router = useRouter();
+  const [isVerified, setIsVerified] = useState(false);
 
-    if (!authToken) {
-      redirect('/login');
+  useEffect(() => {
+    // Check authentication on mount
+    if (!authUtils.isAuthenticated()) {
+      router.push('/login');
+    } else if (!authUtils.isAdmin()) {
+      router.push('/');
+    } else {
+      setIsVerified(true);
     }
+  }, [router]);
 
-    // Verify JWT with signature
-    const secret = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
-    const decoded = jwt.verify(authToken, secret) as any;
-
-    // Check if user has admin role
-    if (decoded.role !== 'admin') {
-      redirect('/');
-    }
-
-    // Token is valid and user is admin - render admin pages with Ant Design layout
-    return <AdminLayoutClient>{children}</AdminLayoutClient>;
-  } catch (error) {
-    console.error('Admin access denied:', error);
-    redirect('/login');
+  // Don't render children until verification is complete to prevent flashing
+  if (!isVerified) {
+    return (
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '100vh',
+        fontSize: '1.2rem'
+      }}>
+        Verifying access...
+      </div>
+    );
   }
+
+  return <AdminLayoutClient>{children}</AdminLayoutClient>;
 }

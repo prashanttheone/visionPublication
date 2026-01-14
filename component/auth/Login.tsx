@@ -60,17 +60,17 @@ export default function Login() {
       // Notify AuthProvider
       window.dispatchEvent(new Event('auth-update'));
 
-      // Small delay to ensure cookies are set before redirect
+      // Small delay to ensure state is updated
       setTimeout(() => {
         // Check user role and redirect accordingly
         if (data.user.role === 'admin') {
-          window.location.href = '/admin/dashboard';
+          router.push('/admin/dashboard');
         } else if (returnTo) {
-          window.location.href = returnTo;
+          router.push(returnTo);
         } else {
-          window.location.href = '/';
+          router.push('/');
         }
-      }, 300);
+      }, 100);
     } catch (err: any) {
       setError(err.message || 'An unexpected error occurred');
     } finally {

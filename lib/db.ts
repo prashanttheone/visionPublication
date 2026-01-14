@@ -6,9 +6,9 @@ if (!process.env.DATABASE_URL) {
 
 const dbConfig = {
   connectionString: process.env.DATABASE_URL,
-  max: 10,
+  max: 20, // Increased from 10
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
+  connectionTimeoutMillis: 10000, // Increased from 2000 to 10s to handle DNS/network lag
 };
 
 // Create a singleton pool instance
@@ -18,7 +18,6 @@ let pool: Pool | null = null;
  * Get the database connection pool
  */
 export function getPool(): Pool {
-    console.log('Database URL:', process.env.DATABASE_URL);
   if (!pool) {
     pool = new Pool(dbConfig);
     
@@ -33,11 +32,12 @@ export function getPool(): Pool {
 }
 
 /**
- * Execute a query with automatic connection handling
+ * Execute a query with automatic connection handling and retry logic for DNS issues
  */
 export async function query<T extends QueryResultRow = any>(
   text: string,
-  params?: any[]
+  params?: any[],
+  retryCount = 0
 ): Promise<QueryResult<T>> {
   const pool = getPool();
   const start = Date.now();
@@ -56,11 +56,20 @@ export async function query<T extends QueryResultRow = any>(
     }
     
     return result;
-  } catch (error) {
+  } catch (error: any) {
+    // Retry on temporary DNS resolution failures (EAI_AGAIN)
+    if (error.code === 'EAI_AGAIN' && retryCount < 2) {
+      console.warn(`DNS resolution failed (EAI_AGAIN). Retrying... (${retryCount + 1}/2)`);
+      // Wait a bit before retrying
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      return query(text, params, retryCount + 1);
+    }
+
     console.error('Database query error:', {
       text,
       params,
       error: error instanceof Error ? error.message : error,
+      code: error.code
     });
     throw error;
   }

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Card, Row, Col, Statistic, Spin } from 'antd';
+import { authUtils } from '@/lib/auth';
 import {
   BookOutlined,
   ReadOutlined,
@@ -40,12 +41,12 @@ export default function Page() {
 
         const [booksRes, coursesRes, slidersRes, videosRes, eresourcesRes, homeSlidersRes] =
           await Promise.all([
-            fetch('/api/book'),
-            fetch('/api/course'),
-            fetch('/api/book/slider'),
-            fetch('/api/youtube'),
-            fetch('/api/eresource'),
-            fetch('/api/home/slider'),
+            authUtils.fetchWithAuth('/api/book'),
+            authUtils.fetchWithAuth('/api/course'),
+            authUtils.fetchWithAuth('/api/book/slider'),
+            authUtils.fetchWithAuth('/api/youtube'),
+            authUtils.fetchWithAuth('/api/eresource'),
+            authUtils.fetchWithAuth('/api/home/slider'),
           ]);
 
         const [booksData, coursesData, slidersData, videosData, eresourcesData, homeSlidersData] =

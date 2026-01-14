@@ -3,6 +3,7 @@
 export const dynamic = 'force-dynamic';
 
 import { useState, useEffect } from 'react';
+import { authUtils } from '@/lib/auth';
 import { Box, Container, Heading, Table, Badge, Text, Spinner } from '@chakra-ui/react';
 // Assuming layout exists, or we might need to wrap it. Admin pages usually have sidebar.
 // Checking admin/layout.tsx might be good but let's assume it provides the shell.
@@ -21,7 +22,7 @@ export default function AdminOrdersPage() {
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        fetch('/api/orders')
+        authUtils.fetchWithAuth('/api/orders')
             .then(res => res.json())
             .then(data => {
                 setOrders(data);

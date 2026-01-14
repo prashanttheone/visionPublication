@@ -75,15 +75,6 @@ export async function POST(request: NextRequest) {
       { status: 200 }
     );
 
-    // Set HTTP-only cookie for authentication
-    response.cookies.set('authToken', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 24 * 60 * 60, // 24 hours in seconds
-      path: '/',
-    });
-
     return response;
   } catch (error) {
     console.error('Login error:', error);

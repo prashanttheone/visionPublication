@@ -10,15 +10,6 @@ export async function POST(request: NextRequest) {
       { status: 200 }
     );
 
-    // Clear the authentication cookie
-    response.cookies.set('authToken', '', {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 0, // This deletes the cookie
-      path: '/',
-    });
-
     return response;
   } catch (error) {
     console.error('Logout error:', error);

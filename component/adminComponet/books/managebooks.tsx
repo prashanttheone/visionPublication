@@ -28,6 +28,7 @@ import {
   DeleteOutlined,
   SearchOutlined,
 } from '@ant-design/icons';
+import { authUtils } from '@/lib/auth';
 import CloudinaryImageUpload from '@/component/imageUpload/CloudinaryImageUpload';
 
 const { Title, Text } = Typography;
@@ -100,7 +101,7 @@ export default function ManageBooks() {
 
   const checkHealth = useCallback(async (): Promise<boolean> => {
     try {
-      const response = await fetch('/api/health');
+      const response = await authUtils.fetchWithAuth('/api/health');
       const result = await response.json();
       if (result.success) {
         setConnectionError(null);
@@ -117,7 +118,7 @@ export default function ManageBooks() {
 
   const fetchCoursesAndSemesters = useCallback(async () => {
     try {
-      const response = await fetch('/api/course?includeSemesters=true');
+      const response = await authUtils.fetchWithAuth('/api/course?includeSemesters=true');
       const result = await response.json();
       if (result.success) {
         setCourses(result.data || []);
@@ -144,7 +145,7 @@ export default function ManageBooks() {
       try {
         await fetchCoursesAndSemesters();
         // Fetch books with course mappings
-        const booksResponse = await fetch('/api/book?includeMappings=true');
+        const booksResponse = await authUtils.fetchWithAuth('/api/book?includeMappings=true');
         const booksResult = await booksResponse.json();
         if (booksResult.success) {
           // Ensure rating is a number
@@ -256,7 +257,7 @@ export default function ManageBooks() {
 
   const refetchBooks = useCallback(async () => {
     try {
-      const booksResponse = await fetch('/api/book?includeMappings=true');
+      const booksResponse = await authUtils.fetchWithAuth('/api/book?includeMappings=true');
       const booksResult = await booksResponse.json();
       if (booksResult.success) {
         // Ensure rating is a number
@@ -288,7 +289,7 @@ export default function ManageBooks() {
       const url = editingId ? `/api/book/${editingId}` : '/api/book';
       const method = editingId ? 'PUT' : 'POST';
       
-      const response = await fetch(url, {
+      const response = await authUtils.fetchWithAuth(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ book: bookData, courseMappings: courseMapping })
@@ -323,7 +324,7 @@ export default function ManageBooks() {
       onOk: async () => {
         setIsLoading(true);
         try {
-          const response = await fetch(`/api/book/${id}`, { method: 'DELETE' });
+          const response = await authUtils.fetchWithAuth(`/api/book/${id}`, { method: 'DELETE' });
           const result = await response.json();
           if (result.success) {
             message.success('Book deleted successfully!');
