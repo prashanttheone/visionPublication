@@ -8,7 +8,7 @@ import { getAuthUser } from '@/lib/auth-server';
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getAuthUser(request);
@@ -16,12 +16,12 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id } = params;
+    const { id } = await params;
 
     // 1. Fetch Order with User and Address Info
     const orderResult = await query(`
-      SELECT o.*, u.full_name as customer_name, u.email as customer_email, u.phone as customer_phone,
-             ua.full_name as shipping_name, ua.contact_no, ua.address_line_1, ua.address_line_2,
+      SELECT o.*, u.full_name as user_name, u.email as customer_email, u.phone as customer_phone,
+             ua.full_name as shipping_name, ua.contact_no as shipping_phone, ua.address_line_1, ua.address_line_2,
              ua.locality, ua.city, ua.state, ua.pincode, ua.country
       FROM orders o
       JOIN users u ON o.user_id = u.id
@@ -73,7 +73,7 @@ export async function GET(
  */
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const user = await getAuthUser(request);
@@ -81,7 +81,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { id } = params;
+    const { id } = await params;
     const body = await request.json();
     const { 
       order_status, 

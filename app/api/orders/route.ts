@@ -14,7 +14,9 @@ export async function GET(request: NextRequest) {
     }
 
     let sql = `
-      SELECT o.*, u.full_name, u.email, ua.city, ua.state, ua.pincode
+      SELECT o.*, u.full_name as user_name, u.email, 
+             ua.full_name as shipping_name, ua.contact_no as shipping_phone, 
+             ua.address_line_1, ua.locality, ua.city, ua.state, ua.pincode, ua.country
       FROM orders o
       JOIN users u ON o.user_id = u.id
       LEFT JOIN user_addresses ua ON o.address_id = ua.id
@@ -70,21 +72,27 @@ export async function POST(request: NextRequest) {
 
     // 0. If shippingAddress is provided, save it first
     if (shippingAddress && (!address_id || address_id === 1)) {
+      if (shippingAddress.saveAsDefault) {
+        // Unset previous default
+        await query(`UPDATE user_addresses SET is_default = FALSE WHERE user_id = $1`, [user.id]);
+      }
+
       const addrResult = await query(`
         INSERT INTO user_addresses (
-          user_id, full_name, contact_no, address_line_1, locality, city, state, pincode, country
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+          user_id, full_name, contact_no, address_line_1, locality, city, state, pincode, country, is_default
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
         RETURNING id
       `, [
         user.id,
         shippingAddress.fullName,
-        shippingAddress.phone || '0000000000', // Default if missing
+        shippingAddress.phone || '0000000000',
         shippingAddress.address,
         shippingAddress.locality || shippingAddress.city,
         shippingAddress.city,
         shippingAddress.state,
         shippingAddress.zipCode,
-        shippingAddress.country || 'India'
+        shippingAddress.country || 'India',
+        shippingAddress.saveAsDefault || false
       ]);
       finalAddressId = addrResult.rows[0].id;
     }
