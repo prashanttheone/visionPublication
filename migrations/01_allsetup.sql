@@ -1,6 +1,6 @@
 -- 1-COURSES TABLE
          -- Stores BSC Nursing, GNM, Post Basic, Pharmacy
-CREATE TABLE courses (
+CREATE TABLE IF NOT EXISTS courses (
     id SERIAL PRIMARY KEY,
     name VARCHAR(100) UNIQUE NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -10,7 +10,7 @@ CREATE TABLE courses (
 -- 2 SEMESTERS TABLE
 -- Each course can have multiple semesters/years.
 
-CREATE TABLE semesters (
+CREATE TABLE IF NOT EXISTS semesters (
     id SERIAL PRIMARY KEY,
     course_id INT NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
     semester_number INT NOT NULL,
@@ -21,7 +21,7 @@ CREATE TABLE semesters (
 
 -- 3  BOOKS TABLE
  -- Main book details
-CREATE TABLE books (
+CREATE TABLE IF NOT EXISTS books (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
     author VARCHAR(255),
@@ -38,7 +38,7 @@ CREATE TABLE books (
 
 -- 4. BOOK–COURSE–SEMESTER MAPPING
 -- This allows same book to belong to multiple courses & semesters
-CREATE TABLE book_course_map (
+CREATE TABLE IF NOT EXISTS book_course_map (
     id SERIAL PRIMARY KEY,
 
     book_id INT NOT NULL REFERENCES books(id) ON DELETE CASCADE,
@@ -54,7 +54,7 @@ CREATE TABLE book_course_map (
 -- 1️ USERS (AUTH + CORE IDENTITY)
 -- This is your main user table used for login & ownership.
 
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
     full_name VARCHAR(150) NOT NULL,
@@ -76,7 +76,7 @@ CREATE TABLE users (
 );
 
 --2 STANDARD user_addresses TABLE
-CREATE TABLE user_addresses (
+CREATE TABLE IF NOT EXISTS user_addresses (
     id SERIAL PRIMARY KEY,
 
     user_id UUID NOT NULL
@@ -111,7 +111,7 @@ CREATE TABLE user_addresses (
 );
 
 -- orders
-CREATE TABLE orders (
+CREATE TABLE IF NOT EXISTS orders (
     id SERIAL PRIMARY KEY,
 
     user_id UUID NOT NULL
@@ -155,7 +155,7 @@ CREATE TABLE orders (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 -- ORDER ITEMS (LIST OF BOOKS IN EACH ORDER)
-CREATE TABLE order_items (
+CREATE TABLE IF NOT EXISTS order_items (
     id SERIAL PRIMARY KEY,
 
     order_id INT NOT NULL

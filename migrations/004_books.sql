@@ -65,10 +65,23 @@ CREATE TABLE IF NOT EXISTS books (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Ensure columns exist for cases where table was created by older migrations
+ALTER TABLE books ADD COLUMN IF NOT EXISTS sku VARCHAR(100) UNIQUE;
+ALTER TABLE books ADD COLUMN IF NOT EXISTS image_url VARCHAR(500);
+ALTER TABLE books ADD COLUMN IF NOT EXISTS stock_quantity INT DEFAULT 0;
+ALTER TABLE books ADD COLUMN IF NOT EXISTS in_stock BOOLEAN DEFAULT TRUE;
+ALTER TABLE books ADD COLUMN IF NOT EXISTS rating DECIMAL(3, 1) DEFAULT 0;
+ALTER TABLE books ADD COLUMN IF NOT EXISTS reviews_count INT DEFAULT 0;
+ALTER TABLE books ADD COLUMN IF NOT EXISTS weight DECIMAL(10, 2) DEFAULT 0;
+ALTER TABLE books ADD COLUMN IF NOT EXISTS length DECIMAL(10, 2) DEFAULT 0;
+ALTER TABLE books ADD COLUMN IF NOT EXISTS width DECIMAL(10, 2) DEFAULT 0;
+ALTER TABLE books ADD COLUMN IF NOT EXISTS height DECIMAL(10, 2) DEFAULT 0;
+ALTER TABLE books ADD COLUMN IF NOT EXISTS category VARCHAR(100);
+
 -- Indexes for performance
-CREATE INDEX idx_books_isbn ON books(isbn);
-CREATE INDEX idx_books_sku ON books(sku);
-CREATE INDEX idx_books_name ON books(name);
-CREATE INDEX idx_books_author ON books(author);
-CREATE INDEX idx_books_category ON books(category);
-CREATE INDEX idx_books_in_stock ON books(in_stock);
+CREATE INDEX IF NOT EXISTS idx_books_isbn ON books(isbn);
+CREATE INDEX IF NOT EXISTS idx_books_sku ON books(sku);
+CREATE INDEX IF NOT EXISTS idx_books_name ON books(name);
+CREATE INDEX IF NOT EXISTS idx_books_author ON books(author);
+CREATE INDEX IF NOT EXISTS idx_books_category ON books(category);
+CREATE INDEX IF NOT EXISTS idx_books_in_stock ON books(in_stock);

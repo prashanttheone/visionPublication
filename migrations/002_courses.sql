@@ -34,4 +34,4 @@ CREATE TABLE IF NOT EXISTS courses (
 );
 
 -- Indexes for performance
-CREATE INDEX idx_courses_name ON courses(name);
+CREATE INDEX IF NOT EXISTS idx_courses_name ON courses(name);

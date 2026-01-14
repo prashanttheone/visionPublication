@@ -57,6 +57,6 @@ CREATE TABLE IF NOT EXISTS book_sliders (
 );
 
 -- Indexes for performance
-CREATE INDEX idx_book_sliders_is_active ON book_sliders(is_active);
-CREATE INDEX idx_book_sliders_display_order ON book_sliders(display_order);
-CREATE INDEX idx_book_sliders_book_id ON book_sliders(book_id);
+CREATE INDEX IF NOT EXISTS idx_book_sliders_is_active ON book_sliders(is_active);
+CREATE INDEX IF NOT EXISTS idx_book_sliders_display_order ON book_sliders(display_order);
+CREATE INDEX IF NOT EXISTS idx_book_sliders_book_id ON book_sliders(book_id);

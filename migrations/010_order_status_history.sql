@@ -66,8 +66,11 @@ CREATE TABLE IF NOT EXISTS order_status_history (
     changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Ensure columns exist for cases where table was created by older migrations
+ALTER TABLE order_status_history ADD COLUMN IF NOT EXISTS metadata JSONB;
+
 -- Indexes for performance
-CREATE INDEX idx_order_status_history_order_id ON order_status_history(order_id);
-CREATE INDEX idx_order_status_history_status ON order_status_history(status);
-CREATE INDEX idx_order_status_history_changed_at ON order_status_history(changed_at);
-CREATE INDEX idx_order_status_history_order_time ON order_status_history(order_id, changed_at DESC);
+CREATE INDEX IF NOT EXISTS idx_order_status_history_order_id ON order_status_history(order_id);
+CREATE INDEX IF NOT EXISTS idx_order_status_history_status ON order_status_history(status);
+CREATE INDEX IF NOT EXISTS idx_order_status_history_changed_at ON order_status_history(changed_at);
+CREATE INDEX IF NOT EXISTS idx_order_status_history_order_time ON order_status_history(order_id, changed_at DESC);

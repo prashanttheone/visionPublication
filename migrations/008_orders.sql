@@ -95,11 +95,24 @@ CREATE TABLE IF NOT EXISTS orders (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Ensure columns exist for cases where table was created by older migrations
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS order_number VARCHAR(50) UNIQUE;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS razorpay_order_id VARCHAR(100);
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS razorpay_payment_id VARCHAR(100);
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS razorpay_signature VARCHAR(255);
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS shiprocket_order_id VARCHAR(100);
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS shiprocket_shipment_id VARCHAR(100);
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS awb_number VARCHAR(100);
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS pickup_location VARCHAR(100);
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS cancelled_at TIMESTAMP NULL;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS cancellation_reason VARCHAR(500);
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS metadata JSONB;
+
 -- Indexes for performance
-CREATE INDEX idx_orders_order_number ON orders(order_number);
-CREATE INDEX idx_orders_user_id ON orders(user_id);
-CREATE INDEX idx_orders_order_status ON orders(order_status);
-CREATE INDEX idx_orders_payment_status ON orders(payment_status);
-CREATE INDEX idx_orders_created_at ON orders(created_at);
-CREATE INDEX idx_orders_tracking_id ON orders(tracking_id);
-CREATE INDEX idx_orders_user_created ON orders(user_id, created_at);
+CREATE INDEX IF NOT EXISTS idx_orders_order_number ON orders(order_number);
+CREATE INDEX IF NOT EXISTS idx_orders_user_id ON orders(user_id);
+CREATE INDEX IF NOT EXISTS idx_orders_order_status ON orders(order_status);
+CREATE INDEX IF NOT EXISTS idx_orders_payment_status ON orders(payment_status);
+CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at);
+CREATE INDEX IF NOT EXISTS idx_orders_tracking_id ON orders(tracking_id);
+CREATE INDEX IF NOT EXISTS idx_orders_user_created ON orders(user_id, created_at);

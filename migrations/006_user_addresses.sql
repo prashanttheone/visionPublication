@@ -60,7 +60,7 @@ CREATE TABLE IF NOT EXISTS user_addresses (
 );
 
 -- Indexes for performance
-CREATE INDEX idx_user_addresses_user_id ON user_addresses(user_id);
-CREATE INDEX idx_user_addresses_pincode ON user_addresses(pincode);
-CREATE INDEX idx_user_addresses_city ON user_addresses(city);
-CREATE INDEX idx_user_addresses_is_default ON user_addresses(user_id, is_default);
+CREATE INDEX IF NOT EXISTS idx_user_addresses_user_id ON user_addresses(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_addresses_pincode ON user_addresses(pincode);
+CREATE INDEX IF NOT EXISTS idx_user_addresses_city ON user_addresses(city);
+CREATE INDEX IF NOT EXISTS idx_user_addresses_is_default ON user_addresses(user_id, is_default);

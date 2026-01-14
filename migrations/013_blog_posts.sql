@@ -107,13 +107,13 @@ CREATE TABLE IF NOT EXISTS blog_posts (
 );
 
 -- Indexes for performance
-CREATE INDEX idx_blog_posts_slug ON blog_posts(slug);
-CREATE INDEX idx_blog_posts_category ON blog_posts(category);
-CREATE INDEX idx_blog_posts_is_published ON blog_posts(is_published);
-CREATE INDEX idx_blog_posts_author_id ON blog_posts(author_id);
-CREATE INDEX idx_blog_posts_created_at ON blog_posts(created_at DESC);
-CREATE INDEX idx_blog_posts_published_at ON blog_posts(published_at DESC);
-CREATE INDEX idx_blog_posts_tags ON blog_posts USING GIN(tags);
+CREATE INDEX IF NOT EXISTS idx_blog_posts_slug ON blog_posts(slug);
+CREATE INDEX IF NOT EXISTS idx_blog_posts_category ON blog_posts(category);
+CREATE INDEX IF NOT EXISTS idx_blog_posts_is_published ON blog_posts(is_published);
+CREATE INDEX IF NOT EXISTS idx_blog_posts_author_id ON blog_posts(author_id);
+CREATE INDEX IF NOT EXISTS idx_blog_posts_created_at ON blog_posts(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_blog_posts_published_at ON blog_posts(published_at DESC);
+CREATE INDEX IF NOT EXISTS idx_blog_posts_tags ON blog_posts USING GIN(tags);
 
 -- GIN index for better tag search performance
 
@@ -165,11 +165,11 @@ CREATE TABLE IF NOT EXISTS blog_comments (
 );
 
 -- Indexes for performance
-CREATE INDEX idx_blog_comments_blog_post_id ON blog_comments(blog_post_id);
-CREATE INDEX idx_blog_comments_user_id ON blog_comments(user_id);
-CREATE INDEX idx_blog_comments_parent_comment_id ON blog_comments(parent_comment_id);
-CREATE INDEX idx_blog_comments_is_approved ON blog_comments(is_approved);
-CREATE INDEX idx_blog_comments_created_at ON blog_comments(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_blog_comments_blog_post_id ON blog_comments(blog_post_id);
+CREATE INDEX IF NOT EXISTS idx_blog_comments_user_id ON blog_comments(user_id);
+CREATE INDEX IF NOT EXISTS idx_blog_comments_parent_comment_id ON blog_comments(parent_comment_id);
+CREATE INDEX IF NOT EXISTS idx_blog_comments_is_approved ON blog_comments(is_approved);
+CREATE INDEX IF NOT EXISTS idx_blog_comments_created_at ON blog_comments(created_at DESC);
 
 /**
  * ============================================
@@ -206,9 +206,9 @@ CREATE TABLE IF NOT EXISTS blog_ratings (
 );
 
 -- Indexes for performance
-CREATE INDEX idx_blog_ratings_blog_post_id ON blog_ratings(blog_post_id);
-CREATE INDEX idx_blog_ratings_user_id ON blog_ratings(user_id);
-CREATE INDEX idx_blog_ratings_rating ON blog_ratings(rating);
+CREATE INDEX IF NOT EXISTS idx_blog_ratings_blog_post_id ON blog_ratings(blog_post_id);
+CREATE INDEX IF NOT EXISTS idx_blog_ratings_user_id ON blog_ratings(user_id);
+CREATE INDEX IF NOT EXISTS idx_blog_ratings_rating ON blog_ratings(rating);
 
 /**
  * ============================================

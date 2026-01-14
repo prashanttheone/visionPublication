@@ -42,7 +42,7 @@ CREATE TABLE IF NOT EXISTS book_course_map (
 );
 
 -- Indexes for performance
-CREATE INDEX idx_book_course_map_book_id ON book_course_map(book_id);
-CREATE INDEX idx_book_course_map_course_id ON book_course_map(course_id);
-CREATE INDEX idx_book_course_map_semester_id ON book_course_map(semester_id);
-CREATE INDEX idx_book_course_map_course_semester ON book_course_map(course_id, semester_id);
+CREATE INDEX IF NOT EXISTS idx_book_course_map_book_id ON book_course_map(book_id);
+CREATE INDEX IF NOT EXISTS idx_book_course_map_course_id ON book_course_map(course_id);
+CREATE INDEX IF NOT EXISTS idx_book_course_map_semester_id ON book_course_map(semester_id);
+CREATE INDEX IF NOT EXISTS idx_book_course_map_course_semester ON book_course_map(course_id, semester_id);

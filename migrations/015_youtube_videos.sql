@@ -13,8 +13,8 @@ CREATE TABLE IF NOT EXISTS youtube_videos (
 );
 
 -- Create index for active videos and display order
-CREATE INDEX idx_youtube_videos_active ON youtube_videos(is_active);
-CREATE INDEX idx_youtube_videos_order ON youtube_videos(display_order);
+CREATE INDEX IF NOT EXISTS idx_youtube_videos_active ON youtube_videos(is_active);
+CREATE INDEX IF NOT EXISTS idx_youtube_videos_order ON youtube_videos(display_order);
 
 -- Create trigger to auto-update updated_at
 CREATE OR REPLACE FUNCTION update_youtube_videos_timestamp()

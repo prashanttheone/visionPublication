@@ -54,8 +54,11 @@ CREATE TABLE IF NOT EXISTS order_items (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Ensure columns exist for cases where table was created by older migrations
+ALTER TABLE order_items ADD COLUMN IF NOT EXISTS sku VARCHAR(100);
+
 -- Indexes for performance
-CREATE INDEX idx_order_items_order_id ON order_items(order_id);
-CREATE INDEX idx_order_items_book_id ON order_items(book_id);
-CREATE INDEX idx_order_items_course_id ON order_items(course_id);
-CREATE INDEX idx_order_items_semester_id ON order_items(semester_id);
+CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON order_items(order_id);
+CREATE INDEX IF NOT EXISTS idx_order_items_book_id ON order_items(book_id);
+CREATE INDEX IF NOT EXISTS idx_order_items_course_id ON order_items(course_id);
+CREATE INDEX IF NOT EXISTS idx_order_items_semester_id ON order_items(semester_id);

@@ -46,9 +46,9 @@ CREATE TABLE IF NOT EXISTS shopping_cart (
 );
 
 -- Indexes for performance
-CREATE INDEX idx_shopping_cart_user_id ON shopping_cart(user_id);
-CREATE INDEX idx_shopping_cart_book_id ON shopping_cart(book_id);
-CREATE INDEX idx_shopping_cart_added_at ON shopping_cart(added_at);
+CREATE INDEX IF NOT EXISTS idx_shopping_cart_user_id ON shopping_cart(user_id);
+CREATE INDEX IF NOT EXISTS idx_shopping_cart_book_id ON shopping_cart(book_id);
+CREATE INDEX IF NOT EXISTS idx_shopping_cart_added_at ON shopping_cart(added_at);
 
 /**
  * ============================================
@@ -69,6 +69,7 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Apply trigger to shopping_cart table
+DROP TRIGGER IF EXISTS update_shopping_cart_updated_at ON shopping_cart;
 CREATE TRIGGER update_shopping_cart_updated_at
     BEFORE UPDATE ON shopping_cart
     FOR EACH ROW

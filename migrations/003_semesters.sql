@@ -40,5 +40,5 @@ CREATE TABLE IF NOT EXISTS semesters (
 );
 
 -- Indexes for performance
-CREATE INDEX idx_semesters_course_id ON semesters(course_id);
-CREATE INDEX idx_semesters_semester_number ON semesters(semester_number);
+CREATE INDEX IF NOT EXISTS idx_semesters_course_id ON semesters(course_id);
+CREATE INDEX IF NOT EXISTS idx_semesters_semester_number ON semesters(semester_number);

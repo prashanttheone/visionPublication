@@ -52,6 +52,6 @@ CREATE TABLE IF NOT EXISTS wishlist (
 );
 
 -- Indexes for performance
-CREATE INDEX idx_wishlist_user_id ON wishlist(user_id);
-CREATE INDEX idx_wishlist_book_id ON wishlist(book_id);
-CREATE INDEX idx_wishlist_added_at ON wishlist(added_at DESC);
+CREATE INDEX IF NOT EXISTS idx_wishlist_user_id ON wishlist(user_id);
+CREATE INDEX IF NOT EXISTS idx_wishlist_book_id ON wishlist(book_id);
+CREATE INDEX IF NOT EXISTS idx_wishlist_added_at ON wishlist(added_at DESC);

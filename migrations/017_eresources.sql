@@ -60,11 +60,13 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS trigger_eresource_books_updated_at ON eresource_books;
 CREATE TRIGGER trigger_eresource_books_updated_at
     BEFORE UPDATE ON eresource_books
     FOR EACH ROW
     EXECUTE FUNCTION update_eresource_updated_at();
 
+DROP TRIGGER IF EXISTS trigger_eresource_chapters_updated_at ON eresource_chapters;
 CREATE TRIGGER trigger_eresource_chapters_updated_at
     BEFORE UPDATE ON eresource_chapters
     FOR EACH ROW
