@@ -1,105 +1,136 @@
-
 import { NextRequest, NextResponse } from 'next/server';
-import { query } from '@/lib/db'; // Assuming this exports a query function
+import { query } from '@/lib/db';
+import { getAuthUser } from '@/lib/auth-server';
 
-// Helper to ensure tables exist
-const ensureTablesExist = async () => {
-    // Create Orders Table
-    await query(`
-        CREATE TABLE IF NOT EXISTS orders (
-            id SERIAL PRIMARY KEY,
-            user_id INTEGER, -- Can be linked to a users table if it exists, or just store the ID from auth
-            user_email VARCHAR(255),
-            full_name VARCHAR(255),
-            shipping_address TEXT,
-            city VARCHAR(100),
-            state VARCHAR(100),
-            zip_code VARCHAR(50),
-            country VARCHAR(100),
-            total_amount NUMERIC(10, 2),
-            status VARCHAR(50) DEFAULT 'pending', -- pending, completed, cancelled
-            created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-        );
-    `);
-
-    // Create Order Items Table
-    await query(`
-        CREATE TABLE IF NOT EXISTS order_items (
-            id SERIAL PRIMARY KEY,
-            order_id INTEGER REFERENCES orders(id) ON DELETE CASCADE,
-            book_id INTEGER,
-            book_name VARCHAR(255),
-            quantity INTEGER,
-            price NUMERIC(10, 2)
-        );
-    `);
-};
-
-export async function POST(req: NextRequest) {
-    try {
-        // 1. Auth Check (Basic - getting user from headers or assuming auth middleware passed it)
-        // Since we are using client-side auth tokens, we might need to verify the token here using jwt-decode or similar.
-        // For now, let's trust the client sends valid user info in the body OR relying on the fact that checkout page requires auth.
-        // Better: We should actually decode the header token here.
-        // But to keep it simple and robust per user request "make this checkout successfully", 
-        // I will extract user info from the request body which the frontend sends (from its auth context).
-
-        const body = await req.json();
-        const { items, total, shippingAddress } = body;
-
-        // Basic validation
-        if (!items || items.length === 0) {
-            return NextResponse.json({ error: 'Cart is empty' }, { status: 400 });
-        }
-
-        // Ensure tables exist
-        await ensureTablesExist();
-
-        // 2. Insert Order
-        // Note: We'll store shipping address components individually
-        const insertOrderQuery = `
-            INSERT INTO orders (user_email, full_name, shipping_address, city, state, zip_code, country, total_amount, status)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'completed') -- Marking as completed for "checkout successfully"
-            RETURNING id;
-        `;
-
-        const addressString = `${shippingAddress.address}, ${shippingAddress.city}, ${shippingAddress.state} ${shippingAddress.zipCode}`;
-
-        const orderResult = await query(insertOrderQuery, [
-            shippingAddress.email,
-            shippingAddress.fullName,
-            shippingAddress.address, // Storing street line separately
-            shippingAddress.city,
-            shippingAddress.state,
-            shippingAddress.zipCode,
-            shippingAddress.country,
-            total
-        ]);
-
-        const orderId = orderResult.rows[0].id;
-
-        // 3. Insert Order Items
-        for (const item of items) {
-            await query(`
-                INSERT INTO order_items (order_id, book_id, book_name, quantity, price)
-                VALUES ($1, $2, $3, $4, $5)
-            `, [orderId, item.id, item.name, item.quantity, item.price]);
-        }
-
-        return NextResponse.json({ success: true, orderId });
-
-    } catch (error: any) {
-        console.error('Order creation error:', error);
-        return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
+/**
+ * GET /api/orders
+ * List orders with role-based filtering
+ */
+export async function GET(request: NextRequest) {
+  try {
+    const user = await getAuthUser(request);
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    let sql = `
+      SELECT o.*, u.full_name, u.email, ua.city, ua.state, ua.pincode
+      FROM orders o
+      JOIN users u ON o.user_id = u.id
+      LEFT JOIN user_addresses ua ON o.address_id = ua.id
+    `;
+    const params: any[] = [];
+
+    // Role-based filtering
+    if (user.role !== 'admin') {
+      sql += ` WHERE o.user_id = $1`;
+      params.push(user.id);
+    }
+
+    sql += ` ORDER BY o.created_at DESC`;
+
+    const result = await query(sql, params);
+    return NextResponse.json(result.rows);
+  } catch (error) {
+    console.error('Failed to fetch orders:', error);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
 }
 
-export async function GET(req: NextRequest) {
-    try {
-        await ensureTablesExist();
-        const result = await query('SELECT * FROM orders ORDER BY created_at DESC');
-        return NextResponse.json(result.rows);
-    } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+/**
+ * POST /api/orders
+ * Create a new order (Checkout)
+ */
+export async function POST(request: NextRequest) {
+  try {
+    const user = await getAuthUser(request);
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const body = await request.json();
+    const { 
+      address_id, 
+      shippingAddress, // New field for one-off addresses
+      items, 
+      subtotal, 
+      discount, 
+      shipping_charge, 
+      total_amount,
+      payment_method,
+      notes 
+    } = body;
+
+    // Basic Validation
+    if ((!address_id && !shippingAddress) || !items || !Array.isArray(items) || items.length === 0) {
+      return NextResponse.json({ error: 'Missing required fields (address or items)' }, { status: 400 });
+    }
+
+    let finalAddressId = address_id;
+
+    // 0. If shippingAddress is provided, save it first
+    if (shippingAddress && (!address_id || address_id === 1)) {
+      const addrResult = await query(`
+        INSERT INTO user_addresses (
+          user_id, full_name, contact_no, address_line_1, locality, city, state, pincode, country
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        RETURNING id
+      `, [
+        user.id,
+        shippingAddress.fullName,
+        shippingAddress.phone || '0000000000', // Default if missing
+        shippingAddress.address,
+        shippingAddress.locality || shippingAddress.city,
+        shippingAddress.city,
+        shippingAddress.state,
+        shippingAddress.zipCode,
+        shippingAddress.country || 'India'
+      ]);
+      finalAddressId = addrResult.rows[0].id;
+    }
+
+    // Generate Order Number
+    const orderNumber = `VP-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+
+    // 1. Create the Order
+    const orderResult = await query(`
+      INSERT INTO orders (
+        order_number, user_id, address_id, subtotal, discount, 
+        shipping_charge, total_amount, payment_method, notes
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      RETURNING id, order_number
+    `, [
+      orderNumber, user.id, finalAddressId, subtotal, discount, 
+      shipping_charge, total_amount, payment_method, notes
+    ]);
+
+    const orderId = orderResult.rows[0].id;
+
+    // 2. Create Order Items
+    for (const item of items) {
+      await query(`
+        INSERT INTO order_items (
+          order_id, book_id, quantity, price, offer_price, sku
+        ) VALUES ($1, $2, $3, $4, $5, $6)
+      `, [
+        orderId, item.book_id, item.quantity, item.price, item.offer_price, item.sku
+      ]);
+    }
+
+    // 3. Create Initial Status History
+    await query(`
+      INSERT INTO order_status_history (order_id, status, description, changed_by)
+      VALUES ($1, 'pending', 'Order placed successfully', $2)
+    `, [orderId, user.email]);
+
+    return NextResponse.json({ 
+      success: true, 
+      order_id: orderId, 
+      order_number: orderNumber 
+    }, { status: 201 });
+
+  } catch (error) {
+    console.error('Failed to create order:', error);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
 }

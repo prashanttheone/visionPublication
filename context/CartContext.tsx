@@ -6,9 +6,12 @@ export interface CartItem {
     id: number;
     name: string;
     price: number;
+    actual_price?: number;
+    offer_price?: number;
     image_url: string;
     quantity: number;
     author: string;
+    sku?: string;
 }
 
 interface CartContextType {
