@@ -31,6 +31,7 @@ CREATE TABLE IF NOT EXISTS books (
     id SERIAL PRIMARY KEY,
     
     -- Book Information
+    sku VARCHAR(100) UNIQUE,
     name VARCHAR(255) NOT NULL,
     author VARCHAR(255),
     isbn VARCHAR(50) UNIQUE,
@@ -50,6 +51,12 @@ CREATE TABLE IF NOT EXISTS books (
     rating DECIMAL(3, 1) DEFAULT 0,
     reviews_count INT DEFAULT 0,
     
+    -- Shipping Dimensions (for Shiprocket)
+    weight DECIMAL(10, 2) DEFAULT 0,  -- in grams
+    length DECIMAL(10, 2) DEFAULT 0,  -- in cm
+    width DECIMAL(10, 2) DEFAULT 0,   -- in cm
+    height DECIMAL(10, 2) DEFAULT 0,  -- in cm
+    
     -- Category/Classification
     category VARCHAR(100),
     
@@ -60,6 +67,7 @@ CREATE TABLE IF NOT EXISTS books (
 
 -- Indexes for performance
 CREATE INDEX idx_books_isbn ON books(isbn);
+CREATE INDEX idx_books_sku ON books(sku);
 CREATE INDEX idx_books_name ON books(name);
 CREATE INDEX idx_books_author ON books(author);
 CREATE INDEX idx_books_category ON books(category);

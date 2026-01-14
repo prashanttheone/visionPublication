@@ -59,6 +59,7 @@ CREATE TABLE IF NOT EXISTS order_status_history (
     
     -- Change Details
     description VARCHAR(500),
+    metadata JSONB,           -- For storing raw webhook response or extra data
     changed_by VARCHAR(100),  -- Admin/system user who made the change
     
     -- Timestamp

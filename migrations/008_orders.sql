@@ -36,6 +36,7 @@
 
 CREATE TABLE IF NOT EXISTS orders (
     id SERIAL PRIMARY KEY,
+    order_number VARCHAR(50) UNIQUE, -- VP-10001
     
     -- User & Delivery Info
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -54,6 +55,11 @@ CREATE TABLE IF NOT EXISTS orders (
     payment_status VARCHAR(20) NOT NULL DEFAULT 'pending'
         CHECK (payment_status IN ('pending', 'paid', 'failed', 'refunded')),
     
+    -- Razorpay Integration
+    razorpay_order_id VARCHAR(100),
+    razorpay_payment_id VARCHAR(100),
+    razorpay_signature VARCHAR(255),
+    
     -- Order Status
     order_status VARCHAR(30) NOT NULL DEFAULT 'pending'
         CHECK (order_status IN (
@@ -67,13 +73,22 @@ CREATE TABLE IF NOT EXISTS orders (
         )),
     
     -- Tracking Information
+    shiprocket_order_id VARCHAR(100),
+    shiprocket_shipment_id VARCHAR(100),
+    awb_number VARCHAR(100),
     tracking_id VARCHAR(100),
     courier_name VARCHAR(100),
+    pickup_location VARCHAR(100),
     estimated_delivery_date DATE,
     delivered_at TIMESTAMP NULL,
     
+    -- Cancellation Info
+    cancelled_at TIMESTAMP NULL,
+    cancellation_reason VARCHAR(500),
+    
     -- Additional Info
     notes TEXT,
+    metadata JSONB, -- For storing raw API responses or extra config
     
     -- Timestamps
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -81,6 +96,7 @@ CREATE TABLE IF NOT EXISTS orders (
 );
 
 -- Indexes for performance
+CREATE INDEX idx_orders_order_number ON orders(order_number);
 CREATE INDEX idx_orders_user_id ON orders(user_id);
 CREATE INDEX idx_orders_order_status ON orders(order_status);
 CREATE INDEX idx_orders_payment_status ON orders(payment_status);

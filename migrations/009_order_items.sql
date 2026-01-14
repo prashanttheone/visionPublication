@@ -44,6 +44,7 @@ CREATE TABLE IF NOT EXISTS order_items (
     
     -- Item Details
     quantity INT NOT NULL DEFAULT 1 CHECK (quantity > 0),
+    sku VARCHAR(100),                                 -- Snapshot of SKU
     
     -- Price Snapshot (at time of purchase)
     price DECIMAL(10, 2) NOT NULL,                    -- Regular price
