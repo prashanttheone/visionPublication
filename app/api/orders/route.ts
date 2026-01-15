@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { getAuthUser } from '@/lib/auth-server';
+import { triggerOrderAutomation } from '@/lib/order-automation';
 
 /**
  * GET /api/orders
@@ -130,6 +131,12 @@ export async function POST(request: NextRequest) {
       INSERT INTO order_status_history (order_id, status, description, changed_by)
       VALUES ($1, 'pending', 'Order placed successfully', $2)
     `, [orderId, user.email]);
+
+    // 4. Trigger Automation for COD
+    if (payment_method === 'cod') {
+      // Run in background to not block the response
+      triggerOrderAutomation(orderId);
+    }
 
     return NextResponse.json({ 
       success: true, 

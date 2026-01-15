@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { getAuthUser } from '@/lib/auth-server';
 import crypto from 'crypto';
+import { triggerOrderAutomation } from '@/lib/order-automation';
 
 /**
  * POST /api/orders/confirm
@@ -49,14 +50,23 @@ export async function POST(request: NextRequest) {
         razorpay_order_id = $2,
         razorpay_payment_id = $3,
         razorpay_signature = $4,
+        payment_method = 'online',
         updated_at = CURRENT_TIMESTAMP
       WHERE id = $1 AND user_id = $5
-      RETURNING id, order_number
+      RETURNING id, order_number, total_amount
     `, [order_id, razorpay_order_id, razorpay_payment_id, razorpay_signature, user.id]);
 
     if (updateResult.rows.length === 0) {
       return NextResponse.json({ error: 'Order not found or unauthorized' }, { status: 404 });
     }
+
+    const confirmedOrder = updateResult.rows[0];
+
+    // 2b. Log successful payment
+    await query(`
+      INSERT INTO payment_logs (order_id, razorpay_order_id, razorpay_payment_id, amount, status, method)
+      VALUES ($1, $2, $3, $4, $5, $6)
+    `, [order_id, razorpay_order_id, razorpay_payment_id, confirmedOrder.total_amount, 'captured', 'online']);
 
     // 3. Record in Status History
     await query(`
@@ -66,6 +76,9 @@ export async function POST(request: NextRequest) {
 
     // 4. Clear Shopping Cart
     await query('DELETE FROM shopping_cart WHERE user_id = $1', [user.id]);
+
+    // 5. Trigger Automation (Shiprocket + SMS)
+    triggerOrderAutomation(order_id);
 
     return NextResponse.json({ 
       success: true, 

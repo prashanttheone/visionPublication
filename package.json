@@ -15,6 +15,7 @@
     "@supabase/supabase-js": "^2.87.1",
     "@types/jsonwebtoken": "^9.0.10",
     "antd": "^6.1.2",
+    "axios": "^1.13.2",
     "bcryptjs": "^3.0.3",
     "fireworks-js": "^2.10.8",
     "framer-motion": "^12.23.26",
@@ -23,11 +24,13 @@
     "next": "16.0.10",
     "next-cloudinary": "^6.17.5",
     "pg": "^8.16.3",
+    "razorpay": "^2.9.6",
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "react-icons": "^5.0.0",
     "react-quill": "^2.0.0",
     "swiper": "^12.0.3",
+    "twilio": "^5.11.2",
     "yet-another-react-lightbox": "^3.28.0"
   },
   "devDependencies": {

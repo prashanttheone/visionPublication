@@ -23,7 +23,8 @@ import {
 import { useCart } from '@/context/CartContext';
 import { useRouter } from 'next/navigation';
 import ShopLayout from '@/component/shopLayout';
-import { EnvironmentOutlined, PlusOutlined, EditOutlined } from '@ant-design/icons';
+import { EnvironmentOutlined, PlusOutlined, EditOutlined, CreditCardOutlined, MoneyCollectOutlined } from '@ant-design/icons';
+import { usePayment } from '@/hooks/usepayment';
 
 const { Title, Text } = Typography;
 
@@ -36,7 +37,9 @@ export default function CheckoutPage() {
     const [isFetchingAddresses, setIsFetchingFetchingAddresses] = useState(true);
     const [isFormVisible, setIsFormVisible] = useState(false);
     const [editingAddressId, setEditingAddressId] = useState<string | number | null>(null);
+    const [paymentMethod, setPaymentMethod] = useState<'cod' | 'online'>('online');
     const [form] = Form.useForm();
+    const { processPayment, isProcessing: isPaymentProcessing } = usePayment();
 
     const fetchAddresses = async () => {
         try {
@@ -148,7 +151,7 @@ export default function CheckoutPage() {
                 discount: 0,
                 shipping_charge: 0,
                 total_amount: cartTotal,
-                payment_method: 'cod',
+                payment_method: paymentMethod,
             };
 
             if (isFormVisible && !editingAddressId) {
@@ -173,9 +176,28 @@ export default function CheckoutPage() {
                 throw new Error(errorData.error || 'Failed to place order');
             }
 
-            clearCart();
-            message.success('Your order has been placed successfully.');
-            router.push('/books/order/success');
+            const orderData = await response.json();
+
+            if (paymentMethod === 'online') {
+                // Trigger Razorpay
+                const userEmail = form.getFieldValue('email') || (await fetch('/api/auth/me').then(res => res.json()).then(data => data.email).catch(() => ''));
+                const userName = form.getFieldValue('fullName') || addresses.find(a => a.id === selectedAddressId)?.full_name || 'Customer';
+                const userPhone = form.getFieldValue('phone') || addresses.find(a => a.id === selectedAddressId)?.contact_no || '';
+
+                await processPayment({
+                    amount: cartTotal,
+                    orderId: orderData.order_id,
+                    userName: userName,
+                    userEmail: userEmail,
+                    userPhone: userPhone,
+                    description: `Payment for Order ${orderData.order_number}`
+                });
+            } else {
+                // COD Flow
+                clearCart();
+                message.success('Your order has been placed successfully.');
+                router.push(`/books/order/success?order_number=${orderData.order_number}`);
+            }
 
         } catch (error: any) {
             message.error(error.message);
@@ -309,6 +331,62 @@ export default function CheckoutPage() {
                                                     </Row>
                                                 </Radio.Group>
                                                 <Divider style={{ borderColor: 'rgba(255,255,255,0.1)' }} />
+                                                
+                                                <div style={{ marginBottom: '24px' }}>
+                                                    <Title level={4} style={{ color: '#60A5FA', marginBottom: '16px' }}>Payment Method</Title>
+                                                    <Radio.Group 
+                                                        value={paymentMethod} 
+                                                        onChange={(e) => setPaymentMethod(e.target.value)}
+                                                        style={{ width: '100%' }}
+                                                    >
+                                                        <Row gutter={[12, 12]}>
+                                                            <Col span={12}>
+                                                                <Radio.Button 
+                                                                    value="online"
+                                                                    style={{ 
+                                                                        width: '100%', 
+                                                                        height: 'auto', 
+                                                                        padding: '16px',
+                                                                        background: paymentMethod === 'online' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(0,0,0,0.2)',
+                                                                        borderColor: paymentMethod === 'online' ? '#3B82F6' : 'rgba(255,255,255,0.1)',
+                                                                        borderRadius: '8px',
+                                                                        display: 'flex',
+                                                                        flexDirection: 'column',
+                                                                        alignItems: 'center',
+                                                                        justifyContent: 'center'
+                                                                    }}
+                                                                >
+                                                                    <CreditCardOutlined style={{ fontSize: '24px', marginBottom: '8px', color: paymentMethod === 'online' ? '#3B82F6' : 'white' }} />
+                                                                    <Text strong style={{ color: 'white' }}>Online Payment</Text>
+                                                                    <Text type="secondary" style={{ fontSize: '11px' }}>UPI, Card, Net Banking</Text>
+                                                                </Radio.Button>
+                                                            </Col>
+                                                            <Col span={12}>
+                                                                <Radio.Button 
+                                                                    value="cod"
+                                                                    style={{ 
+                                                                        width: '100%', 
+                                                                        height: 'auto', 
+                                                                        padding: '16px',
+                                                                        background: paymentMethod === 'cod' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(0,0,0,0.2)',
+                                                                        borderColor: paymentMethod === 'cod' ? '#3B82F6' : 'rgba(255,255,255,0.1)',
+                                                                        borderRadius: '8px',
+                                                                        display: 'flex',
+                                                                        flexDirection: 'column',
+                                                                        alignItems: 'center',
+                                                                        justifyContent: 'center'
+                                                                    }}
+                                                                >
+                                                                    <MoneyCollectOutlined style={{ fontSize: '24px', marginBottom: '8px', color: paymentMethod === 'cod' ? '#3B82F6' : 'white' }} />
+                                                                    <Text strong style={{ color: 'white' }}>Cash on Delivery</Text>
+                                                                    <Text type="secondary" style={{ fontSize: '11px' }}>Pay when you receive</Text>
+                                                                </Radio.Button>
+                                                            </Col>
+                                                        </Row>
+                                                    </Radio.Group>
+                                                </div>
+                                                
+                                                <Divider style={{ borderColor: 'rgba(255,255,255,0.1)' }} />
                                             </div>
                                         )}
 
@@ -425,7 +503,7 @@ export default function CheckoutPage() {
                                                             htmlType="submit"
                                                             size="large"
                                                             block
-                                                            loading={isLoading}
+                                                            loading={isLoading || isPaymentProcessing}
                                                             style={{ 
                                                                 height: '50px',
                                                                 background: 'linear-gradient(to right, #3B82F6, #06B6D4)',
@@ -450,7 +528,7 @@ export default function CheckoutPage() {
                                                             size="large"
                                                             block
                                                             onClick={() => handleSubmit({})} // Empty values because we use selectedAddressId
-                                                            loading={isLoading}
+                                                            loading={isLoading || isPaymentProcessing}
                                                             style={{ 
                                                                 height: '50px',
                                                                 background: 'linear-gradient(to right, #3B82F6, #06B6D4)',
