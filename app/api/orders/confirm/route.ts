@@ -27,10 +27,11 @@ export async function POST(request: NextRequest) {
     }
 
     // 1. Verify Signature
-    const secret = process.env.RAZORPAY_KEY_SECRET;
-    if (secret) {
+    const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET;
+    
+    if (RAZORPAY_KEY_SECRET) {
       const generated_signature = crypto
-        .createHmac('sha256', secret)
+        .createHmac('sha256', RAZORPAY_KEY_SECRET)
         .update(razorpay_order_id + "|" + razorpay_payment_id)
         .digest('hex');
 

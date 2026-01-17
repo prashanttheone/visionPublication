@@ -3,9 +3,21 @@ import Razorpay from 'razorpay';
 import { getAuthUser } from '@/lib/auth-server';
 import { query } from '@/lib/db';
 
+const RAZORPAY_KEY_ID = (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_ID !== 'undefined') 
+  ? process.env.RAZORPAY_KEY_ID 
+  : 'rzp_test_S42RfNzo5hAfId';
+
+const RAZORPAY_KEY_SECRET = (process.env.RAZORPAY_KEY_SECRET && process.env.RAZORPAY_KEY_SECRET !== 'undefined')
+  ? process.env.RAZORPAY_KEY_SECRET 
+  : 'ddx5LaD7mvozCqPEPmS2shlX';
+
+if (!RAZORPAY_KEY_ID || RAZORPAY_KEY_ID === 'rzp_test_S42RfNzo5hAfId') {
+  console.warn('CRITICAL: Using fallback Razorpay Test Keys. Ensure these are valid in Razorpay Dashboard.');
+}
+
 const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID || 'rzp_test_dummy',
-  key_secret: process.env.RAZORPAY_KEY_SECRET || 'dummy_secret',
+  key_id: RAZORPAY_KEY_ID,
+  key_secret: RAZORPAY_KEY_SECRET,
 });
 
 export async function POST(request: NextRequest) {
@@ -16,6 +28,15 @@ export async function POST(request: NextRequest) {
     }
 
     const { amount, order_id } = await request.json();
+    
+    // Masked logging for debugging
+    const maskedId = RAZORPAY_KEY_ID ? `${RAZORPAY_KEY_ID.substring(0, 8)}...` : 'MISSING';
+    console.log('Creating Razorpay Order:', { 
+      amount, 
+      order_id, 
+      user_id: user.id,
+      using_key: maskedId 
+    });
 
     if (!amount || !order_id) {
       return NextResponse.json({ error: 'Amount and Order ID are required' }, { status: 400 });

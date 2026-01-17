@@ -12,19 +12,20 @@ import {
     Divider, 
     Space, 
     Image, 
-    message,
     ConfigProvider,
     theme,
     Radio,
     Badge as AntBadge,
     Spin,
-    Checkbox
+    Checkbox,
+    App
 } from 'antd';
 import { useCart } from '@/context/CartContext';
 import { useRouter } from 'next/navigation';
 import ShopLayout from '@/component/shopLayout';
 import { EnvironmentOutlined, PlusOutlined, EditOutlined, CreditCardOutlined, MoneyCollectOutlined } from '@ant-design/icons';
 import { usePayment } from '@/hooks/usepayment';
+import { authUtils } from '@/lib/auth';
 
 const { Title, Text } = Typography;
 
@@ -33,6 +34,7 @@ export default function CheckoutPage() {
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
     const [addresses, setAddresses] = useState<any[]>([]);
+    const { message } = App.useApp();
     const [selectedAddressId, setSelectedAddressId] = useState<string | number>('');
     const [isFetchingAddresses, setIsFetchingFetchingAddresses] = useState(true);
     const [isFormVisible, setIsFormVisible] = useState(false);
@@ -43,12 +45,10 @@ export default function CheckoutPage() {
 
     const fetchAddresses = async () => {
         try {
-            const token = localStorage.getItem('authToken');
+            const token = authUtils.getToken();
             if (!token) return;
 
-            const response = await fetch('/api/users/addresses', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
+            const response = await authUtils.fetchWithAuth('/api/users/addresses');
             const data = await response.json();
             if (data.success && data.addresses.length > 0) {
                 setAddresses(data.addresses);
@@ -116,18 +116,17 @@ export default function CheckoutPage() {
         // But if editing, we should probably update it in the DB first or send special payload.
         
         setIsLoading(true);
-        const token = localStorage.getItem('authToken');
+        const token = authUtils.getToken();
 
         try {
             let finalAddressId = selectedAddressId;
 
             // If we are editing an existing address, update it first
             if (editingAddressId && editingAddressId !== 'new') {
-                const updateRes = await fetch('/api/users/addresses', {
+                const updateRes = await authUtils.fetchWithAuth('/api/users/addresses', {
                     method: 'POST',
                     headers: { 
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
                     },
                     body: JSON.stringify({
                         id: editingAddressId,
@@ -162,11 +161,10 @@ export default function CheckoutPage() {
                 payload.address_id = finalAddressId;
             }
 
-            const response = await fetch('/api/orders', {
+            const response = await authUtils.fetchWithAuth('/api/orders', {
                 method: 'POST',
                 headers: { 
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify(payload),
             });
@@ -180,7 +178,7 @@ export default function CheckoutPage() {
 
             if (paymentMethod === 'online') {
                 // Trigger Razorpay
-                const userEmail = form.getFieldValue('email') || (await fetch('/api/auth/me').then(res => res.json()).then(data => data.email).catch(() => ''));
+                const userEmail = form.getFieldValue('email') || (await authUtils.fetchWithAuth('/api/auth/me').then(res => res.json()).then(data => data.email).catch(() => ''));
                 const userName = form.getFieldValue('fullName') || addresses.find(a => a.id === selectedAddressId)?.full_name || 'Customer';
                 const userPhone = form.getFieldValue('phone') || addresses.find(a => a.id === selectedAddressId)?.contact_no || '';
 
@@ -564,7 +562,7 @@ export default function CheckoutPage() {
                                         }}
                                     >
                                         <Title level={4} style={{ color: 'white', marginBottom: '24px' }}>Order Summary</Title>
-                                        <Space direction="vertical" size="large" style={{ width: '100%' }}>
+                                        <Space orientation="vertical" size="large" style={{ width: '100%' }}>
                                             {cart.map((item) => (
                                                 <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                                     <Space align="center" size="middle">

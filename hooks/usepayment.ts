@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { message } from 'antd';
+import { App } from 'antd';
+import { authUtils } from '@/lib/auth';
 
 interface RazorpayResponse {
   razorpay_payment_id: string;
@@ -18,6 +19,7 @@ interface PaymentOptions {
 
 export const usePayment = () => {
   const [isProcessing, setIsProcessing] = useState(false);
+  const { message } = App.useApp();
 
   const loadScript = (src: string) => {
     return new Promise((resolve) => {
@@ -39,8 +41,8 @@ export const usePayment = () => {
         setIsProcessing(false);
         return;
       }
-
-      const token = localStorage.getItem('authToken');
+      
+      const token = authUtils.getToken();
 
       // 2. Create Razorpay Order on Backend
       const orderRes = await fetch('/api/payment/create', {
@@ -55,16 +57,24 @@ export const usePayment = () => {
         })
       });
 
-      if (!orderRes.ok) {
-        const errorData = await orderRes.json();
-        throw new Error(errorData.error || 'Failed to create payment order');
+      let orderData;
+      try {
+        orderData = await orderRes.json();
+      } catch (e) {
+        const errorText = await orderRes.text();
+        console.error('Server error response:', errorText);
+        throw new Error('Server returned an invalid response');
       }
 
-      const razorpayOrder = await orderRes.json();
+      if (!orderRes.ok) {
+        throw new Error(orderData.error || 'Failed to create payment order');
+      }
+
+      const razorpayOrder = orderData;
 
       // 3. Open Razorpay Checkout
       const rzpOptions = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_test_dummy', // Replace with your public key
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_test_S42RfNzo5hAfId', // Must match backend key
         amount: razorpayOrder.amount,
         currency: razorpayOrder.currency,
         name: 'Vision Publication',
