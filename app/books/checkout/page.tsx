@@ -228,387 +228,199 @@ export default function CheckoutPage() {
                 algorithm: theme.darkAlgorithm,
                 token: {
                     colorPrimary: '#3B82F6',
-                    borderRadius: 12,
                 },
             }}
         >
-            <ShopLayout>
-                <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #0f172a 0%, #1a2332 100%)', padding: '40px 0' }}>
-                    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 20px' }}>
-                        <Title style={{ color: 'white', marginBottom: '32px' }}>Checkout</Title>
-                        
-                        <Row gutter={[32, 32]}>
-                            {/* Left Column: Shipping Form */}
-                            <Col xs={24} lg={14}>
-                                <div>
-                                    <Card 
-                                        style={{ 
-                                            background: 'rgba(30, 41, 59, 0.6)', 
-                                            border: '1px solid rgba(100, 181, 246, 0.2)',
-                                            borderRadius: '16px'
-                                        }}
-                                    >
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-                                            <Title level={4} style={{ color: '#60A5FA', margin: 0 }}>Shipping Address</Title>
-                                            {isFetchingAddresses && <Spin size="small" />}
-                                        </div>
-
-                                        {addresses.length > 0 && (
-                                            <div style={{ marginBottom: '32px' }}>
-                                                <Text type="secondary" style={{ display: 'block', marginBottom: '12px' }}>Choose from saved addresses:</Text>
-                                                <Radio.Group 
-                                                    value={selectedAddressId} 
-                                                    onChange={(e) => handleAddressSelect(e.target.value)}
-                                                    style={{ width: '100%' }}
-                                                >
-                                                    <Row gutter={[12, 12]}>
-                                                        {addresses.map((addr) => (
-                                                            <Col span={24} sm={12} key={addr.id}>
-                                                                <div style={{ position: 'relative' }}>
-                                                                    <Radio.Button 
-                                                                        value={addr.id}
-                                                                        style={{ 
-                                                                            width: '100%', 
-                                                                            height: 'auto', 
-                                                                            padding: '12px',
-                                                                            background: selectedAddressId === addr.id ? 'rgba(59, 130, 246, 0.1)' : 'rgba(0,0,0,0.2)',
-                                                                            borderColor: selectedAddressId === addr.id ? '#3B82F6' : 'rgba(255,255,255,0.1)',
-                                                                            borderRadius: '8px',
-                                                                            display: 'flex',
-                                                                            flexDirection: 'column',
-                                                                            textAlign: 'left'
-                                                                        }}
-                                                                    >
-                                                                        <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', paddingRight: '24px' }}>
-                                                                            <Text strong style={{ color: 'white' }}>{addr.full_name}</Text>
-                                                                            {addr.is_default && <AntBadge count="Default" style={{ backgroundColor: '#52c41a', fontSize: '10px' }} />}
-                                                                        </div>
-                                                                        <Text type="secondary" style={{ fontSize: '12px', display: 'block', marginTop: '4px', maxWidth: '80%' }}>
-                                                                            {addr.address_line_1}, {addr.locality}, {addr.city}, {addr.state}
-                                                                        </Text>
-                                                                    </Radio.Button>
-                                                                    <Button 
-                                                                        type="text" 
-                                                                        icon={<EditOutlined style={{ color: '#60A5FA' }} />} 
-                                                                        size="small"
-                                                                        onClick={(e) => {
-                                                                            e.preventDefault();
-                                                                            e.stopPropagation();
-                                                                            handleEditAddress(addr);
-                                                                        }}
-                                                                        style={{ 
-                                                                            position: 'absolute', 
-                                                                            right: '8px', 
-                                                                            top: '8px',
-                                                                            zIndex: 2
-                                                                        }}
-                                                                    />
-                                                                </div>
-                                                            </Col>
-                                                        ))}
-                                                        <Col span={24} sm={12}>
-                                                            <Radio.Button 
-                                                                value="new"
+            <ShopLayout hideFilters={true}>
+                <div style={{ padding: '20px 10px', maxWidth: '1200px', margin: '0 auto' }}>
+                    <Title level={2} style={{ fontSize: '24px', marginBottom: '20px' }}>Checkout</Title>
+                    
+                    <Row gutter={[16, 16]}>
+                        <Col xs={24} lg={15}>
+                            <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                                <Card 
+                                    title={<Space><EnvironmentOutlined />Shipping Address</Space>}
+                                    extra={isFetchingAddresses && <Spin size="small" />}
+                                    styles={{ body: { padding: '12px' } }}
+                                >
+                                    {addresses.length > 0 && (
+                                        <div style={{ marginBottom: 24 }}>
+                                            <Radio.Group 
+                                                value={selectedAddressId} 
+                                                onChange={(e) => handleAddressSelect(e.target.value)}
+                                                style={{ width: '100%' }}
+                                            >
+                                                <Row gutter={[12, 12]}>
+                                                    {addresses.map((addr) => (
+                                                        <Col span={24} sm={12} key={addr.id}>
+                                                            <Card 
+                                                                size="small"
+                                                                hoverable
+                                                                onClick={() => handleAddressSelect(addr.id)}
                                                                 style={{ 
-                                                                    width: '100%', 
-                                                                    height: '100%', 
-                                                                    minHeight: '70px',
-                                                                    padding: '12px',
-                                                                    background: selectedAddressId === 'new' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(0,0,0,0.2)',
-                                                                    borderColor: selectedAddressId === 'new' ? '#3B82F6' : 'rgba(255,255,255,0.1)',
-                                                                    borderRadius: '8px',
-                                                                    display: 'flex',
-                                                                    alignItems: 'center',
-                                                                    justifyContent: 'center'
+                                                                    borderColor: selectedAddressId === addr.id ? '#3B82F6' : undefined,
+                                                                    background: selectedAddressId === addr.id ? 'rgba(59, 130, 246, 0.05)' : undefined
                                                                 }}
+                                                                extra={
+                                                                    <Space>
+                                                                        {addr.is_default && <AntBadge status="success" text="Default" />}
+                                                                        <Button 
+                                                                            type="text" 
+                                                                            icon={<EditOutlined />} 
+                                                                            size="small"
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                handleEditAddress(addr);
+                                                                            }}
+                                                                        />
+                                                                    </Space>
+                                                                }
                                                             >
-                                                                <PlusOutlined style={{ marginRight: '8px' }} />
-                                                                Add New Address
-                                                            </Radio.Button>
+                                                                <Radio value={addr.id}>
+                                                                    <Text strong>{addr.full_name}</Text>
+                                                                    <div style={{ fontSize: '12px', marginTop: 4 }}>
+                                                                        <Text type="secondary">
+                                                                            {addr.address_line_1}, {addr.locality}, {addr.city}
+                                                                        </Text>
+                                                                    </div>
+                                                                </Radio>
+                                                            </Card>
                                                         </Col>
-                                                    </Row>
-                                                </Radio.Group>
-                                                <Divider style={{ borderColor: 'rgba(255,255,255,0.1)' }} />
-                                                
-                                                <div style={{ marginBottom: '24px' }}>
-                                                    <Title level={4} style={{ color: '#60A5FA', marginBottom: '16px' }}>Payment Method</Title>
-                                                    <Radio.Group 
-                                                        value={paymentMethod} 
-                                                        onChange={(e) => setPaymentMethod(e.target.value)}
-                                                        style={{ width: '100%' }}
-                                                    >
-                                                        <Row gutter={[12, 12]}>
-                                                            <Col span={12}>
-                                                                <Radio.Button 
-                                                                    value="online"
-                                                                    style={{ 
-                                                                        width: '100%', 
-                                                                        height: 'auto', 
-                                                                        padding: '16px',
-                                                                        background: paymentMethod === 'online' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(0,0,0,0.2)',
-                                                                        borderColor: paymentMethod === 'online' ? '#3B82F6' : 'rgba(255,255,255,0.1)',
-                                                                        borderRadius: '8px',
-                                                                        display: 'flex',
-                                                                        flexDirection: 'column',
-                                                                        alignItems: 'center',
-                                                                        justifyContent: 'center'
-                                                                    }}
-                                                                >
-                                                                    <CreditCardOutlined style={{ fontSize: '24px', marginBottom: '8px', color: paymentMethod === 'online' ? '#3B82F6' : 'white' }} />
-                                                                    <Text strong style={{ color: 'white' }}>Online Payment</Text>
-                                                                    <Text type="secondary" style={{ fontSize: '11px' }}>UPI, Card, Net Banking</Text>
-                                                                </Radio.Button>
-                                                            </Col>
-                                                            <Col span={12}>
-                                                                <Radio.Button 
-                                                                    value="cod"
-                                                                    style={{ 
-                                                                        width: '100%', 
-                                                                        height: 'auto', 
-                                                                        padding: '16px',
-                                                                        background: paymentMethod === 'cod' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(0,0,0,0.2)',
-                                                                        borderColor: paymentMethod === 'cod' ? '#3B82F6' : 'rgba(255,255,255,0.1)',
-                                                                        borderRadius: '8px',
-                                                                        display: 'flex',
-                                                                        flexDirection: 'column',
-                                                                        alignItems: 'center',
-                                                                        justifyContent: 'center'
-                                                                    }}
-                                                                >
-                                                                    <MoneyCollectOutlined style={{ fontSize: '24px', marginBottom: '8px', color: paymentMethod === 'cod' ? '#3B82F6' : 'white' }} />
-                                                                    <Text strong style={{ color: 'white' }}>Cash on Delivery</Text>
-                                                                    <Text type="secondary" style={{ fontSize: '11px' }}>Pay when you receive</Text>
-                                                                </Radio.Button>
-                                                            </Col>
-                                                        </Row>
-                                                    </Radio.Group>
-                                                </div>
-                                                
-                                                <Divider style={{ borderColor: 'rgba(255,255,255,0.1)' }} />
-                                            </div>
-                                        )}
-
-                                        {isFormVisible ? (
-                                            <div>
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                                                    <Title level={5} style={{ color: 'white', margin: 0 }}>
-                                                        {editingAddressId ? 'Edit Address' : 'Add New Shipping Address'}
-                                                    </Title>
-                                                    {addresses.length > 0 && (
-                                                        <Button type="link" onClick={handleCancelForm} style={{ padding: 0 }}>Cancel</Button>
-                                                    )}
-                                                </div>
-                                                <Form
-                                                    form={form}
-                                                    layout="vertical"
-                                                    onFinish={handleSubmit}
-                                                    initialValues={{ country: 'India' }}
-                                                >
-                                                    <Row gutter={16}>
-                                                        <Col span={12}>
-                                                            <Form.Item
-                                                                name="fullName"
-                                                                rules={[{ required: true, message: 'Please enter your full name' }]}
-                                                            >
-                                                                <Input size="large" placeholder="Full Name" style={{ background: 'rgba(0,0,0,0.2)', color: 'white' }} />
-                                                            </Form.Item>
-                                                        </Col>
-                                                        <Col span={12}>
-                                                            <Form.Item
-                                                                name="phone"
-                                                                rules={[{ required: true, message: 'Phone number is required' }]}
-                                                            >
-                                                                <Input size="large" placeholder="Phone Number" style={{ background: 'rgba(0,0,0,0.2)', color: 'white' }} />
-                                                            </Form.Item>
-                                                        </Col>
-                                                    </Row>
-
-                                                    <Form.Item
-                                                        name="email"
-                                                        rules={[
-                                                            { required: true, message: 'Please enter your email' },
-                                                            { type: 'email', message: 'Please enter a valid email' }
-                                                        ]}
-                                                    >
-                                                        <Input size="large" placeholder="Email Address" style={{ background: 'rgba(0,0,0,0.2)', color: 'white' }} />
-                                                    </Form.Item>
-
-                                                    <Form.Item
-                                                        name="address"
-                                                        rules={[{ required: true, message: 'Please enter your street address' }]}
-                                                    >
-                                                        <Input size="large" placeholder="Street Address (House No, Building)" style={{ background: 'rgba(0,0,0,0.2)', color: 'white' }} />
-                                                    </Form.Item>
-
-                                                    <Row gutter={16}>
-                                                        <Col span={12}>
-                                                            <Form.Item
-                                                                name="locality"
-                                                                rules={[{ required: true, message: 'Locality/Area is required' }]}
-                                                            >
-                                                                <Input size="large" placeholder="Locality / Sector" style={{ background: 'rgba(0,0,0,0.2)', color: 'white' }} />
-                                                            </Form.Item>
-                                                        </Col>
-                                                        <Col span={12}>
-                                                            <Form.Item name="landmark">
-                                                                <Input size="large" placeholder="Landmark (Optional)" style={{ background: 'rgba(0,0,0,0.2)', color: 'white' }} />
-                                                            </Form.Item>
-                                                        </Col>
-                                                    </Row>
-
-                                                    <Row gutter={16}>
-                                                        <Col span={12}>
-                                                            <Form.Item
-                                                                name="city"
-                                                                rules={[{ required: true, message: 'City is required' }]}
-                                                            >
-                                                                <Input size="large" placeholder="City" style={{ background: 'rgba(0,0,0,0.2)', color: 'white' }} />
-                                                            </Form.Item>
-                                                        </Col>
-                                                        <Col span={12}>
-                                                            <Form.Item
-                                                                name="state"
-                                                                rules={[{ required: true, message: 'State is required' }]}
-                                                            >
-                                                                <Input size="large" placeholder="State" style={{ background: 'rgba(0,0,0,0.2)', color: 'white' }} />
-                                                            </Form.Item>
-                                                        </Col>
-                                                    </Row>
-
-                                                    <Row gutter={16}>
-                                                        <Col span={12}>
-                                                            <Form.Item
-                                                                name="zipCode"
-                                                                rules={[{ required: true, message: 'ZIP Code is required' }]}
-                                                            >
-                                                                <Input size="large" placeholder="ZIP Code" style={{ background: 'rgba(0,0,0,0.2)', color: 'white' }} />
-                                                            </Form.Item>
-                                                        </Col>
-                                                        <Col span={12}>
-                                                            <Form.Item name="country">
-                                                                <Input size="large" placeholder="Country" disabled style={{ background: 'rgba(0,0,0,0.2)', color: 'gray' }} />
-                                                            </Form.Item>
-                                                        </Col>
-                                                    </Row>
-
-                                                    <Form.Item name="saveAsDefault" valuePropName="checked">
-                                                        <Checkbox style={{ color: 'white' }}>Save this address and set as default</Checkbox>
-                                                    </Form.Item>
-
-                                                    <Form.Item style={{ marginTop: '16px' }}>
-                                                        <Button
-                                                            type="primary"
-                                                            htmlType="submit"
-                                                            size="large"
-                                                            block
-                                                            loading={isLoading || isPaymentProcessing}
-                                                            style={{ 
-                                                                height: '50px',
-                                                                background: 'linear-gradient(to right, #3B82F6, #06B6D4)',
-                                                                border: 'none',
-                                                                fontWeight: 'bold'
-                                                            }}
+                                                    ))}
+                                                    <Col span={24} sm={12}>
+                                                        <Button 
+                                                            type="dashed" 
+                                                            block 
+                                                            style={{ height: '100%', minHeight: 80 }}
+                                                            icon={<PlusOutlined />}
+                                                            onClick={() => handleAddressSelect('new')}
                                                         >
-                                                            {editingAddressId ? 'Update & Place Order' : 'Place Order'} (₹{cartTotal})
+                                                            Add New Address
                                                         </Button>
-                                                    </Form.Item>
-                                                </Form>
-                                            </div>
-                                        ) : (
-                                            <div>
-                                                {selectedAddressId ? (
-                                                    <div style={{ textAlign: 'center', padding: '20px 0' }}>
-                                                        <Text style={{ color: 'white', display: 'block', marginBottom: '20px' }}>
-                                                            You have selected <strong>{addresses.find(a => a.id === selectedAddressId)?.full_name}</strong> for delivery.
-                                                        </Text>
-                                                        <Button
-                                                            type="primary"
-                                                            size="large"
-                                                            block
-                                                            onClick={() => handleSubmit({})} // Empty values because we use selectedAddressId
-                                                            loading={isLoading || isPaymentProcessing}
-                                                            style={{ 
-                                                                height: '50px',
-                                                                background: 'linear-gradient(to right, #3B82F6, #06B6D4)',
-                                                                border: 'none',
-                                                                fontWeight: 'bold'
-                                                            }}
-                                                        >
-                                                            Place Order (₹{cartTotal})
-                                                        </Button>
-                                                    </div>
-                                                ) : (
-                                                    <div style={{ textAlign: 'center', padding: '40px 0' }}>
-                                                        <EnvironmentOutlined style={{ fontSize: '32px', color: '#60A5FA', marginBottom: '16px' }} />
-                                                        <Text style={{ color: 'white', display: 'block' }}>Please select or add a shipping address to proceed.</Text>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )}
-                                    </Card>
-                                </div>
-                            </Col>
+                                                    </Col>
+                                                </Row>
+                                            </Radio.Group>
+                                        </div>
+                                    )}
 
-                            {/* Right Column: Order Summary */}
-                            <Col xs={24} lg={10}>
-                                <div>
-                                    <Card
-                                        style={{ 
-                                            background: 'rgba(30, 41, 59, 0.8)', 
-                                            border: '1px solid rgba(100, 181, 246, 0.2)',
-                                            borderRadius: '16px',
-                                            position: 'sticky',
-                                            top: '100px'
-                                        }}
+                                    {isFormVisible ? (
+                                        <Card title={editingAddressId ? 'Edit Address' : 'New Address'} size="small" extra={addresses.length > 0 && <Button type="link" onClick={handleCancelForm}>Cancel</Button>}>
+                                            <Form
+                                                form={form}
+                                                layout="vertical"
+                                                onFinish={handleSubmit}
+                                                initialValues={{ country: 'India' }}
+                                            >
+                                                <Row gutter={16}>
+                                                    <Col span={12}><Form.Item name="fullName" label="Full Name" rules={[{ required: true }]}><Input /></Form.Item></Col>
+                                                    <Col span={12}><Form.Item name="phone" label="Phone" rules={[{ required: true }]}><Input /></Form.Item></Col>
+                                                </Row>
+                                                <Form.Item name="email" label="Email" rules={[{ required: true, type: 'email' }]}><Input /></Form.Item>
+                                                <Form.Item name="address" label="Street Address" rules={[{ required: true }]}><Input /></Form.Item>
+                                                <Row gutter={16}>
+                                                    <Col span={12}><Form.Item name="locality" label="Locality" rules={[{ required: true }]}><Input /></Form.Item></Col>
+                                                    <Col span={12}><Form.Item name="landmark" label="Landmark"><Input /></Form.Item></Col>
+                                                </Row>
+                                                <Row gutter={16}>
+                                                    <Col span={8}><Form.Item name="city" label="City" rules={[{ required: true }]}><Input /></Form.Item></Col>
+                                                    <Col span={8}><Form.Item name="state" label="State" rules={[{ required: true }]}><Input /></Form.Item></Col>
+                                                    <Col span={8}><Form.Item name="zipCode" label="ZIP" rules={[{ required: true }]}><Input /></Form.Item></Col>
+                                                </Row>
+                                                <Form.Item name="saveAsDefault" valuePropName="checked"><Checkbox>Save as default address</Checkbox></Form.Item>
+                                            </Form>
+                                        </Card>
+                                    ) : (
+                                        <div style={{ textAlign: 'center' }}>
+                                            {!selectedAddressId && <Text type="secondary">Please select a shipping address</Text>}
+                                        </div>
+                                    )}
+                                </Card>
+
+                                <Card title="Payment Method" styles={{ body: { padding: '12px' } }}>
+                                    <Radio.Group 
+                                        value={paymentMethod} 
+                                        onChange={(e) => setPaymentMethod(e.target.value)}
+                                        optionType="button"
+                                        buttonStyle="solid"
+                                        style={{ width: '100%' }}
                                     >
-                                        <Title level={4} style={{ color: 'white', marginBottom: '24px' }}>Order Summary</Title>
-                                        <Space orientation="vertical" size="large" style={{ width: '100%' }}>
-                                            {cart.map((item) => (
-                                                <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                    <Space align="center" size="middle">
-                                                        <div style={{ width: '50px', height: '70px', borderRadius: '8px', overflow: 'hidden' }}>
-                                                            <Image 
-                                                                preview={false}
-                                                                src={item.image_url} 
-                                                                alt={item.name} 
-                                                                width={50}
-                                                                height={70}
-                                                                style={{ objectFit: 'cover' }} 
-                                                            />
-                                                        </div>
-                                                        <div>
-                                                            <Text strong style={{ color: 'white', display: 'block' }}>{item.name}</Text>
-                                                            <Text type="secondary" style={{ fontSize: '12px' }}>Qty: {item.quantity}</Text>
-                                                        </div>
-                                                    </Space>
-                                                    <Text strong style={{ color: 'white' }}>₹{item.price * item.quantity}</Text>
-                                                </div>
-                                            ))}
-                                            
-                                            <Divider style={{ margin: '8px 0', borderColor: 'rgba(255,255,255,0.1)' }} />
-                                            
-                                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                                <Text type="secondary">Subtotal</Text>
-                                                <Text style={{ color: 'white' }}>₹{cartTotal}</Text>
+                                        <Row gutter={8}>
+                                            <Col span={12}>
+                                                <Radio.Button value="online" style={{ width: '100%', height: 'auto', padding: '8px 4px', textAlign: 'center', fontSize: '12px' }}>
+                                                    <CreditCardOutlined style={{ fontSize: '18px' }} /> <div>Online</div>
+                                                </Radio.Button>
+                                            </Col>
+                                            <Col span={12}>
+                                                <Radio.Button value="cod" style={{ width: '100%', height: 'auto', padding: '8px 4px', textAlign: 'center', fontSize: '12px' }}>
+                                                    <MoneyCollectOutlined style={{ fontSize: '18px' }} /> <div>COD</div>
+                                                </Radio.Button>
+                                            </Col>
+                                        </Row>
+                                    </Radio.Group>
+                                </Card>
+                            </Space>
+                        </Col>
+
+                        <Col xs={24} lg={9}>
+                            <div style={{ position: 'sticky', top: 20 }}>
+                                <Card title="Order Summary">
+                                    <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+                                        {cart.map((item) => (
+                                            <div key={item.id} style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                                <Space>
+                                                    <Image src={item.image_url} width={40} height={55} preview={false} style={{ borderRadius: 4, objectFit: 'cover' }} />
+                                                    <div>
+                                                        <Text strong style={{ display: 'block' }}>{item.name}</Text>
+                                                        <Text type="secondary" style={{ fontSize: '12px' }}>Qty: {item.quantity}</Text>
+                                                    </div>
+                                                </Space>
+                                                <Text strong>₹{item.price * item.quantity}</Text>
                                             </div>
-                                            
-                                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                                <Text type="secondary">Shipping</Text>
-                                                <Text style={{ color: '#4ADE80' }}>Free</Text>
-                                            </div>
-                                            
-                                            <Divider style={{ margin: '8px 0', borderColor: 'rgba(255,255,255,0.1)' }} />
-                                            
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                <Title level={4} style={{ margin: 0, color: 'white' }}>Total</Title>
-                                                <Title level={3} style={{ margin: 0, color: '#60A5FA' }}>₹{cartTotal}</Title>
-                                            </div>
-                                        </Space>
-                                    </Card>
-                                </div>
-                            </Col>
-                        </Row>
-                    </div>
+                                        ))}
+                                        <Divider style={{ margin: '8px 0' }} />
+                                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                            <Text type="secondary">Subtotal</Text>
+                                            <Text>₹{cartTotal}</Text>
+                                        </div>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                            <Text type="secondary">Shipping</Text>
+                                            <Text type="success">Free</Text>
+                                        </div>
+                                        <Divider style={{ margin: '8px 0' }} />
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <Text strong>Total Amount</Text>
+                                            <Title level={4} style={{ margin: 0, color: '#3B82F6' }}>₹{cartTotal}</Title>
+                                        </div>
+                                    </Space>
+                                </Card>
+                            </div>
+                        </Col>
+                    </Row>
+
+                    {/* Final Action Button - Bottom on Mobile, Aligned on Desktop */}
+                    <Row style={{ marginTop: 24 }}>
+                        <Col xs={24} lg={15}>
+                            <Button 
+                                type="primary" 
+                                size="large" 
+                                block 
+                                loading={isLoading || isPaymentProcessing}
+                                onClick={() => isFormVisible ? form.submit() : handleSubmit({})}
+                                disabled={!selectedAddressId && !isFormVisible}
+                                style={{ 
+                                    height: '56px', 
+                                    fontSize: '18px', 
+                                    fontWeight: 'bold',
+                                    background: 'linear-gradient(to right, #3B82F6, #06B6D4)',
+                                    border: 'none',
+                                    borderRadius: '12px',
+                                    boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)'
+                                }}
+                            >
+                                Place Order (₹{cartTotal})
+                            </Button>
+                        </Col>
+                    </Row>
                 </div>
             </ShopLayout>
         </ConfigProvider>

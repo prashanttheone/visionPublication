@@ -17,11 +17,14 @@ import {
   Spin,
   Image,
   Row,
-  Col
+  Col,
+  Collapse,
+  Grid
 } from 'antd';
-import { EyeOutlined, ShoppingOutlined } from '@ant-design/icons';
+import { EyeOutlined, ShoppingOutlined, CalendarOutlined, CreditCardOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import ShopLayout from '@/component/shopLayout';
 import { useRouter } from 'next/navigation';
+import { authUtils } from '@/lib/auth';
 
 const { Title, Text } = Typography;
 
@@ -32,6 +35,9 @@ export default function OrderHistoryPage() {
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [modalLoading, setModalLoading] = useState(false);
   const router = useRouter();
+  const screens = Grid.useBreakpoint();
+
+  const isMobile = !screens.md;
 
   useEffect(() => {
     fetchOrders();
@@ -39,17 +45,13 @@ export default function OrderHistoryPage() {
 
   const fetchOrders = async () => {
     try {
-      const token = localStorage.getItem('authToken');
+      const token = authUtils.getToken();
       if (!token) {
         router.push('/login');
         return;
       }
 
-      const response = await fetch('/api/orders', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      const response = await authUtils.fetchWithAuth('/api/orders');
       if (response.ok) {
         const data = await response.json();
         setOrders(data);
@@ -68,10 +70,7 @@ export default function OrderHistoryPage() {
     setIsModalVisible(true);
     setModalLoading(true);
     try {
-      const token = localStorage.getItem('authToken');
-      const response = await fetch(`/api/orders/${order.id}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      const response = await authUtils.fetchWithAuth(`/api/orders/${order.id}`);
       if (response.ok) {
         const fullDetail = await response.json();
         setSelectedOrder(fullDetail);
@@ -85,57 +84,61 @@ export default function OrderHistoryPage() {
 
   const columns = [
     {
-      title: 'Order Number',
+      title: 'Order',
       dataIndex: 'order_number',
       key: 'order_number',
-      render: (text: string) => <Text strong style={{ color: '#60A5FA' }}>{text}</Text>,
+      fixed: 'left' as const,
+      render: (text: string) => <Text strong style={{ color: '#60A5FA', fontSize: '13px' }}>{text}</Text>,
     },
     {
       title: 'Date',
       dataIndex: 'created_at',
       key: 'created_at',
+      responsive: ['md'] as any[],
       render: (date: string) => new Date(date).toLocaleDateString(),
     },
     {
       title: 'Total',
       dataIndex: 'total_amount',
       key: 'total_amount',
-      render: (amount: number) => `₹${amount}`,
+      render: (amount: number) => <Text strong>₹{amount}</Text>,
     },
     {
       title: 'Status',
-      dataIndex: 'status',
+      dataIndex: 'order_status',
       key: 'status',
       render: (status: string) => {
+        const s = status || 'pending';
         let color = 'blue';
-        if (status === 'delivered') color = 'green';
-        if (status === 'cancelled') color = 'red';
-        if (status === 'shipped') color = 'cyan';
-        return <Tag color={color}>{status.toUpperCase()}</Tag>;
+        if (s === 'delivered') color = 'green';
+        if (s === 'cancelled') color = 'red';
+        if (s === 'shipped') color = 'cyan';
+        return <Tag color={color} style={{ fontSize: '11px' }}>{s.toUpperCase()}</Tag>;
       },
     },
     {
       title: 'Payment',
       dataIndex: 'payment_status',
       key: 'payment_status',
+      responsive: ['sm'] as any[],
       render: (status: string) => (
-        <Tag color={status === 'paid' ? 'green' : 'orange'}>
-          {status.toUpperCase()}
+        <Tag color={status === 'paid' ? 'green' : 'orange'} style={{ fontSize: '11px' }}>
+          {(status || 'pending').toUpperCase()}
         </Tag>
       ),
     },
     {
       title: 'Action',
       key: 'action',
+      fixed: 'right' as const,
+      width: 80,
       render: (_: any, record: any) => (
         <Button 
-          type="link" 
+          type="text" 
           icon={<EyeOutlined />} 
           onClick={() => showOrderDetails(record)}
           style={{ color: '#3B82F6' }}
-        >
-          View Details
-        </Button>
+        />
       ),
     },
   ];
@@ -158,20 +161,87 @@ export default function OrderHistoryPage() {
           </Title>
 
           <Card 
+            styles={{ body: { padding: isMobile ? '0' : '12px' } }}
             style={{ 
-              background: 'rgba(30, 41, 59, 0.6)', 
-              border: '1px solid rgba(100, 181, 246, 0.2)',
-              borderRadius: '16px'
+              background: isMobile ? 'transparent' : 'rgba(30, 41, 59, 0.6)', 
+              border: isMobile ? 'none' : '1px solid rgba(100, 181, 246, 0.2)',
+              borderRadius: '16px',
+              overflow: 'hidden'
             }}
           >
-            <Table 
-              columns={columns} 
-              dataSource={orders} 
-              rowKey="id" 
-              loading={loading}
-              pagination={{ pageSize: 10 }}
-              style={{ background: 'transparent' }}
-            />
+            {!isMobile ? (
+              <Table 
+                columns={columns} 
+                dataSource={orders} 
+                rowKey="id" 
+                loading={loading}
+                pagination={{ pageSize: 10, simple: true }}
+                scroll={{ x: 500 }}
+                size="small"
+                style={{ background: 'transparent' }}
+              />
+            ) : (
+              <Collapse 
+                ghost 
+                accordion 
+                expandIconPlacement="end"
+                style={{ color: 'white' }}
+              >
+                {orders.map((order: any) => (
+                  <Collapse.Panel 
+                    key={order.id} 
+                    header={
+                      <div style={{ padding: '4px 0' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                          <Text strong style={{ color: '#60A5FA' }}>{order.order_number}</Text>
+                          <Text strong style={{ color: 'white' }}>₹{order.total_amount}</Text>
+                        </div>
+                        <Space separator={<Divider orientation="vertical" />} size={4} style={{ fontSize: '12px', margin: 0 }}>
+                          <Text type="secondary"><CalendarOutlined /> {new Date(order.created_at).toLocaleDateString()}</Text>
+                          <Tag color={(order.order_status === 'delivered' ? 'green' : 'blue')} style={{ fontSize: '10px', margin: 0 }}>
+                            {(order.order_status || 'pending').toUpperCase()}
+                          </Tag>
+                        </Space>
+                      </div>
+                    }
+                    style={{ 
+                      background: 'rgba(30, 41, 59, 0.6)', 
+                      marginBottom: 12, 
+                      borderRadius: 12, 
+                      border: '1px solid rgba(100, 181, 246, 0.1)' 
+                    }}
+                  >
+                    <div style={{ padding: '8px 4px' }}>
+                      <Descriptions column={1} size="small" bordered={false}>
+                        <Descriptions.Item label={<><CreditCardOutlined /> Payment</>}>
+                          <Tag color={order.payment_status === 'paid' ? 'green' : 'orange'} style={{ fontSize: '11px' }}>
+                            {(order.payment_status || 'pending').toUpperCase()}
+                          </Tag>
+                        </Descriptions.Item>
+                        <Descriptions.Item label={<><InfoCircleOutlined /> Method</>}>
+                          <Text style={{ color: 'white' }}>{order.payment_method?.toUpperCase() || 'N/A'}</Text>
+                        </Descriptions.Item>
+                      </Descriptions>
+                      <Button 
+                        type="primary" 
+                        icon={<EyeOutlined />} 
+                        block 
+                        style={{ marginTop: 12 }}
+                        onClick={() => showOrderDetails(order)}
+                      >
+                        View Full Details
+                      </Button>
+                    </div>
+                  </Collapse.Panel>
+                ))}
+                {orders.length === 0 && !loading && (
+                  <div style={{ textAlign: 'center', padding: 40 }}>
+                    <Text type="secondary">No orders found</Text>
+                  </div>
+                )}
+                {loading && <div style={{ textAlign: 'center', padding: 20 }}><Spin /></div>}
+              </Collapse>
+            )}
           </Card>
 
           <Modal
@@ -192,14 +262,19 @@ export default function OrderHistoryPage() {
                 <div style={{ padding: '0' }}>
                   <Row gutter={[24, 24]}>
                     <Col span={24}>
-                      <Descriptions column={2} bordered size="small" style={{ background: 'rgba(255,255,255,0.02)' }}>
+                      <Descriptions 
+                        column={{ xs: 1, sm: 2 }} 
+                        bordered 
+                        size="small" 
+                        style={{ background: 'rgba(255,255,255,0.02)' }}
+                      >
                         <Descriptions.Item label="Date">{new Date(selectedOrder.created_at).toLocaleString()}</Descriptions.Item>
                         <Descriptions.Item label="Status">
-                          <Tag color={selectedOrder.status === 'delivered' ? 'green' : 'blue'}>
-                            {selectedOrder.status.toUpperCase()}
+                          <Tag color={selectedOrder.order_status === 'delivered' ? 'green' : 'blue'}>
+                            {(selectedOrder.order_status || 'pending').toUpperCase()}
                           </Tag>
                         </Descriptions.Item>
-                        <Descriptions.Item label="Payment Method">{selectedOrder.payment_method?.toUpperCase()}</Descriptions.Item>
+                        <Descriptions.Item label="Payment">{selectedOrder.payment_method?.toUpperCase()}</Descriptions.Item>
                         <Descriptions.Item label="Payment Status">
                           <Tag color={selectedOrder.payment_status === 'paid' ? 'green' : 'orange'}>
                             {selectedOrder.payment_status?.toUpperCase()}
@@ -270,23 +345,22 @@ export default function OrderHistoryPage() {
 
                     {selectedOrder.items && (
                       <Col span={24}>
-                        <Divider style={{ color: '#60A5FA', borderBlockStartColor: 'rgba(255,255,255,0.1)' }}>Order Items</Divider>
+                        <Divider style={{ color: '#60A5FA', borderBlockStartColor: 'rgba(255,255,255,0.1)' }}>Items</Divider>
                         <Table
                           dataSource={selectedOrder.items}
                           pagination={false}
                           size="small"
                           rowKey="id"
+                          scroll={{ x: 400 }}
                           columns={[
                             {
                               title: 'Book',
                               key: 'book',
+                              fixed: 'left' as const,
                               render: (item) => (
                                 <Space>
                                   {item.image_url && <Image src={item.image_url} width={30} preview={false} style={{ borderRadius: '4px' }} />}
-                                  <div>
-                                    <Text strong style={{ color: 'white' }}>{item.book_name}</Text>
-                                    <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.45)' }}>SKU: {item.sku}</div>
-                                  </div>
+                                  <Text strong style={{ color: 'white', fontSize: '12px' }}>{item.book_name}</Text>
                                 </Space>
                               )
                             },
@@ -294,6 +368,7 @@ export default function OrderHistoryPage() {
                               title: 'Qty',
                               dataIndex: 'quantity',
                               key: 'quantity',
+                              width: 60,
                             },
                             {
                               title: 'Price',

@@ -17,6 +17,7 @@ interface ShopLayoutProps {
   onSearch?: (query: string) => void;
   onFilterChange?: (filters: { courseId: string; semesterId: string }) => void;
   cartCount?: number;
+  hideFilters?: boolean;
 }
 
 // Animation variants
@@ -29,7 +30,7 @@ const navVariants = {
   },
 };
 
-export default function ShopLayout({ children, onSearch, onFilterChange, cartCount = 0 }: ShopLayoutProps) {
+export default function ShopLayout({ children, onSearch, onFilterChange, cartCount = 0, hideFilters = false }: ShopLayoutProps) {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [isFocused, setIsFocused] = useState(false);
@@ -121,214 +122,171 @@ export default function ShopLayout({ children, onSearch, onFilterChange, cartCou
             flexWrap={{ base: 'wrap', lg: 'nowrap' }}
           >
             {/* Logo */}
-            <Box flexShrink={0} w={{ base: 'auto', lg: '200px',  }}>
+            <Box flexShrink={0} w={{ base: '120px', md: '160px', lg: '200px' }}>
               <motion.div
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
-                <a href="/" style={{ display: 'block', marginLeft: '20px' }}>
+                <a href="/" style={{ display: 'block' }}>
                   <img
                     src="/logopng.png"
                     alt="Vision Publications Logo"
-                    style={{ height: '50px', width: 'auto', objectFit: 'contain', transform: 'scale(4)' }}
+                    style={{ height: '40px', width: 'auto', objectFit: 'contain' }}
                   />
                 </a>
               </motion.div>
             </Box>
 
-            {/* Search Bar */}
-            <Box
-              flex={{ base: '0 0 100%', sm: '1', lg: '0 0 350px' }}
-              position="relative"
-              ml={{ base: '0', lg: '60px' }}
-            >
-              <Box position="absolute" left="12px" top="50%" transform="translateY(-50%)" zIndex={2} color="gray.400">
-                <HiMagnifyingGlass size={18} />
-              </Box>
-
-              <motion.div
-                animate={{
-                  boxShadow: isFocused ? '0 0 0 3px rgba(100, 181, 246, 0.2)' : '0 0 0 0px rgba(100, 181, 246, 0)',
-                }}
-                transition={{ duration: 0.2 }}
-                style={{
-                  borderRadius: '10px',
-                  overflow: 'hidden',
-                }}
-              >
-                <Input
-                  placeholder="Search books..."
-                  value={searchQuery}
-                  onChange={(e) => handleSearch(e.target.value)}
-                  onFocus={() => setIsFocused(true)}
-                  onBlur={() => setIsFocused(false)}
-                  pl="40px"
-                  pr={searchQuery ? '40px' : '12px'}
-                  py="10px"
-                  fontSize={{ base: '13px', md: '14px' }}
-                  fontWeight="500"
-                  bg="rgba(30, 41, 59, 0.6)"
-                  border="1px solid"
-                  borderColor={isFocused ? 'rgba(100, 181, 246, 0.5)' : 'rgba(100, 181, 246, 0.2)'}
-                  color="white"
-                  _placeholder={{
-                    color: 'gray.400',
-                  }}
-                  _focus={{
-                    outline: 'none',
-                    borderColor: 'rgba(100, 181, 246, 0.5)',
-                    bg: 'rgba(30, 41, 59, 0.8)',
-                  }}
-                  _hover={{
-                    borderColor: 'rgba(100, 181, 246, 0.3)',
-                  }}
-                  backdropFilter="blur(10px)"
-                  transition="all 0.2s ease"
-                />
-              </motion.div>
-
-              {/* Clear Button */}
-              {searchQuery && (
-                <motion.button
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.8 }}
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => handleSearch('')}
-                  style={{
-                    position: 'absolute',
-                    right: '8px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    background: 'transparent',
-                    border: 'none',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: '6px',
-                    zIndex: 3,
-                  }}
+            {!hideFilters && (
+              <>
+                {/* Search Bar */}
+                <Box
+                  flex={{ base: '0 0 100%', sm: '1', lg: '0 0 350px' }}
+                  position="relative"
+                  ml={{ base: '0', lg: '20px' }}
                 >
-                  <HiXMark size={18} color="#64B5F6" />
-                </motion.button>
-              )}
-            </Box>
+                  <Box position="absolute" left="12px" top="50%" transform="translateY(-50%)" zIndex={2} color="gray.400">
+                    <HiMagnifyingGlass size={18} />
+                  </Box>
 
-            {/* Filter: Course */}
-            <Box
-              w={{ base: '100%', sm: 'calc(50% - 6px)', lg: '180px' }}
-            >
-              <select
-                value={selectedCourse}
-                onChange={(e) => setSelectedCourse(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '10px 12px',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  background: 'rgba(30, 41, 59, 0.6)',
-                  border: '1px solid rgba(100, 181, 246, 0.2)',
-                  color: 'white',
-                  borderRadius: '10px',
-                  backdropFilter: 'blur(10px)',
-                  cursor: 'pointer',
-                  outline: 'none',
-                  transition: 'all 0.2s ease',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = 'rgba(100, 181, 246, 0.3)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = 'rgba(100, 181, 246, 0.2)';
-                }}
-                onFocus={(e) => {
-                  e.currentTarget.style.borderColor = 'rgba(100, 181, 246, 0.5)';
-                  e.currentTarget.style.background = 'rgba(30, 41, 59, 0.8)';
-                  e.currentTarget.style.boxShadow = '0 0 0 3px rgba(100, 181, 246, 0.2)';
-                }}
-                onBlur={(e) => {
-                  e.currentTarget.style.borderColor = 'rgba(100, 181, 246, 0.2)';
-                  e.currentTarget.style.background = 'rgba(30, 41, 59, 0.6)';
-                  e.currentTarget.style.boxShadow = 'none';
-                }}
-              >
-                <option value="" style={{ background: '#1e293b', color: 'white' }}>
-                  Select Course
-                </option>
-                {courses.map((course) => (
-                  <option key={course.id} value={course.id} style={{ background: '#1e293b', color: 'white' }}>
-                    {course.name}
-                  </option>
-                ))}
-              </select>
-            </Box>
+                  <motion.div
+                    animate={{
+                      boxShadow: isFocused ? '0 0 0 3px rgba(100, 181, 246, 0.2)' : '0 0 0 0px rgba(100, 181, 246, 0)',
+                    }}
+                    transition={{ duration: 0.2 }}
+                    style={{
+                      borderRadius: '10px',
+                      overflow: 'hidden',
+                    }}
+                  >
+                    <Input
+                      placeholder="Search books..."
+                      value={searchQuery}
+                      onChange={(e) => handleSearch(e.target.value)}
+                      onFocus={() => setIsFocused(true)}
+                      onBlur={() => setIsFocused(false)}
+                      pl="40px"
+                      pr={searchQuery ? '40px' : '12px'}
+                      py="10px"
+                      fontSize={{ base: '13px', md: '14px' }}
+                      fontWeight="500"
+                      bg="rgba(30, 41, 59, 0.6)"
+                      border="1px solid"
+                      borderColor={isFocused ? 'rgba(100, 181, 246, 0.5)' : 'rgba(100, 181, 246, 0.2)'}
+                      color="white"
+                      _placeholder={{
+                        color: 'gray.400',
+                      }}
+                      _focus={{
+                        outline: 'none',
+                        borderColor: 'rgba(100, 181, 246, 0.5)',
+                        bg: 'rgba(30, 41, 59, 0.8)',
+                      }}
+                      _hover={{
+                        borderColor: 'rgba(100, 181, 246, 0.3)',
+                      }}
+                      backdropFilter="blur(10px)"
+                      transition="all 0.2s ease"
+                    />
+                  </motion.div>
 
-            {/* Filter: Semester */}
-            <Box
-              w={{ base: '100%', sm: 'calc(50% - 6px)', lg: '180px' }}
-            >
-              <select
-                value={selectedSemester}
-                onChange={(e) => setSelectedSemester(e.target.value)}
-                disabled={!selectedCourse || semesters.length === 0}
-                style={{
-                  width: '100%',
-                  padding: '10px 12px',
-                  fontSize: '14px',
-                  fontWeight: '500',
-                  background: 'rgba(30, 41, 59, 0.6)',
-                  border: '1px solid rgba(100, 181, 246, 0.2)',
-                  color: 'white',
-                  borderRadius: '10px',
-                  backdropFilter: 'blur(10px)',
-                  cursor: !selectedCourse || semesters.length === 0 ? 'not-allowed' : 'pointer',
-                  outline: 'none',
-                  opacity: !selectedCourse || semesters.length === 0 ? 0.5 : 1,
-                  transition: 'all 0.2s ease',
-                }}
-                onMouseEnter={(e) => {
-                  if (selectedCourse && semesters.length > 0) {
-                    e.currentTarget.style.borderColor = 'rgba(100, 181, 246, 0.3)';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = 'rgba(100, 181, 246, 0.2)';
-                }}
-                onFocus={(e) => {
-                  if (selectedCourse && semesters.length > 0) {
-                    e.currentTarget.style.borderColor = 'rgba(100, 181, 246, 0.5)';
-                    e.currentTarget.style.background = 'rgba(30, 41, 59, 0.8)';
-                    e.currentTarget.style.boxShadow = '0 0 0 3px rgba(100, 181, 246, 0.2)';
-                  }
-                }}
-                onBlur={(e) => {
-                  e.currentTarget.style.borderColor = 'rgba(100, 181, 246, 0.2)';
-                  e.currentTarget.style.background = 'rgba(30, 41, 59, 0.6)';
-                  e.currentTarget.style.boxShadow = 'none';
-                }}
-              >
-                <option value="" style={{ background: '#1e293b', color: 'white' }}>
-                  Select Semester
-                </option>
-                {semesters.map((semester) => (
-                  <option key={semester.id} value={semester.id} style={{ background: '#1e293b', color: 'white' }}>
-                    {semester.description || `Semester ${semester.semester_number}`}
-                  </option>
-                ))}
-              </select>
-            </Box>
+                  {/* Clear Button */}
+                  {searchQuery && (
+                    <motion.button
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.8 }}
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => handleSearch('')}
+                      style={{
+                        position: 'absolute',
+                        right: '8px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        background: 'transparent',
+                        border: 'none',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: '6px',
+                        zIndex: 3,
+                      }}
+                    >
+                      <HiXMark size={18} color="#64B5F6" />
+                    </motion.button>
+                  )}
+                </Box>
+
+                {/* Filter: Course */}
+                <Box
+                  w={{ base: 'calc(50% - 6px)', sm: '150px', lg: '180px' }}
+                >
+                  <select
+                    value={selectedCourse}
+                    onChange={(e) => setSelectedCourse(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      fontSize: '13px',
+                      fontWeight: '500',
+                      background: 'rgba(30, 41, 59, 0.6)',
+                      border: '1px solid rgba(100, 181, 246, 0.2)',
+                      color: 'white',
+                      borderRadius: '10px',
+                      backdropFilter: 'blur(10px)',
+                      cursor: 'pointer',
+                      outline: 'none',
+                    }}
+                  >
+                    <option value="" style={{ background: '#1e293b' }}>Course</option>
+                    {courses.map((course) => (
+                      <option key={course.id} value={course.id} style={{ background: '#1e293b' }}>{course.name}</option>
+                    ))}
+                  </select>
+                </Box>
+
+                {/* Filter: Semester */}
+                <Box
+                  w={{ base: 'calc(50% - 6px)', sm: '150px', lg: '180px' }}
+                >
+                  <select
+                    value={selectedSemester}
+                    onChange={(e) => setSelectedSemester(e.target.value)}
+                    disabled={!selectedCourse || semesters.length === 0}
+                    style={{
+                      width: '100%',
+                      padding: '10px 12px',
+                      fontSize: '13px',
+                      fontWeight: '500',
+                      background: 'rgba(30, 41, 59, 0.6)',
+                      border: '1px solid rgba(100, 181, 246, 0.2)',
+                      color: 'white',
+                      borderRadius: '10px',
+                      backdropFilter: 'blur(10px)',
+                      cursor: 'pointer',
+                      outline: 'none',
+                      opacity: !selectedCourse || semesters.length === 0 ? 0.5 : 1,
+                    }}
+                  >
+                    <option value="" style={{ background: '#1e293b' }}>Semester</option>
+                    {semesters.map((semester) => (
+                      <option key={semester.id} value={semester.id} style={{ background: '#1e293b' }}>
+                        {semester.description || `Sem ${semester.semester_number}`}
+                      </option>
+                    ))}
+                  </select>
+                </Box>
+              </>
+            )}
 
             {/* Right Actions */}
             <Box
               display="flex"
               alignItems="center"
               gap={{ base: '8px', md: '16px' }}
-              ml={{ base: '0', lg: 'auto' }}
-              order={{ base: 3, lg: 'unset' }}
-              w={{ base: '100%', sm: 'auto' }}
-              justifyContent={{ base: 'space-between', sm: 'flex-end' }}
+              ml="auto"
             >
               {/* Login/Profile Button */}
               {!isLoggedIn ? (
