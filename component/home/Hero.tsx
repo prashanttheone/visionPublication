@@ -121,7 +121,7 @@ export default function Hero() {
             >
               <div className="relative aspect-[16/9] rounded-3xl overflow-hidden shadow-2xl">
                 <Image
-                  src="/HeroBook.jpeg"
+                  src="/group.jpg"
                   alt="Vision Publication"
                   fill
                   priority
