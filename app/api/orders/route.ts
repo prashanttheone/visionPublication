@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
         shippingAddress.locality || shippingAddress.city,
         shippingAddress.city,
         shippingAddress.state,
-        shippingAddress.zipCode,
+        shippingAddress.pincode || shippingAddress.zipCode,
         shippingAddress.country || 'India',
         shippingAddress.saveAsDefault || false
       ]);

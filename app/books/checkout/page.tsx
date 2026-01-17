@@ -50,12 +50,17 @@ export default function CheckoutPage() {
 
             const response = await authUtils.fetchWithAuth('/api/users/addresses');
             const data = await response.json();
-            if (data.success && data.addresses.length > 0) {
+            if (data.success) {
                 setAddresses(data.addresses);
                 
-                // Find default address or use the first one
-                const defaultAddr = data.addresses.find((a: any) => a.is_default) || data.addresses[0];
-                handleAddressSelect(defaultAddr.id, data.addresses);
+                if (data.addresses.length > 0) {
+                    // Find default address or use the first one
+                    const defaultAddr = data.addresses.find((a: any) => a.is_default) || data.addresses[0];
+                    handleAddressSelect(defaultAddr.id, data.addresses);
+                } else {
+                    // Automatically show new address form if no addresses exist
+                    handleAddressSelect('new', []);
+                }
             }
         } catch (error) {
             console.error('Error fetching addresses:', error);
@@ -94,7 +99,7 @@ export default function CheckoutPage() {
             landmark: addr.landmark,
             city: addr.city,
             state: addr.state,
-            zipCode: addr.pincode,
+            pincode: addr.pincode,
             country: addr.country,
             saveAsDefault: addr.is_default
         });
@@ -324,7 +329,7 @@ export default function CheckoutPage() {
                                                 <Row gutter={16}>
                                                     <Col span={8}><Form.Item name="city" label="City" rules={[{ required: true }]}><Input /></Form.Item></Col>
                                                     <Col span={8}><Form.Item name="state" label="State" rules={[{ required: true }]}><Input /></Form.Item></Col>
-                                                    <Col span={8}><Form.Item name="zipCode" label="ZIP" rules={[{ required: true }]}><Input /></Form.Item></Col>
+                                                    <Col span={8}><Form.Item name="pincode" label="Pincode" rules={[{ required: true }]}><Input /></Form.Item></Col>
                                                 </Row>
                                                 <Form.Item name="saveAsDefault" valuePropName="checked"><Checkbox>Save as default address</Checkbox></Form.Item>
                                             </Form>

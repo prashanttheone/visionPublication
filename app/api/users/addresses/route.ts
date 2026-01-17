@@ -51,10 +51,13 @@ export async function POST(request: NextRequest) {
       locality, 
       city, 
       state, 
-      zipCode, 
+      zipCode,
+      pincode, 
       country, 
       isDefault 
     } = body;
+
+    const finalPincode = pincode || zipCode;
 
     // Validation & Fallback for required fields
     const finalLocality = locality || city || 'Default';
@@ -71,7 +74,7 @@ export async function POST(request: NextRequest) {
         SET full_name = $1, contact_no = $2, address_line_1 = $3, locality = $4, 
             city = $5, state = $6, pincode = $7, country = $8, is_default = $9, updated_at = CURRENT_TIMESTAMP
         WHERE id = $10 AND user_id = $11
-      `, [fullName, phone, address, finalLocality, city, state, zipCode, country || 'India', isDefault || false, id, user.id]);
+      `, [fullName, phone, address, finalLocality, city, state, finalPincode, country || 'India', isDefault || false, id, user.id]);
       
       return NextResponse.json({ success: true, message: 'Address updated' });
     } else {
@@ -82,7 +85,7 @@ export async function POST(request: NextRequest) {
         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
         RETURNING id
       `, [
-        user.id, fullName, phone || '0000000000', address, finalLocality, city, state, zipCode, country || 'India', isDefault || false
+        user.id, fullName, phone || '0000000000', address, finalLocality, city, state, finalPincode, country || 'India', isDefault || false
       ]);
 
       return NextResponse.json({ success: true, id: result.rows[0].id });
