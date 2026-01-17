@@ -153,7 +153,7 @@ export default function OrderHistoryPage() {
         },
       }}
     >
-      <ShopLayout>
+      <ShopLayout hideFilters={true}>
         <div style={{ maxWidth: '1000px', margin: '0 auto', padding: '40px 20px' }}>
           <Title level={2} style={{ color: 'white', marginBottom: '32px' }}>
             <ShoppingOutlined style={{ marginRight: '12px' }} />
