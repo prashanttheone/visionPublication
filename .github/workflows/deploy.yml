@@ -13,33 +13,22 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22.22.0
-          cache: npm
-
-      - name: Install & Build
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          JWT_SECRET: ${{ secrets.JWT_SECRET }}
-          RAZORPAY_KEY_ID: ${{ secrets.RAZORPAY_KEY_ID }}
-          RAZORPAY_KEY_SECRET: ${{ secrets.RAZORPAY_KEY_SECRET }}
-          NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: ${{ secrets.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME }}
-          NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET: ${{ secrets.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET }}
-          NEXT_PUBLIC_RAZORPAY_KEY_ID: ${{ secrets.NEXT_PUBLIC_RAZORPAY_KEY_ID }}
+      - name: Create deploy archive
         run: |
-          npm ci
-          npm run build
-          tar -czf build.tar.gz .next public package.json package-lock.json
+          tar -czf deploy.tar.gz \
+            app pages public \
+            package.json package-lock.json \
+            next.config.js \
+            prisma \
+            .npmrc || true
 
-      - name: Upload build to VPS
+      - name: Upload project to VPS
         uses: appleboy/scp-action@v0.1.7
         with:
           host: 72.62.198.90
           username: root
           password: ${{ secrets.VM_PASSWORD }}
-          source: build.tar.gz
+          source: deploy.tar.gz
           target: /var/www/visionPublication
 
       - name: Deploy on VPS
@@ -51,24 +40,22 @@ jobs:
           script: |
             cd /var/www/visionPublication
 
-            # Extract build
-            tar -xzf build.tar.gz
-            rm -f build.tar.gz
+            rm -rf app pages public node_modules .next
+            tar -xzf deploy.tar.gz
+            rm -f deploy.tar.gz
 
-            # Create .env
             cat <<EOF > .env
             DATABASE_URL=${{ secrets.DATABASE_URL }}
-            NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=${{ secrets.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME }}
-            NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${{ secrets.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET }}
             JWT_SECRET=${{ secrets.JWT_SECRET }}
             RAZORPAY_KEY_ID=${{ secrets.RAZORPAY_KEY_ID }}
             RAZORPAY_KEY_SECRET=${{ secrets.RAZORPAY_KEY_SECRET }}
             NEXT_PUBLIC_RAZORPAY_KEY_ID=${{ secrets.NEXT_PUBLIC_RAZORPAY_KEY_ID }}
+            NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=${{ secrets.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME }}
+            NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET=${{ secrets.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET }}
             EOF
 
-            # Install prod deps only
-            npm ci --omit=dev
+            npm ci
+            npm run build
 
-            # Start / Restart app
             pm2 restart visionpub || pm2 start npm --name visionpub -- start
             pm2 save
