@@ -54,7 +54,7 @@ export default function Signup() {
       setSuccess(true);
 
       setTimeout(() => {
-        window.location.href = '/login';
+        window.location.href = '/books';
       }, 2000);
     } catch (err: any) {
       setError(err.message || 'Something went wrong');
@@ -105,7 +105,7 @@ export default function Signup() {
           {error && (
             <Alert
               type="error"
-              message={error}
+              title={error}
               showIcon
               style={{ marginBottom: 16 }}
             />
@@ -114,7 +114,7 @@ export default function Signup() {
           {success && (
             <Alert
               type="success"
-              message="Account created successfully!"
+              title="Account created successfully!"
               showIcon
               style={{ marginBottom: 16 }}
             />
@@ -219,10 +219,10 @@ export default function Signup() {
           </Form>
 
           <Divider>OR</Divider>
-
+{/* 
           <Button block onClick={() => alert('Google signup coming soon')}>
             🔐 Continue with Google
-          </Button>
+          </Button> */}
 
           <Text
             style={{

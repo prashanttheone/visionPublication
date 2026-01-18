@@ -44,7 +44,7 @@ export default function Login() {
         } else if (returnTo) {
           router.push(returnTo);
         } else {
-          router.push('/');
+          router.push('/books');
         }
       }, 100);
     } catch (err: any) {
@@ -67,7 +67,7 @@ export default function Login() {
         {error && (
           <Alert
             type="error"
-            message={error}
+            title={error}
             showIcon
             style={{ marginBottom: 16 }}
           />

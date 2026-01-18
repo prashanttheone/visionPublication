@@ -8,7 +8,7 @@ import { HiMenuAlt3, HiX } from 'react-icons/hi';
 const MotionBox = motion.create(Box);
 
 const navItems = [
-  { label: 'Home', href: '/' },
+  // { label: 'Home', href: '/' },
   { label: 'About', href: '/about' },
   { label: 'Books', href: '/books' },
   { label: 'E-Resources', href: '/resources' },
