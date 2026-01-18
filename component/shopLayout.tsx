@@ -129,7 +129,7 @@ export default function ShopLayout({ children, onSearch, onFilterChange, cartCou
               >
                 <a href="/" style={{ display: 'block' }}>
                   <img
-                    src="/logopng.png"
+                    src="/newlogo.png"
                     alt="Vision Publications Logo"
                     style={{ height: '40px', width: 'auto', objectFit: 'contain' }}
                   />

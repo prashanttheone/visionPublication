@@ -4,7 +4,7 @@ import ClientLayout from "@/component/ClientLayout";
 import LayoutWrapper from "@/component/LayoutWrapper";
 import { AuthProvider } from "@/context/AuthProvider";
 import { CartProvider } from "@/context/CartContext";
-import Celebration from "@/utils/Celebration";
+
 import WhatsAppCTA from "@/component/whatsappCta";
 import AnnouncementBar from "@/component/AnnouncementBar";
 import "./globals.css";
@@ -36,7 +36,6 @@ export default function RootLayout({
       >
         <AuthProvider>
           <CartProvider>
-            <Celebration />
             <WhatsAppCTA />
             <ClientLayout>
               <AnnouncementBar />
