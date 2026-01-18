@@ -316,7 +316,7 @@ export default function Book() {
 
   return (
     <ShopLayout onSearch={setSearchQuery} onFilterChange={handleFilterChange} cartCount={0}>
-      <Box bg="linear-gradient(135deg, #0f172a 0%, #1a2332 50%, #0f172a 100%)" py={{ base: '60px', md: '80px' }} position="relative" overflow="hidden">
+      <Box bg="linear-gradient(135deg, #0f172a 0%, #1a2332 50%, #0f172a 100%)" py={{ base: '10px', md: '10px' }} position="relative" overflow="hidden">
         {/* Background Elements */}
         <Box
           position="fixed"
