@@ -30,6 +30,12 @@ export async function POST(request: NextRequest) {
 
     const user = result.rows[0];
 
+    // Update last login timestamp
+    await query(
+      'UPDATE users SET last_login_at = CURRENT_TIMESTAMP WHERE id = $1',
+      [user.id]
+    );
+
     // Check if user is active
     if (!user.is_active) {
       return NextResponse.json(

@@ -1,4 +1,5 @@
 // lib/supabase/client.ts
+/*
 "use client";
 import { createBrowserClient } from "@supabase/auth-helpers-nextjs";
 import type { SupabaseClient as SupabaseAuthClient } from "@supabase/supabase-js";
@@ -22,3 +23,4 @@ export const getSupabaseBrowser = () => {
   }
   return supabaseClient;
 };
+*/

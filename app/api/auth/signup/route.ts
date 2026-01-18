@@ -41,9 +41,9 @@ export async function POST(request: NextRequest) {
 
     // Create user in PostgreSQL first
     const result = await query(
-      `INSERT INTO users (full_name, email, phone, password_hash, role, is_active)
-       VALUES ($1, $2, $3, $4, $5, $6)
-       RETURNING id, email, full_name, role, created_at`,
+      `INSERT INTO users (full_name, email, phone, password_hash, role, is_active, raw_user_meta_data)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       RETURNING id, email, full_name, role, created_at, raw_user_meta_data`,
       [
         `${firstName} ${lastName}`,
         email,
@@ -51,6 +51,7 @@ export async function POST(request: NextRequest) {
         passwordHash,
         'user',
         true,
+        JSON.stringify({ firstName, lastName })
       ]
     );
 
