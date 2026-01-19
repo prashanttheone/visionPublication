@@ -242,12 +242,12 @@ export default function Author() {
                     px="16px"
                     mt="12px"
                   >
-                    {/* <Text fontSize="sm" color="gray.400">
+                    <Text fontSize="sm" color="gray.400">
                       Mobile
-                    </Text> */}
-                    {/* <Text fontSize="md" color="#64B5F6" fontWeight="600">
-                      9914583417 | 9816773505
-                    </Text> */}
+                    </Text>
+                    <Text fontSize="md" color="#64B5F6" fontWeight="600">
+                      9914583417 
+                    </Text>
                   </Box>
                 </Box>
               </Box>
