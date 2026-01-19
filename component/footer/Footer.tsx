@@ -178,7 +178,7 @@ export default function Footer() {
             gap="16px"
           >
             <Text color="gray.500" fontSize="xs">
-              © 2025 VisionPublications. All rights reserved.
+              © 2025-2026 VisionPublications. All rights reserved.
             </Text>
             <Box display="flex" gap="24px">
               {socialLinks.map(({ name, url }) => (
