@@ -76,6 +76,11 @@ const menuItems: MenuItem[] = [
     icon: <ShoppingOutlined />,
     label: 'Orders',
   },
+  {
+    key: '/admin/gallery',
+    icon: <PictureOutlined />,
+    label: 'Gallery',
+  },
 ];
 
 export default function AdminLayoutClient({

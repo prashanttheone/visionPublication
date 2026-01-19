@@ -15,8 +15,8 @@ export default function LayoutWrapper({ children }: { children: ReactNode }) {
 
   const isShopLayout = pathname?.startsWith('/books') || false;
   const isAdminLayout = pathname?.startsWith('/admin') || false;
-  const isAuthLayout = pathname === '/login' || pathname === '/signup' || pathname?.startsWith('/auth');
-  const showHeaderFooter = isMounted && !isShopLayout && !isAdminLayout && !isAuthLayout;
+  // const isAuthLayout = pathname === '/login' || pathname === '/signup' || pathname?.startsWith('/auth');
+  const showHeaderFooter = isMounted && !isShopLayout && !isAdminLayout ;
 
   return (
     <div suppressHydrationWarning>

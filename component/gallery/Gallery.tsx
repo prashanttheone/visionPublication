@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation, Pagination, Autoplay, EffectCoverflow } from "swiper/modules";
@@ -13,42 +13,54 @@ import "swiper/css/navigation";
 import "swiper/css/pagination";
 import "swiper/css/effect-coverflow";
 
-const galleryImages = [
-  {
-    src: "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?q=80&w=1200&auto=format&fit=crop",
-    title: "Academic Excellence",
-    description: "Dive deep into our curated academic collection.",
-  },
-  {
-    src: "https://images.unsplash.com/photo-1497633762265-9d179a990aa6?q=80&w=1200&auto=format&fit=crop",
-    title: "Library Treasures",
-    description: "Discover hidden gems in our extensive library.",
-  },
-  {
-    src: "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?q=80&w=1200&auto=format&fit=crop",
-    title: "Focused Learning",
-    description: "Resources designed for competitive success.",
-  },
-  {
-    src: "https://images.unsplash.com/photo-1512820790803-83ca734da794?q=80&w=1200&auto=format&fit=crop",
-    title: "Expert Authors",
-    description: "Content crafted by industry-leading professionals.",
-  },
-  {
-    src: "https://images.unsplash.com/photo-1495446815901-a7297e633e8d?q=80&w=1200&auto=format&fit=crop",
-    title: "New Releases",
-    description: "Stay ahead with our latest publications.",
-  },
-  {
-    src: "https://images.unsplash.com/photo-1532012197367-6849f9ec3352?q=80&w=1200&auto=format&fit=crop",
-    title: "Research Guides",
-    description: "Tools to support your research journey.",
-  },
-];
+interface GalleryImage {
+  id: number;
+  title: string;
+  description: string;
+  image_url: string;
+  alt_text: string | null;
+  display_order: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
 
 const Gallery = () => {
   const [index, setIndex] = useState(-1);
   const [hoveredCard, setHoveredCard] = useState<number | null>(null);
+  const [galleryImages, setGalleryImages] = useState<GalleryImage[]>([]);
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    const fetchGalleryImages = async () => {
+      try {
+        const response = await fetch('/api/gallery?active=true');
+        const result = await response.json();
+        
+        if (result.success) {
+          setGalleryImages(result.data);
+        } else {
+          console.error('Failed to fetch gallery images:', result.error);
+        }
+      } catch (error) {
+        console.error('Error fetching gallery images:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchGalleryImages();
+  }, []);
+
+  if (loading) {
+    return (
+      <section style={{ padding: "80px 20px", backgroundColor: "#f9fafb", minHeight: "500px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ textAlign: "center" }}>
+          <p style={{ fontSize: "1.25rem", color: "#4b5563" }}>Loading gallery...</p>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section style={{ padding: "80px 20px", backgroundColor: "#f9fafb" }}>
@@ -63,75 +75,77 @@ const Gallery = () => {
         </div>
 
         {/* Carousel Section */}
-        <div style={{ marginBottom: "80px" }}>
-          <Swiper
-            effect={"coverflow"}
-            grabCursor={true}
-            centeredSlides={true}
-            slidesPerView={"auto"}
-            coverflowEffect={{
-              rotate: 50,
-              stretch: 0,
-              depth: 100,
-              modifier: 1,
-              slideShadows: true,
-            }}
-            autoplay={{
-              delay: 3000,
-              disableOnInteraction: false,
-            }}
-            pagination={{ clickable: true }}
-            navigation={true}
-            modules={[EffectCoverflow, Pagination, Navigation, Autoplay]}
-            style={{ width: "100%", padding: "48px 0" }}
-          >
-            {galleryImages.map((image, idx) => (
-              <SwiperSlide 
-                key={idx} 
-                style={{ 
-                    width: "auto", 
-                    maxWidth: "600px",
-                    height: "400px" 
-                }}
-              >
-                <div 
-                  style={{
-                    position: "relative",
-                    width: "100%",
-                    height: "100%",
-                    borderRadius: "16px",
-                    overflow: "hidden",
-                    boxShadow: "0 20px 25px -5px rgb(0 0 0 / 0.1)",
-                    cursor: "pointer"
+        {galleryImages.length > 0 && (
+          <div style={{ marginBottom: "80px" }}>
+            <Swiper
+              effect={"coverflow"}
+              grabCursor={true}
+              centeredSlides={true}
+              slidesPerView={"auto"}
+              coverflowEffect={{
+                rotate: 50,
+                stretch: 0,
+                depth: 100,
+                modifier: 1,
+                slideShadows: true,
+              }}
+              autoplay={{
+                delay: 3000,
+                disableOnInteraction: false,
+              }}
+              pagination={{ clickable: true }}
+              navigation={true}
+              modules={[EffectCoverflow, Pagination, Navigation, Autoplay]}
+              style={{ width: "100%", padding: "48px 0" }}
+            >
+              {galleryImages.map((image, idx) => (
+                <SwiperSlide 
+                  key={image.id} 
+                  style={{ 
+                      width: "auto", 
+                      maxWidth: "600px",
+                      height: "400px" 
                   }}
-                  onClick={() => setIndex(idx)}
                 >
-                  <Image
-                    src={image.src}
-                    alt={image.title}
-                    fill
-                    style={{ objectFit: "cover" }}
-                  />
-                  <div style={{
-                    position: "absolute",
-                    inset: 0,
-                    backgroundColor: "rgba(0,0,0,0.4)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    opacity: 0,
-                    transition: "opacity 0.3s ease"
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.opacity = "1")}
-                  onMouseLeave={(e) => (e.currentTarget.style.opacity = "0")}
+                  <div 
+                    style={{
+                      position: "relative",
+                      width: "100%",
+                      height: "100%",
+                      borderRadius: "16px",
+                      overflow: "hidden",
+                      boxShadow: "0 20px 25px -5px rgb(0 0 0 / 0.1)",
+                      cursor: "pointer"
+                    }}
+                    onClick={() => setIndex(idx)}
                   >
-                    <p style={{ color: "white", fontWeight: "600", fontSize: "1.125rem" }}>View Full Image</p>
+                    <Image
+                      src={image.image_url}
+                      alt={image.alt_text || image.title}
+                      fill
+                      style={{ objectFit: "cover" }}
+                    />
+                    <div style={{
+                      position: "absolute",
+                      inset: 0,
+                      backgroundColor: "rgba(0,0,0,0.4)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      opacity: 0,
+                      transition: "opacity 0.3s ease"
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.opacity = "1")}
+                    onMouseLeave={(e) => (e.currentTarget.style.opacity = "0")}
+                    >
+                      <p style={{ color: "white", fontWeight: "600", fontSize: "1.125rem" }}>View Full Image</p>
+                    </div>
                   </div>
-                </div>
-              </SwiperSlide>
-            ))}
-          </Swiper>
-        </div>
+                </SwiperSlide>
+              ))}
+            </Swiper>
+          </div>
+        )}
 
         {/* Cards Section */}
         <div style={{ 
@@ -141,7 +155,7 @@ const Gallery = () => {
         }}>
           {galleryImages.map((image, idx) => (
             <div
-              key={idx}
+              key={image.id}
               style={{
                 backgroundColor: "#fff",
                 borderRadius: "12px",
@@ -159,8 +173,8 @@ const Gallery = () => {
             >
               <div style={{ position: "relative", height: "256px", width: "100%" }}>
                 <Image
-                  src={image.src}
-                  alt={image.title}
+                  src={image.image_url}
+                  alt={image.alt_text || image.title}
                   fill
                   style={{ objectFit: "cover" }}
                 />
@@ -178,7 +192,7 @@ const Gallery = () => {
           index={index}
           open={index >= 0}
           close={() => setIndex(-1)}
-          slides={galleryImages.map((img) => ({ src: img.src }))}
+          slides={galleryImages.map((img) => ({ src: img.image_url }))}
         />
       </div>
     </section>
