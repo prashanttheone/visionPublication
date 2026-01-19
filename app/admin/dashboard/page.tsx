@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Card, Row, Col, Statistic, Spin } from 'antd';
+import { useRouter } from 'next/navigation';
 import { authUtils } from '@/lib/auth';
 import {
   BookOutlined,
@@ -11,6 +12,7 @@ import {
   FormOutlined,
   CloudOutlined,
   ShoppingOutlined,
+  UsergroupAddOutlined,
 } from '@ant-design/icons';
 
 interface AdminStats {
@@ -22,9 +24,11 @@ interface AdminStats {
   totalEresources: number;
   totalHomeSliders: number;
   totalOrders: number;
+  totalTeamMembers: number;
 }
 
 export default function Page() {
+  const router = useRouter();
   const [stats, setStats] = useState<AdminStats>({
     totalBooks: 0,
     totalCourses: 0,
@@ -34,6 +38,7 @@ export default function Page() {
     totalEresources: 0,
     totalHomeSliders: 0,
     totalOrders: 0,
+    totalTeamMembers: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
 
@@ -42,7 +47,7 @@ export default function Page() {
       try {
         setIsLoading(true);
 
-        const [booksRes, coursesRes, slidersRes, videosRes, eresourcesRes, homeSlidersRes, ordersRes] =
+        const [booksRes, coursesRes, slidersRes, videosRes, eresourcesRes, homeSlidersRes, ordersRes, teamRes] =
           await Promise.all([
             authUtils.fetchWithAuth('/api/book'),
             authUtils.fetchWithAuth('/api/course'),
@@ -51,9 +56,10 @@ export default function Page() {
             authUtils.fetchWithAuth('/api/eresource'),
             authUtils.fetchWithAuth('/api/home/slider'),
             authUtils.fetchWithAuth('/api/orders'),
+            authUtils.fetchWithAuth('/api/team-members'),
           ]);
 
-        const [booksData, coursesData, slidersData, videosData, eresourcesData, homeSlidersData, ordersData] =
+        const [booksData, coursesData, slidersData, videosData, eresourcesData, homeSlidersData, ordersData, teamData] =
           await Promise.all([
             booksRes.json(),
             coursesRes.json(),
@@ -62,6 +68,7 @@ export default function Page() {
             eresourcesRes.json(),
             homeSlidersRes.json(),
             ordersRes.json(),
+            teamRes.json(),
           ]);
 
         setStats({
@@ -73,6 +80,7 @@ export default function Page() {
           totalEresources: eresourcesData.count || 0,
           totalHomeSliders: homeSlidersData.data?.length || 0,
           totalOrders: Array.isArray(ordersData) ? ordersData.length : 0,
+          totalTeamMembers: teamData.data?.length || 0,
         });
       } catch (err) {
         console.error('Error fetching stats:', err);
@@ -96,8 +104,12 @@ export default function Page() {
     <div>
       <h1 style={{ marginBottom: 24 }}>Dashboard</h1>
       <Row gutter={[16, 16]}>
-        <Col xs={24} sm={12} lg={8}>
-          <Card>
+        <Col xs={24} sm={12} lg={6}>
+          <Card 
+            hoverable 
+            onClick={() => router.push('/admin/books')}
+            style={{ cursor: 'pointer' }}
+          >
             <Statistic
               title="Total Books"
               value={stats.totalBooks}
@@ -106,8 +118,12 @@ export default function Page() {
             />
           </Card>
         </Col>
-        <Col xs={24} sm={12} lg={8}>
-          <Card>
+        <Col xs={24} sm={12} lg={6}>
+          <Card 
+            hoverable 
+            onClick={() => router.push('/admin/course')}
+            style={{ cursor: 'pointer' }}
+          >
             <Statistic
               title="Total Courses"
               value={stats.totalCourses}
@@ -116,8 +132,12 @@ export default function Page() {
             />
           </Card>
         </Col>
-        <Col xs={24} sm={12} lg={8}>
-          <Card>
+        <Col xs={24} sm={12} lg={6}>
+          <Card 
+            hoverable 
+            onClick={() => router.push('/admin/home/slider')}
+            style={{ cursor: 'pointer' }}
+          >
             <Statistic
               title="Home Sliders"
               value={stats.totalHomeSliders}
@@ -126,8 +146,12 @@ export default function Page() {
             />
           </Card>
         </Col>
-        <Col xs={24} sm={12} lg={8}>
-          <Card>
+        <Col xs={24} sm={12} lg={6}>
+          <Card 
+            hoverable 
+            onClick={() => router.push('/admin/yt')}
+            style={{ cursor: 'pointer' }}
+          >
             <Statistic
               title="YouTube Videos"
               value={stats.totalYoutubeVideos}
@@ -136,8 +160,12 @@ export default function Page() {
             />
           </Card>
         </Col>
-        <Col xs={24} sm={12} lg={8}>
-          <Card>
+        <Col xs={24} sm={12} lg={6}>
+          <Card 
+            hoverable 
+            onClick={() => router.push('/admin/orders')}
+            style={{ cursor: 'pointer' }}
+          >
             <Statistic
               title="Total Orders"
               value={stats.totalOrders}
@@ -146,8 +174,12 @@ export default function Page() {
             />
           </Card>
         </Col>
-        <Col xs={24} sm={12} lg={8}>
-          <Card>
+        <Col xs={24} sm={12} lg={6}>
+          <Card 
+            hoverable 
+            onClick={() => router.push('/admin/blogs')}
+            style={{ cursor: 'pointer' }}
+          >
             <Statistic
               title="Total Blogs"
               value={stats.totalBlogs}
@@ -156,13 +188,31 @@ export default function Page() {
             />
           </Card>
         </Col>
-        <Col xs={24} sm={12} lg={8}>
-          <Card>
+        <Col xs={24} sm={12} lg={6}>
+          <Card 
+            hoverable 
+            onClick={() => router.push('/admin/eresource')}
+            style={{ cursor: 'pointer' }}
+          >
             <Statistic
               title="E-Resources"
               value={stats.totalEresources}
               prefix={<CloudOutlined />}
               valueStyle={{ color: '#13c2c2' }}
+            />
+          </Card>
+        </Col>
+        <Col xs={24} sm={12} lg={6}>
+          <Card 
+            hoverable 
+            onClick={() => router.push('/admin/team')}
+            style={{ cursor: 'pointer' }}
+          >
+            <Statistic
+              title="Team Members"
+              value={stats.totalTeamMembers}
+              prefix={<UsergroupAddOutlined />}
+              valueStyle={{ color: '#f5222d' }}
             />
           </Card>
         </Col>

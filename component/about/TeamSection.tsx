@@ -2,75 +2,22 @@
 
 import { Box, Container, Text, Grid } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
+import { useEffect, useState } from 'react';
 
 const MotionBox = motion.create(Box);
 
 interface TeamMember {
+  id: number;
   name: string;
   role: string;
   team: string;
-  image: string;
-  bio: string;
+  image_url: string;
+  bio: string | null;
+  display_order: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
 }
-
-const teamMembers: TeamMember[] = [
-  {
-    name: 'Dr. Sharma',
-    role: 'Editor-in-Chief',
-    team: 'Editorial Team',
-    image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop',
-    bio: '20+ years in medical publishing',
-  },
-  {
-    name: 'Priya Verma',
-    role: 'Senior Editor',
-    team: 'Editorial Team',
-    image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop',
-    bio: 'Expert in health sciences content',
-  },
-  {
-    name: 'Rajesh Design',
-    role: 'Creative Director',
-    team: 'Design Team',
-    image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&h=400&fit=crop',
-    bio: 'Award-winning publication design',
-  },
-  {
-    name: 'Sarah Khan',
-    role: 'Lead Designer',
-    team: 'Design Team',
-    image: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&h=400&fit=crop',
-    bio: 'Specializes in educational materials',
-  },
-  {
-    name: 'Amit Patel',
-    role: 'Operations Manager',
-    team: 'Publishing & Operations',
-    image: 'https://images.unsplash.com/photo-1507527173202-83c92705a63b?w=400&h=400&fit=crop',
-    bio: 'Streamlining publishing workflows',
-  },
-  {
-    name: 'Lisa Anderson',
-    role: 'Publishing Director',
-    team: 'Publishing & Operations',
-    image: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&h=400&fit=crop',
-    bio: 'Leading digital transformation',
-  },
-  {
-    name: 'Dr. Vikram Singh',
-    role: 'Chief Executive Officer',
-    team: 'Leadership',
-    image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&h=400&fit=crop',
-    bio: 'Visionary leader in healthcare publishing',
-  },
-  {
-    name: 'Neha Gupta',
-    role: 'Chief Operating Officer',
-    team: 'Leadership',
-    image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop',
-    bio: 'Building scalable publishing solutions',
-  },
-];
 
 const itemVariants = {
   hidden: { opacity: 0, y: 20 },
@@ -107,6 +54,50 @@ const containerVariants = {
 };
 
 export default function TeamSection() {
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchTeamMembers = async () => {
+      try {
+        const response = await fetch('/api/team-members?active=true');
+        const result = await response.json();
+        
+        if (result.success) {
+          setTeamMembers(result.data || []);
+        } else {
+          console.error('Failed to fetch team members:', result.error);
+        }
+      } catch (error) {
+        console.error('Error fetching team members:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTeamMembers();
+  }, []);
+
+  if (loading) {
+    return (
+      <Box py={{ base: '60px', md: '80px' }} position="relative" zIndex={1} borderTop="1px solid" borderColor="rgba(100, 181, 246, 0.1)">
+        <Container maxW="1200px" px={{ base: '20px', md: '40px' }}>
+          <Box textAlign="center" mb="60px">
+            <Text fontSize="sm" fontWeight="700" color="#FF8C00" mb="12px" textTransform="uppercase" letterSpacing="1px">
+              Our Team
+            </Text>
+            <Text fontSize={{ base: '32px', md: '48px' }} fontWeight="900" color="white" mb="20px">
+              Meet Our Leadership & Experts
+            </Text>
+            <Text fontSize="md" color="gray.300" maxW="600px" mx="auto">
+              Loading team members...
+            </Text>
+          </Box>
+        </Container>
+      </Box>
+    );
+  }
+
   return (
     <Box py={{ base: '60px', md: '80px' }} position="relative" zIndex={1} borderTop="1px solid" borderColor="rgba(100, 181, 246, 0.1)">
       <Container maxW="1200px" px={{ base: '20px', md: '40px' }}>
@@ -126,10 +117,10 @@ export default function TeamSection() {
 
         <Grid gridTemplateColumns={{ base: '1fr', md: 'repeat(2, 1fr)', lg: 'repeat(4, 1fr)' }} gap="24px">
           {teamMembers.map((member, i) => (
-            <MotionBox key={i} variants={cardVariants} initial="hidden" whileInView="visible" viewport={{ once: true }} whileHover="hover">
+            <MotionBox key={member.id} variants={cardVariants} initial="hidden" whileInView="visible" viewport={{ once: true }} whileHover="hover">
               <Box bg="rgba(30, 41, 59, 0.6)" border="1px solid" borderColor="rgba(100, 181, 246, 0.2)" borderRadius="16px" overflow="hidden" backdropFilter="blur(10px)" cursor="pointer" transition="all 0.3s ease" _hover={{ borderColor: 'rgba(100, 181, 246, 0.4)' }}>
                 <Box width="100%" height="200px" overflow="hidden" bg="rgba(100, 181, 246, 0.1)">
-                  <Box backgroundImage={`url(${member.image})`} backgroundSize="cover" backgroundPosition="center" width="100%" height="100%" />
+                  <Box backgroundImage={`url(${member.image_url})`} backgroundSize="cover" backgroundPosition="center" width="100%" height="100%" />
                 </Box>
                 <Box p="20px">
                   <Text fontSize="lg" fontWeight="700" color="white" mb="4px">
@@ -142,7 +133,7 @@ export default function TeamSection() {
                     {member.team}
                   </Text>
                   <Text fontSize="xs" color="gray.500">
-                    {member.bio}
+                    {member.bio || 'No bio available'}
                   </Text>
                 </Box>
               </Box>

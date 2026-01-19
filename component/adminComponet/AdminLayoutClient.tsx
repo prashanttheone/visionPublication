@@ -11,6 +11,7 @@ import {
   CloudOutlined,
   PictureOutlined,
   ShoppingOutlined,
+  UsergroupAddOutlined,
 } from '@ant-design/icons';
 import { useRouter, usePathname } from 'next/navigation';
 import type { MenuProps } from 'antd';
@@ -80,6 +81,16 @@ const menuItems: MenuItem[] = [
     key: '/admin/gallery',
     icon: <PictureOutlined />,
     label: 'Gallery',
+  },
+  {
+    key: '/admin/team',
+    icon: <UsergroupAddOutlined />,
+    label: 'Team Members',
+  },
+    {
+    key: '',
+    icon: <UsergroupAddOutlined />,
+    label: 'Team Members',
   },
 ];
 
