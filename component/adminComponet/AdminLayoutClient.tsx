@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Layout, Menu, Typography, Avatar } from 'antd';
 import {
   HomeOutlined,
@@ -91,6 +91,40 @@ export default function AdminLayoutClient({
   const [collapsed, setCollapsed] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
+
+  // Load Cloudinary widget script
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      // Check if script already exists
+      if (!document.getElementById('cloudinary-widget-script')) {
+        const script = document.createElement('script');
+        script.id = 'cloudinary-widget-script';
+        script.src = 'https://widget.cloudinary.com/v2.0/global/all.js';
+        script.async = true;
+        
+        script.onload = () => {
+          console.log('Cloudinary widget script loaded successfully');
+        };
+        
+        script.onerror = () => {
+          console.error('Failed to load Cloudinary widget script');
+          // Retry after 2 seconds
+          setTimeout(() => {
+            if (document.getElementById('cloudinary-widget-script')) {
+              document.getElementById('cloudinary-widget-script')?.remove();
+            }
+            const retryScript = document.createElement('script');
+            retryScript.id = 'cloudinary-widget-script-retry';
+            retryScript.src = 'https://widget.cloudinary.com/v2.0/global/all.js';
+            retryScript.async = true;
+            document.head.appendChild(retryScript);
+          }, 2000);
+        };
+        
+        document.head.appendChild(script);
+      }
+    }
+  }, []);
 
   const handleMenuClick: MenuProps['onClick'] = (e) => {
     router.push(e.key);

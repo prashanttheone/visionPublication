@@ -127,9 +127,11 @@ export default function AppHeader() {
         onClose={() => setOpen(false)}
         size={300}
         closable={false}
-        bodyStyle={{
-          padding: 0,
-          background: "linear-gradient(180deg, #0f172a, #1e293b)",
+        styles={{
+          body: {
+            padding: 0,
+            background: "linear-gradient(180deg, #0f172a, #1e293b)",
+          }
         }}
       >
         {/* Drawer Header */}

@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Card, Input, Button, Typography, Space, Table, Tag, Modal, Form, Upload, message } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, UploadOutlined } from '@ant-design/icons';
-import { RcFile } from 'antd/es/upload';
+import { Card, Input, Button, Typography, Space, Table, Tag, Modal, Form, message, Radio } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined, UploadOutlined, LinkOutlined } from '@ant-design/icons';
+import CloudinaryImageUpload from '@/component/imageUpload/CloudinaryImageUpload';
+import { useAuth } from '@/context/AuthProvider';
+import { authUtils } from '@/lib/auth';
 
 const { Title, Text } = Typography;
 const { confirm } = Modal;
@@ -25,7 +27,13 @@ const GalleryManager = () => {
   const [loading, setLoading] = useState(true);
   const [formVisible, setFormVisible] = useState(false);
   const [editingImage, setEditingImage] = useState<GalleryImage | null>(null);
+  const [uploadMethod, setUploadMethod] = useState<'url' | 'upload'>('upload');
   const [form] = Form.useForm();
+  
+  // State for image upload
+  const [uploadedImageUrl, setUploadedImageUrl] = useState<string>('');
+
+
 
   useEffect(() => {
     fetchGalleryImages();
@@ -34,7 +42,12 @@ const GalleryManager = () => {
   const fetchGalleryImages = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/gallery');
+      const token = authUtils.getToken();
+      const response = await fetch('/api/gallery', {
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
+        }
+      });
       const result = await response.json();
 
       if (result.success) {
@@ -52,18 +65,32 @@ const GalleryManager = () => {
 
   const handleCreateOrUpdate = async (values: any) => {
     try {
+      // Determine the final image URL based on upload method
+      const finalImageUrl = uploadedImageUrl || values.image_url;
+      
+      // Validate image URL is provided
+      if (!finalImageUrl) {
+        message.error('Please provide an image URL');
+        return;
+      }
+
       const url = editingImage ? '/api/gallery' : '/api/gallery';
       const method = editingImage ? 'PUT' : 'POST';
       
       const payload = {
         ...(editingImage && { id: editingImage.id }),
         ...values,
+        image_url: finalImageUrl, // Use the determined image URL
         is_active: values.is_active ?? true
       };
 
+      const token = authUtils.getToken();
       const response = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': token ? `Bearer ${token}` : '',
+        },
         body: JSON.stringify(payload),
       });
 
@@ -74,6 +101,8 @@ const GalleryManager = () => {
         setFormVisible(false);
         form.resetFields();
         setEditingImage(null);
+        setUploadMethod('upload');
+        setUploadedImageUrl(''); // Reset uploaded image URL
         fetchGalleryImages(); // Refresh the list
       } else {
         message.error(result.error || 'Operation failed');
@@ -86,8 +115,12 @@ const GalleryManager = () => {
 
   const handleDelete = async (id: number) => {
     try {
+      const token = authUtils.getToken();
       const response = await fetch(`/api/gallery?id=${id}`, {
         method: 'DELETE',
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
+        },
       });
 
       const result = await response.json();
@@ -126,9 +159,12 @@ const GalleryManager = () => {
         display_order: record.display_order,
         is_active: record.is_active,
       });
+      setUploadMethod('url'); // Default to URL for editing
     } else {
       setEditingImage(null);
       form.resetFields();
+      setUploadMethod('upload'); // Default to upload for new images
+      form.setFieldValue('image_url', '');
     }
     setFormVisible(true);
   };
@@ -263,11 +299,60 @@ const GalleryManager = () => {
           </Form.Item>
 
           <Form.Item
-            name="image_url"
-            label="Image URL"
-            rules={[{ required: true, message: 'Please enter image URL' }]}
+            label="Image Source"
           >
-            <Input placeholder="Enter image URL" />
+            <Radio.Group 
+              value={uploadMethod} 
+              onChange={(e) => {
+                setUploadMethod(e.target.value);
+                if (e.target.value === 'upload') {
+                  form.setFieldValue('image_url', '');
+                }
+              }}
+              style={{ marginBottom: 16 }}
+            >
+              <Radio value="upload">Upload from Device</Radio>
+              <Radio value="url">Enter URL</Radio>
+            </Radio.Group>
+            
+            {uploadMethod === 'upload' ? (
+              <div>
+                <div style={{ marginBottom: 12 }}>
+                  <Text type="secondary">
+                    Select and upload an image from your device
+                  </Text>
+                </div>
+                <CloudinaryImageUpload
+                  onImageSelect={(url) => {
+                    setUploadedImageUrl(url);
+                    form.setFieldValue('image_url', url);
+                  }}
+                />
+                {uploadedImageUrl && (
+                  <div style={{ marginTop: 12 }}>
+                    <div style={{ marginBottom: 8 }}>
+                      <strong>Preview:</strong>
+                    </div>
+                    <img 
+                      src={uploadedImageUrl} 
+                      alt="Uploaded preview" 
+                      style={{ maxWidth: '100%', maxHeight: 200, borderRadius: 4, border: '1px solid #d9d9d9' }}
+                    />
+                  </div>
+                )}
+              </div>
+            ) : (
+              <Form.Item
+                name="image_url"
+                rules={[{ required: true, message: 'Please enter image URL' }]}
+                noStyle
+              >
+                <Input 
+                  prefix={<LinkOutlined />} 
+                  placeholder="Enter image URL" 
+                />
+              </Form.Item>
+            )}
           </Form.Item>
 
           <Form.Item
@@ -291,7 +376,10 @@ const GalleryManager = () => {
             valuePropName="checked"
             initialValue={true}
           >
-            <Input type="checkbox" /> Active
+            <Radio.Group>
+              <Radio value={true}>Active</Radio>
+              <Radio value={false}>Inactive</Radio>
+            </Radio.Group>
           </Form.Item>
 
           <Form.Item>
@@ -299,11 +387,17 @@ const GalleryManager = () => {
               <Button onClick={() => {
                 setFormVisible(false);
                 setEditingImage(null);
+                setUploadMethod('upload');
                 form.resetFields();
+                form.setFieldValue('image_url', '');
               }}>
                 Cancel
               </Button>
-              <Button type="primary" htmlType="submit">
+              <Button 
+                type="primary" 
+                htmlType="submit"
+                disabled={uploadMethod === 'upload' && !uploadedImageUrl}
+              >
                 {editingImage ? 'Update' : 'Create'}
               </Button>
             </Space>

@@ -116,13 +116,13 @@ export default function ShopLayout({ children, onSearch, onFilterChange, cartCou
             display="flex"
             justifyContent="space-between"
             alignItems="center"
-            py={{ base: '12px', md: '16px' }}
-            minH="70px"
-            gap={{ base: '12px', md: '24px' }}
-            flexWrap={{ base: 'wrap', lg: 'nowrap' }}
+            py={{ base: '8px', md: '12px' }}
+            minH="60px"
+            gap={{ base: '6px', md: '12px' }}
+            flexWrap="nowrap"
           >
             {/* Logo */}
-            <Box flexShrink={0} w={{ base: '120px', md: '160px', lg: '200px' }}>
+            <Box flexShrink={0} w={{ base: '80px', md: '100px', lg: '160px' }}>
               <motion.div
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -139,36 +139,36 @@ export default function ShopLayout({ children, onSearch, onFilterChange, cartCou
 
             {!hideFilters && (
               <>
-                {/* Search Bar */}
+                {/* Search Bar - Adjusted for mobile */}
                 <Box
-                  flex={{ base: '0 0 100%', sm: '1', lg: '0 0 350px' }}
+                  flex="1"
                   position="relative"
-                  ml={{ base: '0', lg: '20px' }}
+                  minW="0"
                 >
-                  <Box position="absolute" left="12px" top="50%" transform="translateY(-50%)" zIndex={2} color="gray.400">
-                    <HiMagnifyingGlass size={18} />
+                  <Box position="absolute" left="10px" top="50%" transform="translateY(-50%)" zIndex={2} color="gray.400">
+                    <HiMagnifyingGlass size={16} />
                   </Box>
-
+                
                   <motion.div
                     animate={{
-                      boxShadow: isFocused ? '0 0 0 3px rgba(100, 181, 246, 0.2)' : '0 0 0 0px rgba(100, 181, 246, 0)',
+                      boxShadow: isFocused ? '0 0 0 2px rgba(100, 181, 246, 0.2)' : '0 0 0 0px rgba(100, 181, 246, 0)',
                     }}
                     transition={{ duration: 0.2 }}
                     style={{
-                      borderRadius: '10px',
+                      borderRadius: '8px',
                       overflow: 'hidden',
                     }}
                   >
                     <Input
-                      placeholder="Search books..."
+                      placeholder="Search..."
                       value={searchQuery}
                       onChange={(e) => handleSearch(e.target.value)}
                       onFocus={() => setIsFocused(true)}
                       onBlur={() => setIsFocused(false)}
-                      pl="40px"
-                      pr={searchQuery ? '40px' : '12px'}
-                      py="10px"
-                      fontSize={{ base: '13px', md: '14px' }}
+                      pl="32px"
+                      pr={searchQuery ? '32px' : '10px'}
+                      py="8px"
+                      fontSize={{ base: '12px', md: '13px' }}
                       fontWeight="500"
                       bg="rgba(30, 41, 59, 0.6)"
                       border="1px solid"
@@ -189,7 +189,7 @@ export default function ShopLayout({ children, onSearch, onFilterChange, cartCou
                       transition="all 0.2s ease"
                     />
                   </motion.div>
-
+                
                   {/* Clear Button */}
                   {searchQuery && (
                     <motion.button
@@ -201,7 +201,7 @@ export default function ShopLayout({ children, onSearch, onFilterChange, cartCou
                       onClick={() => handleSearch('')}
                       style={{
                         position: 'absolute',
-                        right: '8px',
+                        right: '6px',
                         top: '50%',
                         transform: 'translateY(-50%)',
                         background: 'transparent',
@@ -210,11 +210,11 @@ export default function ShopLayout({ children, onSearch, onFilterChange, cartCou
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        padding: '6px',
+                        padding: '4px',
                         zIndex: 3,
                       }}
                     >
-                      <HiXMark size={18} color="#64B5F6" />
+                      <HiXMark size={16} color="#64B5F6" />
                     </motion.button>
                   )}
                 </Box>
@@ -281,14 +281,81 @@ export default function ShopLayout({ children, onSearch, onFilterChange, cartCou
               </>
             )}
 
-            {/* Right Actions */}
+            {/* Right Actions - Compact on mobile */}
             <Box
               display="flex"
               alignItems="center"
-              gap={{ base: '8px', md: '16px' }}
-              ml="auto"
+              gap={{ base: '4px', md: '8px' }}
             >
-              {/* Login/Profile Button */}
+              {/* Filter: Course - Hidden on mobile */}
+              {!hideFilters && (
+                <Box
+                  w={{ base: '0 0 0px', sm: '120px', lg: '150px' }}
+                  overflow="hidden"
+                  display={{ base: 'none', sm: 'block' }}
+                >
+                  <select
+                    value={selectedCourse}
+                    onChange={(e) => setSelectedCourse(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '8px 10px',
+                      fontSize: '12px',
+                      fontWeight: '500',
+                      background: 'rgba(30, 41, 59, 0.6)',
+                      border: '1px solid rgba(100, 181, 246, 0.2)',
+                      color: 'white',
+                      borderRadius: '8px',
+                      backdropFilter: 'blur(10px)',
+                      cursor: 'pointer',
+                      outline: 'none',
+                    }}
+                  >
+                    <option value="" style={{ background: '#1e293b' }}>Course</option>
+                    {courses.map((course) => (
+                      <option key={course.id} value={course.id} style={{ background: '#1e293b' }}>{course.name}</option>
+                    ))}
+                  </select>
+                </Box>
+              )}
+
+              {/* Filter: Semester - Hidden on mobile */}
+              {!hideFilters && (
+                <Box
+                  w={{ base: '0 0 0px', sm: '120px', lg: '150px' }}
+                  overflow="hidden"
+                  display={{ base: 'none', sm: 'block' }}
+                >
+                  <select
+                    value={selectedSemester}
+                    onChange={(e) => setSelectedSemester(e.target.value)}
+                    disabled={!selectedCourse || semesters.length === 0}
+                    style={{
+                      width: '100%',
+                      padding: '8px 10px',
+                      fontSize: '12px',
+                      fontWeight: '500',
+                      background: 'rgba(30, 41, 59, 0.6)',
+                      border: '1px solid rgba(100, 181, 246, 0.2)',
+                      color: 'white',
+                      borderRadius: '8px',
+                      backdropFilter: 'blur(10px)',
+                      cursor: 'pointer',
+                      outline: 'none',
+                      opacity: !selectedCourse || semesters.length === 0 ? 0.5 : 1,
+                    }}
+                  >
+                    <option value="" style={{ background: '#1e293b' }}>Semester</option>
+                    {semesters.map((semester) => (
+                      <option key={semester.id} value={semester.id} style={{ background: '#1e293b' }}>
+                        {semester.description || `Sem ${semester.semester_number}`}
+                      </option>
+                    ))}
+                  </select>
+                </Box>
+              )}
+
+              {/* Login/Profile Button - Compact on mobile */}
               {!isLoggedIn ? (
                 <motion.button
                   whileHover={{ scale: 1.05 }}
@@ -297,16 +364,17 @@ export default function ShopLayout({ children, onSearch, onFilterChange, cartCou
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '6px',
-                    padding: '8px 16px',
-                    borderRadius: '8px',
+                    justifyContent: 'center',
+                    padding: '6px',
+                    borderRadius: '6px',
                     border: '1px solid rgba(100, 181, 246, 0.3)',
                     background: 'transparent',
                     color: '#64B5F6',
-                    fontSize: '13px',
+                    fontSize: '11px',
                     fontWeight: '600',
                     cursor: 'pointer',
                     transition: 'all 0.3s ease',
+                    minWidth: '30px',
                   }}
                   onMouseEnter={(e) => {
                     (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(100, 181, 246, 0.1)';
@@ -317,8 +385,7 @@ export default function ShopLayout({ children, onSearch, onFilterChange, cartCou
                     (e.currentTarget as HTMLElement).style.borderColor = 'rgba(100, 181, 246, 0.3)';
                   }}
                 >
-                  <HiUser size={18} />
-                  <Box display={{ base: 'none', sm: 'block' }}>Login</Box>
+                  <HiUser size={16} />
                 </motion.button>
               ) : (
                 <motion.button
@@ -328,16 +395,17 @@ export default function ShopLayout({ children, onSearch, onFilterChange, cartCou
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '6px',
-                    padding: '8px 16px',
-                    borderRadius: '8px',
+                    justifyContent: 'center',
+                    padding: '6px',
+                    borderRadius: '6px',
                     border: '1px solid rgba(100, 181, 246, 0.3)',
                     background: 'rgba(100, 181, 246, 0.1)',
                     color: '#64B5F6',
-                    fontSize: '13px',
+                    fontSize: '11px',
                     fontWeight: '600',
                     cursor: 'pointer',
                     transition: 'all 0.3s ease',
+                    minWidth: '30px',
                   }}
                   onMouseEnter={(e) => {
                     (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(100, 181, 246, 0.2)';
@@ -348,12 +416,11 @@ export default function ShopLayout({ children, onSearch, onFilterChange, cartCou
                     (e.currentTarget as HTMLElement).style.borderColor = 'rgba(100, 181, 246, 0.3)';
                   }}
                 >
-                  <HiOutlineUserCircle size={20} />
-                  <Box display={{ base: 'none', sm: 'block' }}>Profile</Box>
+                  <HiOutlineUserCircle size={18} />
                 </motion.button>
               )}
 
-              {/* Cart Button */}
+              {/* Cart Button - Compact on mobile */}
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -362,15 +429,16 @@ export default function ShopLayout({ children, onSearch, onFilterChange, cartCou
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  padding: '8px 16px',
-                  borderRadius: '8px',
+                  padding: '6px',
+                  borderRadius: '6px',
                   border: '1px solid rgba(255, 140, 0, 0.3)',
                   background: 'rgba(255, 140, 0, 0.05)',
                   color: '#FF8C00',
-                  fontSize: '13px',
+                  fontSize: '11px',
                   fontWeight: '600',
                   cursor: 'pointer',
                   transition: 'all 0.3s ease',
+                  minWidth: '30px',
                 }}
                 onMouseEnter={(e) => {
                   (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(255, 140, 0, 0.15)';
@@ -381,19 +449,19 @@ export default function ShopLayout({ children, onSearch, onFilterChange, cartCou
                   (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255, 140, 0, 0.3)';
                 }}
               >
-                <HiShoppingCart size={18} />
+                <HiShoppingCart size={16} />
                 {cartCount > 0 && (
                   <Badge
                     position="absolute"
-                    top="-6px"
-                    right="-6px"
+                    top="-4px"
+                    right="-4px"
                     bg="linear-gradient(135deg, #FF8C00, #FFA500)"
                     color="white"
                     borderRadius="full"
-                    fontSize="10px"
+                    fontSize="8px"
                     fontWeight="700"
-                    minW="20px"
-                    h="20px"
+                    minW="14px"
+                    h="14px"
                     display="flex"
                     alignItems="center"
                     justifyContent="center"
@@ -401,9 +469,6 @@ export default function ShopLayout({ children, onSearch, onFilterChange, cartCou
                     {cartCount > 99 ? '99+' : cartCount}
                   </Badge>
                 )}
-                <Box display={{ base: 'none', sm: 'block' }} ml="4px">
-                  Cart
-                </Box>
               </motion.button>
             </Box>
           </Box>

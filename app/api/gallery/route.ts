@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { query } from '@/lib/db';
-import { authUtils } from '@/lib/auth';
+import { getAuthUser } from '@/lib/auth-server';
 
 // GET: Fetch all gallery images
 export async function GET(request: NextRequest) {
@@ -36,7 +36,8 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // Check if user is admin
-    if (!authUtils.isAdmin()) {
+    const user = await getAuthUser(request);
+    if (!user || user.role !== 'admin') {
       return Response.json({ 
         success: false, 
         error: 'Unauthorized' 
@@ -81,7 +82,8 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     // Check if user is admin
-    if (!authUtils.isAdmin()) {
+    const user = await getAuthUser(request);
+    if (!user || user.role !== 'admin') {
       return Response.json({ 
         success: false, 
         error: 'Unauthorized' 
@@ -136,7 +138,8 @@ export async function PUT(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     // Check if user is admin
-    if (!authUtils.isAdmin()) {
+    const user = await getAuthUser(request);
+    if (!user || user.role !== 'admin') {
       return Response.json({ 
         success: false, 
         error: 'Unauthorized' 

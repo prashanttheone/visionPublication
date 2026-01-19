@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { query } from "@/lib/db";
+import { getAuthUser } from "@/lib/auth-server";
 
 // GET - Fetch all sliders or active sliders only
 export async function GET(request: NextRequest) {
@@ -36,6 +37,15 @@ export async function GET(request: NextRequest) {
 // POST - Create a new slider
 export async function POST(request: NextRequest) {
   try {
+    // Check if user is admin
+    const user = await getAuthUser(request);
+    if (!user || user.role !== 'admin') {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
     const body = await request.json();
     const { title, description, image_url, link_url, display_order, is_active } = body;
 
@@ -78,6 +88,15 @@ export async function POST(request: NextRequest) {
 // PUT - Update an existing slider
 export async function PUT(request: NextRequest) {
   try {
+    // Check if user is admin
+    const user = await getAuthUser(request);
+    if (!user || user.role !== 'admin') {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
     const body = await request.json();
     const { id, title, description, image_url, link_url, display_order, is_active } = body;
 
@@ -129,6 +148,15 @@ export async function PUT(request: NextRequest) {
 // DELETE - Delete a slider
 export async function DELETE(request: NextRequest) {
   try {
+    // Check if user is admin
+    const user = await getAuthUser(request);
+    if (!user || user.role !== 'admin') {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
 

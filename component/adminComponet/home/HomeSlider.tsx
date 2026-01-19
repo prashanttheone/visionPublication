@@ -13,6 +13,7 @@ import {
   Heading,
 } from '@chakra-ui/react';
 import CloudinaryImageUpload from '@/component/imageUpload/CloudinaryImageUpload';
+import { authUtils } from '@/lib/auth';
 
 interface HomeSlider {
   id: number;
@@ -59,7 +60,12 @@ export default function HomeSlider() {
   const fetchSliders = useCallback(async () => {
     try {
       setIsLoading(true);
-      const response = await fetch('/api/home/slider');
+      const token = authUtils.getToken();
+      const response = await fetch('/api/home/slider', {
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
+        }
+      });
       const data = await response.json();
 
       if (data.success) {
@@ -131,9 +137,13 @@ export default function HomeSlider() {
 
       if (editingId) {
         // Update existing slider
+        const token = authUtils.getToken();
         const response = await fetch('/api/home/slider', {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': token ? `Bearer ${token}` : '',
+          },
           body: JSON.stringify({ ...payload, id: editingId }),
         });
 
@@ -149,9 +159,13 @@ export default function HomeSlider() {
         }
       } else {
         // Create new slider
+        const token = authUtils.getToken();
         const response = await fetch('/api/home/slider', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': token ? `Bearer ${token}` : '',
+          },
           body: JSON.stringify(payload),
         });
 
@@ -176,8 +190,12 @@ export default function HomeSlider() {
     }
 
     try {
+      const token = authUtils.getToken();
       const response = await fetch(`/api/home/slider?id=${id}`, {
         method: 'DELETE',
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
+        },
       });
 
       const result = await response.json();
