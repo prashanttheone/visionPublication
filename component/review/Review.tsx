@@ -3,7 +3,7 @@
 import { Box, Container, Text } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
 import { HiStar } from 'react-icons/hi';
-
+import { useRouter } from 'next/navigation';
 const MotionBox = motion.create(Box);
 
 interface Review {
@@ -80,6 +80,7 @@ const reviews: Review[] = [
 ];
 
 export default function Review() {
+  const router = useRouter();
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -357,6 +358,7 @@ export default function Review() {
               cursor: 'pointer',
               boxShadow: '0 10px 30px rgba(255, 140, 0, 0.2)',
             }}
+             onClick={() => { router.push('/books') }}
           >
             Explore Our Books
           </motion.button>

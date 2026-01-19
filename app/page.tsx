@@ -16,8 +16,9 @@ export default function Page() {
           {/* <DifferentiatorSection /> */}
                <StatisticsSection/>
                      {/* Gallery Section */}
+                     <Youtube />
       <Gallery />
-            <Youtube />
+            
          <TeamSection />
         <Review/>
    

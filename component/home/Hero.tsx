@@ -57,7 +57,7 @@ export default function Hero() {
                   <Row gutter={32}>
                     <Col>
                       <Text strong style={{ fontSize: "40px", color: "#fff" }}>
-                        5k+
+                        500k
                       </Text>
                       <div
                         style={{
@@ -72,7 +72,7 @@ export default function Hero() {
 
                     <Col>
                       <Text strong style={{ fontSize: "40px", color: "#fff" }}>
-                        1000+
+                        100+
                       </Text>
                       <div
                         style={{
@@ -81,7 +81,7 @@ export default function Hero() {
                           fontWeight: "bold",
                         }}
                       >
-                        Products
+                        Ttitles
                       </div>
                     </Col>
 

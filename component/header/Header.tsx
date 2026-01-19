@@ -9,9 +9,10 @@ const { Header } = Layout;
 const { useBreakpoint } = Grid;
 
 const navItems = [
+  { label: "Home", href: "/" },
   { label: "About", href: "/about" },
   // { label: "Books", href: "/books" },
-  { label: "E-Resources", href: "/resources" },
+  // { label: "E-Resources", href: "/resources" },
   { label: "Join As Author", href: "/join-as-author" },
   { label: "Event / Vision CSR", href: "/blog" },
   { label: "Contact Us", href: "/contact" },
@@ -81,7 +82,8 @@ export default function AppHeader() {
               }))}
             />
 
-            <Link href="/books">
+   
+                      <Link href="/books">
               <Button
                 type="primary"
                 style={{
@@ -92,6 +94,19 @@ export default function AppHeader() {
                 }}
               >
                 Books
+              </Button>
+            </Link>
+                     <Link href="/resources">
+              <Button
+                type="primary"
+                style={{
+                  background: "linear-gradient(135deg,#f59e0b,#f97316)",
+                  border: "none",
+                  fontWeight: 700,
+                  marginRight: 16,
+                }}
+              >
+                E-Resources
               </Button>
             </Link>
             <Button
@@ -209,6 +224,22 @@ export default function AppHeader() {
               Books
             </Button>
           </Link>
+                   <Link href="/resources">
+              <Button
+                type="primary"
+                size="large"
+                block
+                style={{
+                  background: "linear-gradient(135deg,#f59e0b,#f97316)",
+                  border: "none",
+                  fontWeight: 700,
+                  marginRight: 16,
+                  marginBottom: 16,
+                }}
+              >
+                E-Resources
+              </Button>
+            </Link>
 
           <Button
             type="primary"

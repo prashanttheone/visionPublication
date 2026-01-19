@@ -15,10 +15,10 @@ interface StatItem {
 }
 
 const stats: StatItem[] = [
-  { label: 'Books Published', value: '500+', icon: HiSparkles },
-  { label: 'Happy Readers', value: '100K+', icon: HiHeart },
+  { label: 'Books Published', value: '100+', icon: HiSparkles },
+  { label: 'Happy Readers', value: '500K+', icon: HiHeart },
   { label: 'Expert Authors', value: '200+', icon: HiUserGroup },
-  { label: 'Growth Rate', value: '45%', icon: HiTrendingUp },
+  { label: 'Growth Rate', value: '75%', icon: HiTrendingUp },
 ];
 
 const containerVariants = {

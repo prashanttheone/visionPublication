@@ -2,6 +2,7 @@
 
 import { Box, Container, Text } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
+import { useRouter } from 'next/navigation';
 
 const MotionBox = motion.create(Box);
 
@@ -26,6 +27,8 @@ const containerVariants = {
 };
 
 export default function CTASection() {
+  const router = useRouter();
+
   return (
     <Box py={{ base: '60px', md: '100px' }} position="relative" zIndex={1} borderTop="1px solid" borderColor="rgba(100, 181, 246, 0.1)">
       <Container maxW="1200px" px={{ base: '20px', md: '40px' }}>
@@ -72,8 +75,9 @@ export default function CTASection() {
                 cursor: 'pointer',
                 transition: 'all 0.3s ease',
               }}
+              onClick={() => { router.push('/books') }}
             >
-              Explore Our Books
+              Explore Our Booksss
             </motion.button>
           </MotionBox>
         </MotionBox>

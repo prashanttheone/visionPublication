@@ -130,7 +130,7 @@ export default function Youtube() {
 
           <MotionBox variants={itemVariants} mb="20px">
             <Text fontSize={{ base: '42px', md: '56px', lg: '64px' }} fontWeight="900" lineHeight="1.2" color="white">
-              Educational
+             VHS E-CLASSES
             </Text>
             <Text fontSize={{ base: '42px', md: '56px', lg: '64px' }} fontWeight="900" lineHeight="1.2" bgGradient="linear(to-r, #64B5F6, #90CAF9)" bgClip="text">
               Playlists
