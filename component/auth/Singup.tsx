@@ -114,7 +114,7 @@ export default function Signup() {
           {success && (
             <Alert
               type="success"
-              message="Account created successfully!"
+              title="Account created successfully!"
               showIcon
               style={{ marginBottom: 16 }}
             />
@@ -219,10 +219,10 @@ export default function Signup() {
           </Form>
 
           <Divider>OR</Divider>
-
+{/* 
           <Button block onClick={() => alert('Google signup coming soon')}>
             🔐 Continue with Google
-          </Button>
+          </Button> */}
 
           <Text
             style={{

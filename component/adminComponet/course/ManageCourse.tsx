@@ -1,29 +1,42 @@
 'use client';
 
-import { useState, useCallback, useMemo, useEffect, Fragment } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import {
-  Box,
-  Container,
+  ConfigProvider,
+  Card,
   Input,
-  Textarea,
   Button,
-  Stack,
-  Heading,
-  Text,
-  Badge,
-  Separator
-} from '@chakra-ui/react';
-import { motion } from 'framer-motion';
-import { HiPencil, HiTrash, HiPlus, HiAcademicCap } from 'react-icons/hi2';
+  Typography,
+  Space,
+  Row,
+  Col,
+  Table,
+  Tag,
+  Divider,
+  Form,
+  message,
+  Modal,
+  Spin,
+  theme,
+} from 'antd';
+import {
+  PlusOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  ArrowLeftOutlined,
+  BookOutlined,
+  ExclamationCircleOutlined,
+} from '@ant-design/icons';
 
-const MotionBox = motion.create(Box);
+const { Title, Text } = Typography;
+const { confirm } = Modal;
+const { useToken } = theme;
 
+/* ===================== TYPES ===================== */
 interface Course {
   id?: number;
   name: string;
   description: string;
-  created_at?: string;
-  updated_at?: string;
 }
 
 interface Semester {
@@ -31,113 +44,122 @@ interface Semester {
   course_id?: number;
   semester_number: number;
   description: string;
-  created_at?: string;
-  updated_at?: string;
 }
 
-const initialCourseState: Course = {
-  name: '',
-  description: ''
+/* ===================== DARK THEME CONFIG ===================== */
+const darkTheme = {
+  token: {
+    colorBgBase: '#1a1a1a',
+    colorBgContainer: '#262626',
+    colorBgElevated: '#262626',
+    colorBgSpotlight: '#262626',
+    colorBgLayout: '#000000',
+    colorText: 'rgba(255, 255, 255, 0.85)',
+    colorTextSecondary: 'rgba(255, 255, 255, 0.65)',
+    colorTextTertiary: 'rgba(255, 255, 255, 0.45)',
+    colorBorder: '#434343',
+    colorBorderSecondary: '#303030',
+    colorPrimary: '#177ddc',
+    colorPrimaryHover: '#3c9be8',
+    colorSuccess: '#49aa19',
+    colorWarning: '#d89614',
+    colorError: '#dc4446',
+    colorInfo: '#177ddc',
+  },
+  components: {
+    Card: {
+      colorBgContainer: '#262626',
+      colorBorder: '#434343',
+    },
+    Button: {
+      colorBgContainer: '#262626',
+      colorBorder: '#434343',
+    },
+    Input: {
+      colorBgContainer: '#262626',
+      colorBorder: '#434343',
+      colorText: 'rgba(255, 255, 255, 0.85)',
+      colorTextPlaceholder: 'rgba(255, 255, 255, 0.45)',
+    },
+    Table: {
+      colorBgContainer: '#262626',
+      colorBorder: '#434343',
+      headerBg: '#1d1d1d',
+      rowHoverBg: '#303030',
+    },
+  },
 };
 
-const FormControl = ({ children, isRequired, ...props }: any) => (
-  <Box {...props}>
-    {children}
-  </Box>
-);
-const FormLabel = (props: any) => <Box as="label" fontWeight="bold" mb={2} {...props} />;
-
+/* ===================== MAIN ===================== */
 export default function ManageCourse() {
-  // State Management
   const [courses, setCourses] = useState<Course[]>([]);
-  const [allSemesters, setAllSemesters] = useState<Semester[]>([]);
-  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [semesters, setSemesters] = useState<Semester[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
-  const [courseFormData, setCourseFormData] = useState<Course>(initialCourseState);
+  const [view, setView] = useState<'list' | 'form' | 'semester'>('list');
+  const [editingCourse, setEditingCourse] = useState<Course | null>(null);
+  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
+  const [search, setSearch] = useState('');
+
+  // Semester management state
   const [semestersForCourse, setSemestersForCourse] = useState<Semester[]>([
     { semester_number: 1, description: '1st Year 1st Semester' },
     { semester_number: 2, description: '1st Year 2nd Semester' }
   ]);
-  
-  const [isEditing, setIsEditing] = useState(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [activeView, setActiveView] = useState<'list' | 'form'>('list');
-  const [selectedCourseId, setSelectedCourseId] = useState<number | null>(null);
-  const [showSemesters, setShowSemesters] = useState(false);
 
-  /**
-   * Fetch all courses on component mount
-   */
-  useEffect(() => {
-    const fetchCourses = async () => {
-      try {
-        const response = await fetch('/api/course?includeSemesters=true');
-        
-        if (!response.ok) {
-          console.error('API Error:', response.status, response.statusText);
-          setIsInitialLoading(false);
-          return;
-        }
-        
-        const result = await response.json();
+  const [form] = Form.useForm<Course>();
 
-        if (result.success) {
-          setCourses(result.data || []);
-          
-          // Extract all semesters from courses
-          const semesters: Semester[] = [];
-          result.data?.forEach((course: any) => {
-            if (course.semesters) {
-              semesters.push(...course.semesters);
-            }
-          });
-          setAllSemesters(semesters);
-        } else {
-          console.error('Failed to fetch courses:', result.error);
-        }
-      } catch (error) {
-        console.error('Error fetching courses:', error);
-      } finally {
-        setIsInitialLoading(false);
+  /* ===================== FETCH ===================== */
+  const fetchCourses = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await fetch('/api/course?includeSemesters=true');
+      const data = await res.json();
+      if (data.success) {
+        setCourses(data.data || []);
+        const all: Semester[] = [];
+        data.data?.forEach((c: any) => c.semesters && all.push(...c.semesters));
+        setSemesters(all);
+      } else {
+        message.error(data.error || 'Failed to load courses');
       }
-    };
-
-    fetchCourses();
+    } catch (error) {
+      message.error('Error loading courses');
+      console.error('Fetch error:', error);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  /**
-   * Filter courses based on search term
-   */
-  const filteredCourses = useMemo(() => {
-    return courses.filter(course =>
-      course.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      course.description.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [courses, searchTerm]);
+  useEffect(() => {
+    fetchCourses();
+  }, [fetchCourses]);
 
-  /**
-   * Get semesters for a specific course
-   */
-  const getSemestersForCourse = useCallback((courseId: number) => {
-    return allSemesters.filter(s => s.course_id === courseId).sort((a, b) => a.semester_number - b.semester_number);
-  }, [allSemesters]);
-
-  /**
-   * Handle course input change
-   */
-  const handleCourseInputChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-      const { name, value } = e.target;
-      setCourseFormData(prev => ({ ...prev, [name]: value }));
-    },
-    []
+  /* ===================== HELPERS ===================== */
+  const getCourseSemesters = useCallback(
+    (courseId?: number) =>
+      semesters.filter((s) => s.course_id === courseId),
+    [semesters]
   );
 
-  /**
-   * Handle semester change
-   */
+  const filteredCourses = useMemo(
+    () =>
+      courses.filter(
+        (c) =>
+          c.name.toLowerCase().includes(search.toLowerCase()) ||
+          c.description.toLowerCase().includes(search.toLowerCase())
+      ),
+    [courses, search]
+  );
+
+  /* ===================== SEMESTER HELPERS ===================== */
+  const getOrdinal = (n: number): string => {
+    const s = ['th', 'st', 'nd', 'rd'];
+    const v = n % 100;
+    return n + (s[(v - 20) % 10] || s[v] || s[0]);
+  };
+
   const handleSemesterChange = useCallback((index: number, field: keyof Semester, value: any) => {
     setSemestersForCourse(prev => {
       const newSemesters = [...prev];
@@ -146,9 +168,6 @@ export default function ManageCourse() {
     });
   }, []);
 
-  /**
-   * Add new semester
-   */
   const handleAddSemester = useCallback(() => {
     const nextSemesterNumber = semestersForCourse.length + 1;
     const year = Math.ceil(nextSemesterNumber / 2);
@@ -163,573 +182,475 @@ export default function ManageCourse() {
     ]);
   }, [semestersForCourse]);
 
-  /**
-   * Remove semester
-   */
   const handleRemoveSemester = useCallback((index: number) => {
     if (semestersForCourse.length <= 1) {
-      alert('A course must have at least one semester');
+      message.warning('A course must have at least one semester');
       return;
     }
     setSemestersForCourse(prev => prev.filter((_, i) => i !== index));
   }, [semestersForCourse]);
 
-  /**
-   * Get ordinal suffix (1st, 2nd, 3rd, 4th)
-   */
-  const getOrdinal = (n: number): string => {
-    const s = ['th', 'st', 'nd', 'rd'];
-    const v = n % 100;
-    return n + (s[(v - 20) % 10] || s[v] || s[0]);
-  };
-
-  /**
-   * Create new course
-   */
-  const handleCreateCourse = useCallback(async () => {
-    if (!courseFormData.name.trim()) {
-      alert('Course name is required');
-      return;
-    }
-
-    if (semestersForCourse.length === 0) {
-      alert('Please add at least one semester');
-      return;
-    }
-
-    // Validate semester numbers are sequential
-    const semesterNumbers = semestersForCourse.map(s => s.semester_number).sort((a, b) => a - b);
-    for (let i = 0; i < semesterNumbers.length; i++) {
-      if (semesterNumbers[i] !== i + 1) {
-        alert('Semester numbers must be sequential starting from 1');
-        return;
-      }
-    }
-
-    setIsLoading(true);
-    try {
-      const response = await fetch('/api/course', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ course: courseFormData, semesters: semestersForCourse })
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        // Add to local state
-        const newCourse = result.data.course;
-        const newSemesters = result.data.semesters;
-
-        setCourses(prev => [...prev, newCourse]);
-        setAllSemesters(prev => [...prev, ...newSemesters]);
-
-        // Reset form
-        setCourseFormData(initialCourseState);
-        setSemestersForCourse([
-          { semester_number: 1, description: '1st Year 1st Semester' },
-          { semester_number: 2, description: '1st Year 2nd Semester' }
-        ]);
-        setActiveView('list');
-        alert('Course created successfully with ' + newSemesters.length + ' semesters!');
-      } else {
-        alert(result.error || 'Failed to create course');
-      }
-    } catch (error) {
-      alert(error instanceof Error ? error.message : 'Failed to create course');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [courseFormData, semestersForCourse]);
-
-  /**
-   * Update existing course
-   */
-  const handleUpdateCourse = useCallback(async () => {
-    if (!editingId) return;
-
-    if (!courseFormData.name.trim()) {
-      alert('Course name is required');
-      return;
-    }
-
-    if (semestersForCourse.length === 0) {
-      alert('Please add at least one semester');
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      const response = await fetch(`/api/course/${editingId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ course: courseFormData, semesters: semestersForCourse })
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        // Update course
-        setCourses(prev =>
-          prev.map(course =>
-            course.id === editingId ? result.data.course : course
-          )
-        );
-
-        // Update semesters - remove old ones and add new ones
-        setAllSemesters(prev => {
-          const filtered = prev.filter(s => s.course_id !== editingId);
-          return [...filtered, ...result.data.semesters];
-        });
-
-        // Reset form
-        setCourseFormData(initialCourseState);
-        setSemestersForCourse([
-          { semester_number: 1, description: '1st Year 1st Semester' },
-          { semester_number: 2, description: '1st Year 2nd Semester' }
-        ]);
-        setIsEditing(false);
-        setEditingId(null);
-        setActiveView('list');
-        alert('Course updated successfully!');
-      } else {
-        alert(result.error || 'Failed to update course');
-      }
-    } catch (error) {
-      alert(error instanceof Error ? error.message : 'Failed to update course');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [editingId, courseFormData, semestersForCourse]);
-
-  /**
-   * Delete course
-   */
-  const handleDeleteCourse = useCallback(async (id: number) => {
-    if (!confirm('Are you sure you want to delete this course? All associated semesters will also be deleted.')) return;
-
-    setIsLoading(true);
-    try {
-      const response = await fetch(`/api/course/${id}`, {
-        method: 'DELETE'
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        setCourses(prev => prev.filter(course => course.id !== id));
-        setAllSemesters(prev => prev.filter(sem => sem.course_id !== id));
-        alert('Course deleted successfully');
-      } else {
-        alert(result.error || 'Failed to delete course');
-      }
-    } catch (error) {
-      alert(error instanceof Error ? error.message : 'Failed to delete course');
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  /**
-   * Edit course
-   */
-  const handleEditCourse = useCallback((course: Course) => {
-    setCourseFormData(course);
-    const existingSemesters = getSemestersForCourse(course.id!);
-    setSemestersForCourse(existingSemesters.length > 0 ? existingSemesters : [
-      { semester_number: 1, description: '1st Year 1st Semester' }
-    ]);
-    setEditingId(course.id!);
-    setIsEditing(true);
-    setActiveView('form');
-  }, [getSemestersForCourse]);
-
-  /**
-   * View course semesters
-   */
-  const handleViewSemesters = useCallback((courseId: number) => {
-    setSelectedCourseId(courseId);
-    setShowSemesters(true);
-  }, []);
-
-  /**
-   * Cancel editing
-   */
-  const handleCancel = useCallback(() => {
-    setCourseFormData(initialCourseState);
-    setSemestersForCourse([
-      { semester_number: 1, description: '1st Year 1st Semester' },
-      { semester_number: 2, description: '1st Year 2nd Semester' }
-    ]);
-    setIsEditing(false);
-    setEditingId(null);
-    setActiveView('list');
-  }, []);
-
-  /**
-   * Generate quick semester template
-   */
   const generateSemesterTemplate = useCallback((years: number) => {
-    const semesters: Semester[] = [];
+    const newSemesters: Semester[] = [];
     for (let year = 1; year <= years; year++) {
       for (let sem = 1; sem <= 2; sem++) {
         const semesterNumber = (year - 1) * 2 + sem;
         const semInYear = sem === 1 ? '1st' : '2nd';
-        semesters.push({
+        newSemesters.push({
           semester_number: semesterNumber,
           description: `${getOrdinal(year)} Year ${semInYear} Semester`
         });
       }
     }
-    setSemestersForCourse(semesters);
+    setSemestersForCourse(newSemesters);
   }, []);
 
-  return (
-    <Container maxW="100%" py={8}>
-      <MotionBox
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-      >
-        {/* Header */}
-        <Box mb={8}>
-          <Heading size="lg" mb={2}>
-            🎓 Course Management
-          </Heading>
-          <Text color="gray.600">
-            Create and manage academic courses with years and semesters
-          </Text>
-        </Box>
+  /* ===================== API ===================== */
+  const handleSubmit = async (values: Course) => {
+    try {
+      // Validate semester data
+      if (semestersForCourse.length === 0) {
+        message.error('Please add at least one semester');
+        return;
+      }
 
-        {/* List View */}
-        {activeView === 'list' && !showSemesters && (
-          <Stack gap={6}>
-            {isInitialLoading ? (
-              <Box p={8} textAlign="center">
-                <Text color="gray.600">Loading courses...</Text>
-              </Box>
-            ) : (
-              <Fragment>
-                {/* Search and Add Button */}
-                <Stack direction="row" gap={4}>
-                  <Input
-                    placeholder="Search courses by name or description..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    size="lg"
-                  />
-                  <Button
-                    colorScheme="green"
-                    onClick={() => {
-                      setCourseFormData(initialCourseState);
-                      setIsEditing(false);
-                      setActiveView('form');
-                    }}
-                  >
-                    <HiPlus style={{ marginRight: '8px' }} />
-                    Add Course
-                  </Button>
-                </Stack>
+      // Validate semester numbers are sequential
+      const semesterNumbers = semestersForCourse.map(s => s.semester_number).sort((a, b) => a - b);
+      for (let i = 0; i < semesterNumbers.length; i++) {
+        if (semesterNumbers[i] !== i + 1) {
+          message.error('Semester numbers must be sequential starting from 1');
+          return;
+        }
+      }
 
-                {/* Courses Grid */}
-                {filteredCourses.length > 0 ? (
-                  <Box display="grid" gridTemplateColumns={{ base: '1fr', md: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)' }} gap={6}>
-                    {filteredCourses.map(course => {
-                      const semesters = getSemestersForCourse(course.id!);
-                      const years = Math.ceil(semesters.length / 2);
-                      
-                      return (
-                        <MotionBox
-                          key={course.id}
-                          p={6}
-                          borderWidth={1}
-                          borderRadius="lg"
-                          borderColor="gray.200"
-                          bg="white"
-                          boxShadow="sm"
-                          _hover={{ boxShadow: 'md', borderColor: 'blue.300' }}
-                          transition={{ duration: 0.2 }}
-                          whileHover={{ scale: 1.02 }}
-                        >
-                          <Stack gap={4}>
-                            {/* Course Icon and Name */}
-                            <Box>
-                              <Stack direction="row" align="center" mb={2}>
-                                <HiAcademicCap size={24} color="#3182CE" />
-                                <Heading size="md" color="blue.700">
-                                  {course.name}
-                                </Heading>
-                              </Stack>
-                              <Text fontSize="sm" color="gray.600">
-                                {course.description}
-                              </Text>
-                            </Box>
+      setSubmitting(true);
+      const url = editingCourse ? `/api/course/${editingCourse.id}` : '/api/course';
+      const method = editingCourse ? 'PUT' : 'POST';
 
-                            <Separator />
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ course: values, semesters: semestersForCourse }),
+      });
 
-                            {/* Course Stats */}
-                            <Stack direction="row" gap={2} wrap="wrap">
-                              <Badge colorScheme="purple" fontSize="xs">
-                                {semesters.length} Semesters
-                              </Badge>
-                              <Badge colorScheme="blue" fontSize="xs">
-                                {years} {years === 1 ? 'Year' : 'Years'}
-                              </Badge>
-                            </Stack>
+      const data = await res.json();
+      
+      if (!data.success) {
+        throw new Error(data.error || 'Operation failed');
+      }
 
-                            {/* Action Buttons */}
-                            <Stack direction="row" gap={2} pt={2}>
-                              <Button
-                                size="sm"
-                                colorScheme="blue"
-                                variant="outline"
-                                flex={1}
-                                onClick={() => handleViewSemesters(course.id!)}
-                              >
-                                📚 View Semesters
-                              </Button>
-                              <Button
-                                size="sm"
-                                colorScheme="green"
-                                variant="ghost"
-                                onClick={() => handleEditCourse(course)}
-                              >
-                                <HiPencil />
-                              </Button>
-                              <Button
-                                size="sm"
-                                colorScheme="red"
-                                variant="ghost"
-                                onClick={() => handleDeleteCourse(course.id!)}
-                              >
-                                <HiTrash />
-                              </Button>
-                            </Stack>
-                          </Stack>
-                        </MotionBox>
-                      );
-                    })}
-                  </Box>
-                ) : (
-                  <Box p={8} textAlign="center" bg="gray.50" borderRadius="md">
-                    <Text color="gray.600">
-                      {courses.length === 0 ? 'No courses yet. Create your first course!' : 'No courses match your search.'}
-                    </Text>
-                  </Box>
-                )}
-              </Fragment>
-            )}
-          </Stack>
-        )}
+      // Update local state
+      if (editingCourse) {
+        setCourses(prev => prev.map(c => 
+          c.id === editingCourse.id ? { ...c, ...values } : c
+        ));
+        // Update semesters
+        setSemesters(prev => {
+          const filtered = prev.filter(s => s.course_id !== editingCourse.id);
+          return [...filtered, ...data.data.semesters];
+        });
+        message.success(`Course "${values.name}" updated successfully with ${data.data.semesters.length} semesters`);
+      } else {
+        setCourses(prev => [...prev, { ...data.data.course, ...values }]);
+        setSemesters(prev => [...prev, ...data.data.semesters]);
+        message.success(`Course "${values.name}" created successfully with ${data.data.semesters.length} semesters`);
+      }
 
-        {/* Semester View */}
-        {showSemesters && selectedCourseId && (
-          <Box bg="white" p={8} borderRadius="lg" boxShadow="md">
-            <Stack gap={6}>
-              <Stack direction="row" align="center" justify="space-between">
-                <Heading size="md">
-                  📚 {courses.find(c => c.id === selectedCourseId)?.name} - Semesters
-                </Heading>
-                <Button
-                  variant="outline"
+      // Reset and return to list
+      form.resetFields();
+      setSemestersForCourse([
+        { semester_number: 1, description: '1st Year 1st Semester' },
+        { semester_number: 2, description: '1st Year 2nd Semester' }
+      ]);
+      setView('list');
+      setEditingCourse(null);
+      
+    } catch (error: any) {
+      message.error(error.message || 'An error occurred');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (id?: number, courseName?: string) => {
+    if (!id) return;
+    
+    try {
+      const res = await fetch(`/api/course/${id}`, { method: 'DELETE' });
+      const data = await res.json();
+      
+      if (data.success) {
+        message.success(`Course "${courseName}" deleted successfully`);
+        setCourses(prev => prev.filter(c => c.id !== id));
+        setSemesters(prev => prev.filter(s => s.course_id !== id));
+        if (view === 'semester' && selectedCourse?.id === id) {
+          setView('list');
+          setSelectedCourse(null);
+        }
+      } else {
+        message.error(data.error || 'Failed to delete course');
+      }
+    } catch (error) {
+      message.error('Error deleting course');
+    }
+  };
+
+  /* ===================== EDIT HANDLERS ===================== */
+  const handleEditCourse = useCallback((course: Course) => {
+    setEditingCourse(course);
+    form.setFieldsValue(course);
+    
+    // Load existing semesters for this course
+    const existingSemesters = semesters.filter(s => s.course_id === course.id);
+    if (existingSemesters.length > 0) {
+      setSemestersForCourse(existingSemesters);
+    } else {
+      setSemestersForCourse([
+        { semester_number: 1, description: '1st Year 1st Semester' },
+        { semester_number: 2, description: '1st Year 2nd Semester' }
+      ]);
+    }
+    
+    setView('form');
+  }, [semesters, form]);
+
+  /* ===================== REUSABLE COMPONENTS ===================== */
+  const Header = ({ 
+    title, 
+    onBack,
+    extra 
+  }: { 
+    title: string; 
+    onBack?: () => void;
+    extra?: React.ReactNode;
+  }) => (
+    <div style={{ marginBottom: 24 }}>
+      <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+        <Space>
+          {onBack && (
+            <Button icon={<ArrowLeftOutlined />} onClick={onBack}>
+              Back
+            </Button>
+          )}
+          <Title level={3} style={{ margin: 0, flex: 1 }}>{title}</Title>
+          {extra}
+        </Space>
+      </Space>
+    </div>
+  );
+
+  const CourseGrid = () => (
+    <Row gutter={[16, 16]}>
+      {filteredCourses.map((course) => {
+        const sem = getCourseSemesters(course.id);
+        return (
+          <Col xs={24} sm={12} md={8} lg={6} key={course.id}>
+            <Card
+              title={course.name}
+              loading={loading}
+              extra={<BookOutlined />}
+              actions={[
+                <Button 
+                  type="link" 
+                  size="small"
                   onClick={() => {
-                    setShowSemesters(false);
-                    setSelectedCourseId(null);
+                    setSelectedCourse(course);
+                    setView('semester');
                   }}
                 >
-                  ← Back to Courses
+                  Semesters
+                </Button>,
+                <Button 
+                  type="link" 
+                  size="small"
+                  icon={<EditOutlined />}
+                  onClick={() => handleEditCourse(course)}
+                >
+                  Edit
+                </Button>,
+                <Button 
+                  type="link" 
+                  size="small"
+                  icon={<DeleteOutlined />}
+                  danger
+                  onClick={() => confirm({
+                    title: 'Delete Course',
+                    icon: <ExclamationCircleOutlined />,
+                    content: `Are you sure you want to delete "${course.name}"?`,
+                    okText: 'Delete',
+                    okType: 'danger',
+                    onOk: () => handleDelete(course.id, course.name),
+                  })}
+                >
+                  Delete
+                </Button>,
+              ]}
+            >
+              <Text type="secondary" style={{ display: 'block', marginBottom: 12 }}>
+                {course.description}
+              </Text>
+              <Divider style={{ margin: '12px 0' }} />
+              <Space>
+                <Tag color="blue">{sem.length} Semesters</Tag>
+                <Tag color="purple">{Math.ceil(sem.length / 2)} Years</Tag>
+              </Space>
+            </Card>
+          </Col>
+        );
+      })}
+    </Row>
+  );
+
+  /* ===================== LIST VIEW ===================== */
+  if (view === 'list') {
+    return (
+      <ConfigProvider theme={darkTheme}>
+        <div style={{ padding: 24, minHeight: '100vh', backgroundColor: '#000000' }}>
+          <Space direction="vertical" size="large" style={{ width: '100%' }}>
+            <Header 
+              title="🎓 Course Management" 
+              extra={
+                <Button
+                  type="primary"
+                  icon={<PlusOutlined />}
+                  onClick={() => {
+                    setEditingCourse(null);
+                    form.resetFields();
+                    setView('form');
+                  }}
+                >
+                  Add New Course
                 </Button>
-              </Stack>
+              }
+            />
 
-              <Box overflowX="auto">
-                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                  <thead style={{ backgroundColor: '#f7fafc' }}>
-                    <tr style={{ borderBottom: '2px solid #e2e8f0' }}>
-                      <th style={{ padding: '12px', textAlign: 'left', fontWeight: 'bold' }}>Semester #</th>
-                      <th style={{ padding: '12px', textAlign: 'left', fontWeight: 'bold' }}>Description</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {getSemestersForCourse(selectedCourseId).map(semester => (
-                      <tr key={semester.id} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                        <td style={{ padding: '12px' }}>
-                          <Badge colorScheme="blue">Semester {semester.semester_number}</Badge>
-                        </td>
-                        <td style={{ padding: '12px' }}>{semester.description}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </Box>
-            </Stack>
-          </Box>
-        )}
+            <Space wrap>
+              <Input.Search
+                placeholder="Search courses by name or description"
+                allowClear
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                style={{ width: 300 }}
+              />
+            </Space>
 
-        {/* Form View */}
-        {activeView === 'form' && (
-          <Box bg="white" p={8} borderRadius="lg" boxShadow="md">
-            <Heading size="md" mb={6}>
-              {isEditing ? '✏️ Edit Course' : '➕ Add New Course'}
-            </Heading>
-
-            <Stack gap={6} maxW="900px">
-              {/* Course Information */}
-              <Box>
-                <Heading size="sm" mb={4} color="blue.600">
-                  📖 Course Information
-                </Heading>
-
-                <FormControl isRequired mb={4}>
-                  <FormLabel>Course Name *</FormLabel>
-                  <Input
-                    name="name"
-                    value={courseFormData.name}
-                    onChange={handleCourseInputChange}
-                    placeholder="e.g., BSc Nursing, GNM, Pharmacy"
-                    size="lg"
-                  />
-                </FormControl>
-
-                <FormControl mb={4}>
-                  <FormLabel>Description</FormLabel>
-                  <Textarea
-                    name="description"
-                    value={courseFormData.description}
-                    onChange={handleCourseInputChange}
-                    placeholder="Enter course description"
-                    rows={3}
-                  />
-                </FormControl>
-              </Box>
-
-              <Separator />
-
-              {/* Semester Management */}
-              <Box>
-                <Stack direction="row" align="center" justify="space-between" mb={4}>
-                  <Heading size="sm" color="purple.600">
-                    📅 Years & Semesters
-                  </Heading>
-                  <Stack direction="row" gap={2}>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      colorScheme="blue"
-                      onClick={() => generateSemesterTemplate(2)}
-                    >
-                      2 Years (4 Sem)
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      colorScheme="blue"
-                      onClick={() => generateSemesterTemplate(3)}
-                    >
-                      3 Years (6 Sem)
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      colorScheme="blue"
-                      onClick={() => generateSemesterTemplate(4)}
-                    >
-                      4 Years (8 Sem)
-                    </Button>
-                  </Stack>
-                </Stack>
-
-                <Text fontSize="sm" color="gray.600" mb={4}>
-                  Add semesters/years for this course. Use quick templates above or customize manually.
+            {loading ? (
+              <div style={{ textAlign: 'center', padding: 48 }}>
+                <Spin size="large" />
+              </div>
+            ) : filteredCourses.length > 0 ? (
+              <CourseGrid />
+            ) : (
+              <Card>
+                <Text type="secondary">
+                  {search 
+                    ? `No courses found matching "${search}"` 
+                    : 'No courses available. Add your first course to get started.'
+                  }
                 </Text>
+              </Card>
+            )}
+          </Space>
+        </div>
+      </ConfigProvider>
+    );
+  }
 
-                {/* Semesters List */}
-                <Stack gap={3}>
-                  {semestersForCourse.map((semester, index) => (
-                    <Box
-                      key={index}
-                      p={4}
-                      borderWidth={1}
-                      borderRadius="md"
-                      borderColor="gray.200"
-                      bg="gray.50"
-                    >
-                      <Stack direction="row" gap={4} align="center">
-                        <FormControl flex={0} minW="150px">
-                          <FormLabel fontSize="sm">Semester Number</FormLabel>
-                          <Input
-                            type="number"
-                            value={semester.semester_number}
-                            onChange={(e) => handleSemesterChange(index, 'semester_number', parseInt(e.target.value) || 1)}
-                            min={1}
-                            bg="white"
-                          />
-                        </FormControl>
+  /* ===================== SEMESTER VIEW ===================== */
+  if (view === 'semester' && selectedCourse) {
+    const semesterData = getCourseSemesters(selectedCourse.id).map((s) => ({
+      key: s.id,
+      semester: s.semester_number,
+      description: s.description,
+    }));
 
-                        <FormControl flex={1}>
-                          <FormLabel fontSize="sm">Description</FormLabel>
-                          <Input
-                            value={semester.description}
-                            onChange={(e) => handleSemesterChange(index, 'description', e.target.value)}
-                            placeholder="e.g., 1st Year 1st Semester"
-                            bg="white"
-                          />
-                        </FormControl>
+    return (
+      <ConfigProvider theme={darkTheme}>
+        <div style={{ padding: 24, minHeight: '100vh', backgroundColor: '#000000' }}>
+          <Header 
+            title={`📚 ${selectedCourse.name} - Semesters`} 
+            onBack={() => setView('list')} 
+          />
 
-                        <Button
-                          size="sm"
-                          colorScheme="red"
-                          variant="ghost"
-                          onClick={() => handleRemoveSemester(index)}
-                          mt={6}
-                        >
-                          <HiTrash />
-                        </Button>
-                      </Stack>
-                    </Box>
-                  ))}
-                </Stack>
+          <Card>
+            <Table
+              pagination={false}
+              dataSource={semesterData}
+              columns={[
+                { 
+                  title: 'Semester', 
+                  dataIndex: 'semester',
+                  sorter: (a, b) => a.semester - b.semester,
+                  width: 120,
+                },
+                { 
+                  title: 'Description', 
+                  dataIndex: 'description',
+                  render: (text: string) => text || <Text type="secondary">No description</Text>
+                },
+              ]}
+              locale={{
+                emptyText: 'No semesters found for this course'
+              }}
+            />
+          </Card>
+        </div>
+      </ConfigProvider>
+    );
+  }
 
-                <Button
-                  size="sm"
-                  colorScheme="green"
-                  variant="outline"
-                  onClick={handleAddSemester}
-                  mt={4}
+  /* ===================== SEMESTER MANAGEMENT UI ===================== */
+  const SemesterManagement = () => (
+    <div style={{ marginTop: 24 }}>
+      <Divider>📅 Years & Semesters</Divider>
+      
+      <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
+        Add semesters/years for this course. Use quick templates or customize manually.
+      </Text>
+
+      {/* Quick Templates */}
+      <Space wrap style={{ marginBottom: 16 }}>
+        <Button size="small" onClick={() => generateSemesterTemplate(1)}>
+          1 Year (2 Sem)
+        </Button>
+        <Button size="small" onClick={() => generateSemesterTemplate(2)}>
+          2 Years (4 Sem)
+        </Button>
+        <Button size="small" onClick={() => generateSemesterTemplate(3)}>
+          3 Years (6 Sem)
+        </Button>
+        <Button size="small" onClick={() => generateSemesterTemplate(4)}>
+          4 Years (8 Sem)
+        </Button>
+      </Space>
+
+      {/* Semester List */}
+      <div style={{ marginBottom: 16 }}>
+        {semestersForCourse.map((semester, index) => (
+          <Card 
+            size="small" 
+            key={index} 
+            style={{ marginBottom: 8 }}
+            actions={[
+              <Button 
+                type="text" 
+                icon={<DeleteOutlined />} 
+                danger 
+                size="small"
+                onClick={() => handleRemoveSemester(index)}
+              />
+            ]}
+          >
+            <Row gutter={16} align="middle">
+              <Col span={6}>
+                <Form.Item 
+                  label="Sem #" 
+                  style={{ marginBottom: 0 }}
+                  initialValue={semester.semester_number}
                 >
-                  <HiPlus style={{ marginRight: '8px' }} />
-                  Add Semester
-                </Button>
-
-                {/* Summary */}
-                <Box mt={4} p={4} bg="blue.50" borderRadius="md">
-                  <Text fontSize="sm" color="blue.800">
-                    📊 <strong>Total:</strong> {semestersForCourse.length} semesters ({Math.ceil(semestersForCourse.length / 2)} years)
-                  </Text>
-                </Box>
-              </Box>
-
-              <Separator />
-
-              {/* Action Buttons */}
-              <Stack direction="row" gap={4} justify="flex-end" pt={4}>
-                <Button
-                  variant="outline"
-                  onClick={handleCancel}
+                  <Input
+                    type="number"
+                    min={1}
+                    value={semester.semester_number}
+                    onChange={(e) => handleSemesterChange(index, 'semester_number', parseInt(e.target.value) || 1)}
+                  />
+                </Form.Item>
+              </Col>
+              <Col span={18}>
+                <Form.Item 
+                  label="Description" 
+                  style={{ marginBottom: 0 }}
+                  initialValue={semester.description}
                 >
-                  Cancel
-                </Button>
-                <Button
-                  colorScheme={isEditing ? 'blue' : 'green'}
-                  onClick={isEditing ? handleUpdateCourse : handleCreateCourse}
-                  disabled={isLoading}
-                >
-                  {isEditing ? '💾 Update Course' : '➕ Create Course'}
-                </Button>
-              </Stack>
-            </Stack>
-          </Box>
-        )}
-      </MotionBox>
-    </Container>
+                  <Input
+                    value={semester.description}
+                    onChange={(e) => handleSemesterChange(index, 'description', e.target.value)}
+                    placeholder="e.g., 1st Year 1st Semester"
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
+          </Card>
+        ))}
+      </div>
+
+      <Button 
+        type="dashed" 
+        onClick={handleAddSemester}
+        icon={<PlusOutlined />}
+        style={{ width: '100%', marginBottom: 16 }}
+      >
+        Add Semester
+      </Button>
+
+      {/* Summary */}
+      <Card size="small" style={{ backgroundColor: '#f0f5ff' }}>
+        <Text strong>
+          📊 Total: {semestersForCourse.length} semesters ({Math.ceil(semestersForCourse.length / 2)} years)
+        </Text>
+      </Card>
+    </div>
+  );
+
+  /* ===================== FORM VIEW ===================== */
+  return (
+    <ConfigProvider theme={darkTheme}>
+      <div style={{ padding: 24, minHeight: '100vh', backgroundColor: '#000000' }}>
+        <Header 
+          title={editingCourse ? '✏️ Edit Course' : '➕ Add New Course'} 
+          onBack={() => setView('list')} 
+        />
+
+        <Card style={{ maxWidth: 700 }}>
+          <Form
+            form={form}
+            layout="vertical"
+            onFinish={handleSubmit}
+          >
+            <Form.Item
+              name="name"
+              label="Course Name"
+              rules={[{ required: true, message: 'Please enter course name' }]}
+            >
+              <Input placeholder="Enter course name" />
+            </Form.Item>
+
+            <Form.Item 
+              name="description" 
+              label="Description"
+              rules={[{ required: true, message: 'Please enter description' }]}
+            >
+              <Input.TextArea 
+                rows={3} 
+                placeholder="Enter course description" 
+              />
+            </Form.Item>
+
+            <SemesterManagement />
+
+            <Divider />
+
+            <Space>
+              <Button onClick={() => {
+                setView('list');
+                setSemestersForCourse([
+                  { semester_number: 1, description: '1st Year 1st Semester' },
+                  { semester_number: 2, description: '1st Year 2nd Semester' }
+                ]);
+              }}>
+                Cancel
+              </Button>
+              <Button 
+                type="primary" 
+                htmlType="submit" 
+                loading={submitting}
+              >
+                {editingCourse ? 'Update Course' : 'Create Course'}
+              </Button>
+            </Space>
+          </Form>
+        </Card>
+      </div>
+    </ConfigProvider>
   );
 }
