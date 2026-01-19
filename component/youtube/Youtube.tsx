@@ -41,7 +41,7 @@ export default function Youtube() {
             description: playlist.description,
             thumbnail: playlist.thumbnail,
             videoCount: playlist.video_count || 0,
-            totalDuration: playlist.total_duration || '0h 0m',
+            // totalDuration: playlist.total_duration || '0h 0m',
             category: playlist.category,
           }));
               
@@ -308,9 +308,9 @@ export default function Youtube() {
                         {playlist.description}
                       </Box>
 
-                      <Text fontSize="xs" color="gray.400" mt="12px">
+                      {/* <Text fontSize="xs" color="gray.400" mt="12px">
                         {playlist.totalDuration} total
-                      </Text>
+                      </Text> */}
                     </Box>
                   </Box>
                 </MotionBox>
