@@ -59,12 +59,15 @@ interface Course {
   id: number;
   name: string;
   description: string;
+  academic_periods?: AcademicPeriod[];
 }
 
-interface Semester {
+interface AcademicPeriod {
   id: number;
   course_id: number;
-  semester_number: number;
+  period_number: number;
+  period_type: 'SEMESTER' | 'YEAR';
+  label: string;
   description: string;
 }
 
@@ -72,9 +75,11 @@ interface BookCourseMap {
   id?: number;
   book_id?: number;
   course_id: number;
-  semester_id: number;
+  academic_period_id: number;
   is_required: boolean;
-  is_recommended: boolean;
+  course_name?: string;
+  period_label?: string;
+  period_type?: string;
 }
 
 const initialFormState: Book = {
@@ -86,7 +91,7 @@ const initialFormState: Book = {
 export default function ManageBooks() {
   const [books, setBooks] = useState<Book[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
-  const [semesters, setSemesters] = useState<Semester[]>([]);
+  const [academicPeriods, setAcademicPeriods] = useState<AcademicPeriod[]>([]);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -94,7 +99,7 @@ export default function ManageBooks() {
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCourse, setFilterCourse] = useState<number | null>(null);
-  const [filterSemester, setFilterSemester] = useState<number | null>(null);
+  const [filterPeriod, setFilterPeriod] = useState<number | null>(null);
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string>('');
   const [courseMapping, setCourseMapping] = useState<BookCourseMap[]>([]);
   const [form] = Form.useForm();
@@ -116,19 +121,19 @@ export default function ManageBooks() {
     }
   }, []);
 
-  const fetchCoursesAndSemesters = useCallback(async () => {
+  const fetchCoursesAndPeriods = useCallback(async () => {
     try {
-      const response = await authUtils.fetchWithAuth('/api/course?includeSemesters=true');
+      const response = await authUtils.fetchWithAuth('/api/course?includePeriods=true');
       const result = await response.json();
       if (result.success) {
         setCourses(result.data || []);
-        const allSems: Semester[] = [];
-        result.data?.forEach((course: any) => {
-          if (course.semesters) {
-            allSems.push(...course.semesters);
+        const allPeriods: AcademicPeriod[] = [];
+        result.data?.forEach((course: Course) => {
+          if (course.academic_periods) {
+            allPeriods.push(...course.academic_periods);
           }
         });
-        setSemesters(allSems);
+        setAcademicPeriods(allPeriods);
       }
     } catch (error) {
       console.error('Error fetching courses:', error);
@@ -143,12 +148,10 @@ export default function ManageBooks() {
         return;
       }
       try {
-        await fetchCoursesAndSemesters();
-        // Fetch books with course mappings
+        await fetchCoursesAndPeriods();
         const booksResponse = await authUtils.fetchWithAuth('/api/book?includeMappings=true');
         const booksResult = await booksResponse.json();
         if (booksResult.success) {
-          // Ensure rating is a number
           const booksWithParsedRatings = booksResult.data.map((book: Book) => ({
             ...book,
             rating: typeof book.rating === 'string' ? parseFloat(book.rating) : (book.rating || 0),
@@ -170,22 +173,6 @@ export default function ManageBooks() {
     initializeData();
   }, []);
 
-  // Initialize courseMapping when courses and semesters are loaded
-  useEffect(() => {
-    if (courses.length > 0 && semesters.length > 0 && courseMapping.length === 0) {
-      const firstCourse = courses[0];
-      const courseSems = semesters.filter(s => s.course_id === firstCourse.id);
-      if (courseSems.length > 0) {
-        setCourseMapping([{
-          course_id: firstCourse.id,
-          semester_id: courseSems[0].id,
-          is_required: true,
-          is_recommended: false
-        }]);
-      }
-    }
-  }, [courses, semesters, courseMapping.length]);
-
   const calculateDiscount = useCallback((actual: number, offer: number) => {
     if (actual <= 0) return 0;
     return Math.round(((actual - offer) / actual) * 100);
@@ -193,14 +180,12 @@ export default function ManageBooks() {
 
   const filteredBooks = useMemo(() => {
     return books.filter(book => {
-      // Search filter
       const matchesSearch = book.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         book.author.toLowerCase().includes(searchTerm.toLowerCase()) ||
         book.isbn.toLowerCase().includes(searchTerm.toLowerCase());
       
       if (!matchesSearch) return false;
       
-      // Course filter
       if (filterCourse !== null) {
         const hasCourseMapping = book.courseMappings?.some(
           mapping => mapping.course_id === filterCourse
@@ -208,42 +193,54 @@ export default function ManageBooks() {
         if (!hasCourseMapping) return false;
       }
       
-      // Semester filter (only applies if course is selected)
-      if (filterSemester !== null && filterCourse !== null) {
-        const hasSemesterMapping = book.courseMappings?.some(
-          mapping => mapping.course_id === filterCourse && mapping.semester_id === filterSemester
+      if (filterPeriod !== null && filterCourse !== null) {
+        const hasPeriodMapping = book.courseMappings?.some(
+          mapping => mapping.course_id === filterCourse && mapping.academic_period_id === filterPeriod
         );
-        if (!hasSemesterMapping) return false;
+        if (!hasPeriodMapping) return false;
       }
       
       return true;
     });
-  }, [books, searchTerm, filterCourse, filterSemester]);
+  }, [books, searchTerm, filterCourse, filterPeriod]);
+
+  const getPeriodsForCourse = useCallback((courseId: number) => {
+    return academicPeriods.filter(p => p.course_id === courseId);
+  }, [academicPeriods]);
 
   const getDefaultCourseMapping = useCallback((): BookCourseMap[] => {
     if (courses.length === 0) return [];
     const firstCourse = courses[0];
-    const courseSemesters = semesters.filter(s => s.course_id === firstCourse.id);
-    if (courseSemesters.length === 0) return [];
+    const coursePeriods = getPeriodsForCourse(firstCourse.id);
+    if (coursePeriods.length === 0) return [];
     return [{
       course_id: firstCourse.id,
-      semester_id: courseSemesters[0].id,
-      is_required: true,
-      is_recommended: false
+      academic_period_id: coursePeriods[0].id,
+      is_required: true
     }];
-  }, [courses, semesters]);
+  }, [courses, getPeriodsForCourse]);
 
   const showModal = useCallback((book?: Book) => {
     if (book) {
       form.setFieldsValue(book);
       setEditingId(book.id!);
+      setUploadedImageUrl(book.image_url || '');
+      if (book.courseMappings && book.courseMappings.length > 0) {
+        setCourseMapping(book.courseMappings.map(m => ({
+          course_id: m.course_id,
+          academic_period_id: m.academic_period_id,
+          is_required: m.is_required
+        })));
+      } else {
+        setCourseMapping(getDefaultCourseMapping());
+      }
     } else {
       form.resetFields();
       form.setFieldsValue(initialFormState);
       setEditingId(null);
+      setUploadedImageUrl('');
+      setCourseMapping(getDefaultCourseMapping());
     }
-    setUploadedImageUrl('');
-    setCourseMapping(getDefaultCourseMapping());
     setIsModalOpen(true);
   }, [form, getDefaultCourseMapping]);
 
@@ -260,7 +257,6 @@ export default function ManageBooks() {
       const booksResponse = await authUtils.fetchWithAuth('/api/book?includeMappings=true');
       const booksResult = await booksResponse.json();
       if (booksResult.success) {
-        // Ensure rating is a number
         const booksWithParsedRatings = booksResult.data.map((book: Book) => ({
           ...book,
           rating: typeof book.rating === 'string' ? parseFloat(book.rating) : (book.rating || 0),
@@ -302,7 +298,7 @@ export default function ManageBooks() {
         } else {
           message.success('Book created successfully!');
         }
-        await refetchBooks(); // Refetch to get updated mappings
+        await refetchBooks();
         handleCancel();
       } else {
         message.error(result.error || 'Operation failed');
@@ -328,7 +324,7 @@ export default function ManageBooks() {
           const result = await response.json();
           if (result.success) {
             message.success('Book deleted successfully!');
-            await refetchBooks(); // Refetch to update list
+            await refetchBooks();
           } else {
             message.error(result.error || 'Failed to delete book');
           }
@@ -340,10 +336,6 @@ export default function ManageBooks() {
       }
     });
   }, [refetchBooks]);
-
-  const getSemestersForCourse = useCallback((courseId: number) => {
-    return semesters.filter(s => s.course_id === courseId);
-  }, [semesters]);
 
   const columns = [
     {
@@ -370,6 +362,27 @@ export default function ManageBooks() {
       render: (category: string) => (
         <Tag color="blue">{category || 'N/A'}</Tag>
       ),
+    },
+    {
+      title: 'Course/Period',
+      key: 'coursePeriod',
+      render: (_: any, record: Book) => {
+        if (!record.courseMappings || record.courseMappings.length === 0) {
+          return <Tag color="default">Not mapped</Tag>;
+        }
+        return (
+          <Space direction="vertical" size="small">
+            {record.courseMappings.slice(0, 2).map((m, idx) => (
+              <Tag key={idx} color="purple">
+                {m.course_name || courses.find(c => c.id === m.course_id)?.name || 'Unknown'} - {m.period_label || 'Unknown Period'}
+              </Tag>
+            ))}
+            {record.courseMappings.length > 2 && (
+              <Tag color="default">+{record.courseMappings.length - 2} more</Tag>
+            )}
+          </Space>
+        );
+      },
     },
     {
       title: 'Actual Price',
@@ -410,16 +423,6 @@ export default function ManageBooks() {
       sorter: (a: Book, b: Book) => a.stock_quantity - b.stock_quantity,
     },
     {
-      title: 'Rating',
-      dataIndex: 'rating',
-      key: 'rating',
-      render: (rating: number, record: Book) => {
-        const validRating = typeof rating === 'number' && !isNaN(rating) ? rating : 0;
-        return `⭐ ${validRating.toFixed(1)}`;
-      },
-      sorter: (a: Book, b: Book) => (a.rating || 0) - (b.rating || 0),
-    },
-    {
       title: 'Actions',
       key: 'actions',
       render: (_: any, record: Book) => (
@@ -447,10 +450,10 @@ export default function ManageBooks() {
   return (
     <div style={{ padding: '24px' }}>
       <Card>
-        <Space orientation="vertical" size="large" style={{ width: '100%', display: 'flex' }}>
+        <Space direction="vertical" size="large" style={{ width: '100%', display: 'flex' }}>
           <div>
-            <Title level={3}>📚 Books Management</Title>
-            <Text type="secondary">Manage your book catalog with complete CRUD operations</Text>
+            <Title level={3}>Books Management</Title>
+            <Text type="secondary">Manage your book catalog with course mappings</Text>
           </div>
 
           {connectionError && (
@@ -486,7 +489,7 @@ export default function ManageBooks() {
                     value={filterCourse}
                     onChange={(value) => {
                       setFilterCourse(value);
-                      setFilterSemester(null); // Reset semester when course changes
+                      setFilterPeriod(null);
                     }}
                     allowClear
                   >
@@ -499,16 +502,16 @@ export default function ManageBooks() {
                 </Col>
                 <Col xs={24} sm={12} md={6}>
                   <Select
-                    placeholder="Filter by Semester"
+                    placeholder="Filter by Year/Semester"
                     style={{ width: '100%' }}
-                    value={filterSemester}
-                    onChange={setFilterSemester}
+                    value={filterPeriod}
+                    onChange={setFilterPeriod}
                     allowClear
                     disabled={!filterCourse}
                   >
-                    {filterCourse && getSemestersForCourse(filterCourse).map(semester => (
-                      <Option key={semester.id} value={semester.id}>
-                        {semester.description || `Semester ${semester.semester_number}`}
+                    {filterCourse && getPeriodsForCourse(filterCourse).map(period => (
+                      <Option key={period.id} value={period.id}>
+                        {period.label || `${period.period_type} ${period.period_number}`}
                       </Option>
                     ))}
                   </Select>
@@ -543,7 +546,7 @@ export default function ManageBooks() {
       </Card>
 
       <Modal
-        title={editingId ? '✏️ Edit Book' : '➕ Add New Book'}
+        title={editingId ? 'Edit Book' : 'Add New Book'}
         open={isModalOpen}
         onCancel={handleCancel}
         footer={null}
@@ -555,7 +558,7 @@ export default function ManageBooks() {
           onFinish={handleSubmit}
           initialValues={initialFormState}
         >
-          <Divider><strong>📖 Basic Information</strong></Divider>
+          <Divider><strong>Basic Information</strong></Divider>
           <Row gutter={16}>
             <Col span={24}>
               <Form.Item
@@ -600,12 +603,12 @@ export default function ManageBooks() {
             </Col>
           </Row>
 
-          <Divider><strong>📝 Description</strong></Divider>
+          <Divider><strong>Description</strong></Divider>
           <Form.Item label="Description" name="description">
             <TextArea rows={4} placeholder="Enter book description" />
           </Form.Item>
 
-          <Divider><strong>💰 Pricing</strong></Divider>
+          <Divider><strong>Pricing</strong></Divider>
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item
@@ -639,7 +642,7 @@ export default function ManageBooks() {
             </Col>
           </Row>
 
-          <Divider><strong>📊 Stock & Ratings</strong></Divider>
+          <Divider><strong>Stock & Ratings</strong></Divider>
           <Row gutter={16}>
             <Col span={8}>
               <Form.Item label="Stock Quantity" name="stock_quantity">
@@ -669,7 +672,7 @@ export default function ManageBooks() {
             </Col>
           </Row>
 
-          <Divider><strong>🖼️ Book Cover Image</strong></Divider>
+          <Divider><strong>Book Cover Image</strong></Divider>
           <CloudinaryImageUpload onImageSelect={setUploadedImageUrl} />
           {uploadedImageUrl && (
             <Alert
@@ -681,23 +684,23 @@ export default function ManageBooks() {
             />
           )}
 
-          <Divider><strong>🎓 Course Mapping</strong></Divider>
+          <Divider><strong>Course & Period Mapping</strong></Divider>
           <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
-            Map this book to academic courses, semesters, and specify if it's required or recommended.
+            Map this book to courses and their academic periods (years/semesters).
           </Text>
           {courseMapping.map((mapping, index) => (
             <Card key={index} size="small" style={{ marginBottom: 16 }}>
               <Row gutter={16}>
-                <Col span={12}>
+                <Col span={10}>
                   <Form.Item label="Course">
                     <Select
                       value={mapping.course_id}
                       onChange={(courseId) => {
                         const newMappings = [...courseMapping];
                         newMappings[index].course_id = courseId;
-                        const courseSems = semesters.filter(s => s.course_id === courseId);
-                        if (courseSems.length > 0) {
-                          newMappings[index].semester_id = courseSems[0].id;
+                        const coursePeriods = getPeriodsForCourse(courseId);
+                        if (coursePeriods.length > 0) {
+                          newMappings[index].academic_period_id = coursePeriods[0].id;
                         }
                         setCourseMapping(newMappings);
                       }}
@@ -710,26 +713,27 @@ export default function ManageBooks() {
                     </Select>
                   </Form.Item>
                 </Col>
-                <Col span={12}>
-                  <Form.Item label="Semester">
+                <Col span={10}>
+                  <Form.Item label="Year/Semester">
                     <Select
-                      value={mapping.semester_id}
-                      onChange={(semesterId) => {
+                      value={mapping.academic_period_id}
+                      onChange={(periodId) => {
                         const newMappings = [...courseMapping];
-                        newMappings[index].semester_id = semesterId;
+                        newMappings[index].academic_period_id = periodId;
                         setCourseMapping(newMappings);
                       }}
                     >
-                      {getSemestersForCourse(mapping.course_id).map(semester => (
-                        <Option key={semester.id} value={semester.id}>
-                          {semester.description || `Semester ${semester.semester_number}`}
+                      {getPeriodsForCourse(mapping.course_id).map(period => (
+                        <Option key={period.id} value={period.id}>
+                          {period.label || `${period.period_type} ${period.period_number}`}
+                          {period.period_type && <Tag style={{ marginLeft: 8 }} color={period.period_type === 'YEAR' ? 'blue' : 'green'}>{period.period_type}</Tag>}
                         </Option>
                       ))}
                     </Select>
                   </Form.Item>
                 </Col>
-                <Col span={24}>
-                  <Space>
+                <Col span={4} style={{ display: 'flex', alignItems: 'center' }}>
+                  <Space direction="vertical">
                     <Checkbox
                       checked={mapping.is_required}
                       onChange={(e) => {
@@ -739,16 +743,6 @@ export default function ManageBooks() {
                       }}
                     >
                       Required
-                    </Checkbox>
-                    <Checkbox
-                      checked={mapping.is_recommended}
-                      onChange={(e) => {
-                        const newMappings = [...courseMapping];
-                        newMappings[index].is_recommended = e.target.checked;
-                        setCourseMapping(newMappings);
-                      }}
-                    >
-                      Recommended
                     </Checkbox>
                     {courseMapping.length > 1 && (
                       <Button
@@ -774,6 +768,7 @@ export default function ManageBooks() {
               }
             }}
             block
+            disabled={courses.length === 0}
           >
             Add Another Course Mapping
           </Button>

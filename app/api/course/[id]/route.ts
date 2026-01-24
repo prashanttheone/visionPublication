@@ -1,18 +1,6 @@
-/**
- * ============================================
- * INDIVIDUAL COURSE API ROUTES
- * ============================================
- * 
- * Endpoints:
- * - GET    /api/course/[id]     - Get single course with semesters
- * - PUT    /api/course/[id]     - Update course and semesters
- * - DELETE /api/course/[id]     - Delete course (cascades to semesters)
- */
-
 import { NextRequest, NextResponse } from 'next/server';
 import { query, getClient } from '@/lib/db';
 
-// Types
 interface Course {
   id?: number;
   name: string;
@@ -21,23 +9,20 @@ interface Course {
   updated_at?: string;
 }
 
-interface Semester {
+interface AcademicPeriod {
   id?: number;
   course_id?: number;
-  semester_number: number;
+  period_number: number;
+  period_type?: 'SEMESTER' | 'YEAR';
+  label?: string;
   description: string;
-  created_at?: string;
-  updated_at?: string;
 }
 
 interface UpdateCourseRequest {
   course: Course;
-  semesters: Semester[];
+  academic_periods: AcademicPeriod[];
 }
 
-/**
- * GET - Fetch single course by ID with semesters
- */
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -53,7 +38,6 @@ export async function GET(
       );
     }
 
-    // Fetch course
     const courseResult = await query<Course>(
       'SELECT * FROM courses WHERE id = $1',
       [courseId]
@@ -68,9 +52,8 @@ export async function GET(
 
     const course = courseResult.rows[0];
 
-    // Fetch semesters
-    const semestersResult = await query<Semester>(
-      'SELECT * FROM semesters WHERE course_id = $1 ORDER BY semester_number',
+    const periodsResult = await query<AcademicPeriod>(
+      'SELECT * FROM academic_periods WHERE course_id = $1 ORDER BY period_number',
       [courseId]
     );
 
@@ -78,7 +61,7 @@ export async function GET(
       success: true,
       data: {
         ...course,
-        semesters: semestersResult.rows
+        academic_periods: periodsResult.rows
       }
     });
   } catch (error) {
@@ -94,9 +77,6 @@ export async function GET(
   }
 }
 
-/**
- * PUT - Update course and semesters
- */
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -115,9 +95,8 @@ export async function PUT(
     }
 
     const body: UpdateCourseRequest = await request.json();
-    const { course, semesters } = body;
+    const { course, academic_periods } = body;
 
-    // Validation
     if (!course.name || !course.name.trim()) {
       return NextResponse.json(
         { success: false, error: 'Course name is required' },
@@ -125,14 +104,13 @@ export async function PUT(
       );
     }
 
-    if (!semesters || semesters.length === 0) {
+    if (!academic_periods || academic_periods.length === 0) {
       return NextResponse.json(
-        { success: false, error: 'At least one semester is required' },
+        { success: false, error: 'At least one academic period is required' },
         { status: 400 }
       );
     }
 
-    // Check if course exists
     const existingCourse = await client.query(
       'SELECT id FROM courses WHERE id = $1',
       [courseId]
@@ -145,10 +123,8 @@ export async function PUT(
       );
     }
 
-    // Start transaction
     await client.query('BEGIN');
 
-    // Update course
     const courseResult = await client.query<Course>(
       `UPDATE courses 
        SET name = $1, description = $2, updated_at = CURRENT_TIMESTAMP
@@ -159,26 +135,20 @@ export async function PUT(
 
     const updatedCourse = courseResult.rows[0];
 
-    // Delete existing semesters
-    await client.query(
-      'DELETE FROM semesters WHERE course_id = $1',
-      [courseId]
-    );
+    await client.query('DELETE FROM academic_periods WHERE course_id = $1', [courseId]);
 
-    // Insert new semesters
-    const semesterInserts = semesters.map((semester) =>
-      client.query<Semester>(
-        `INSERT INTO semesters (course_id, semester_number, description, created_at, updated_at)
-         VALUES ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+    const periodInserts = academic_periods.map((period, index) =>
+      client.query<AcademicPeriod>(
+        `INSERT INTO academic_periods (course_id, period_number, description, period_type, label, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
          RETURNING *`,
-        [courseId, semester.semester_number, semester.description]
+        [courseId, period.period_number || index + 1, period.description || '', period.period_type || 'SEMESTER', period.label || '']
       )
     );
 
-    const semesterResults = await Promise.all(semesterInserts);
-    const newSemesters = semesterResults.map((result) => result.rows[0]);
+    const periodResults = await Promise.all(periodInserts);
+    const newPeriods = periodResults.map(result => result.rows[0]);
 
-    // Commit transaction
     await client.query('COMMIT');
 
     return NextResponse.json({
@@ -186,22 +156,17 @@ export async function PUT(
       message: 'Course updated successfully',
       data: {
         course: updatedCourse,
-        semesters: newSemesters
+        academic_periods: newPeriods
       }
     });
   } catch (error) {
-    // Rollback transaction on error
     await client.query('ROLLBACK');
 
     console.error('Error updating course:', error);
 
-    // Check for unique constraint violation
     if (error instanceof Error && error.message.includes('duplicate key')) {
       return NextResponse.json(
-        {
-          success: false,
-          error: 'A course with this name already exists'
-        },
+        { success: false, error: 'A course with this name already exists' },
         { status: 409 }
       );
     }
@@ -219,9 +184,6 @@ export async function PUT(
   }
 }
 
-/**
- * DELETE - Delete course (cascades to semesters)
- */
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -237,7 +199,6 @@ export async function DELETE(
       );
     }
 
-    // Check if course exists
     const existingCourse = await query(
       'SELECT id, name FROM courses WHERE id = $1',
       [courseId]
@@ -250,24 +211,19 @@ export async function DELETE(
       );
     }
 
-    // Delete course (semesters will be cascade deleted)
     await query('DELETE FROM courses WHERE id = $1', [courseId]);
 
     return NextResponse.json({
       success: true,
-      message: 'Course and associated semesters deleted successfully',
+      message: 'Course and associated periods deleted successfully',
       data: existingCourse.rows[0]
     });
   } catch (error) {
     console.error('Error deleting course:', error);
 
-    // Check for foreign key constraint violation
     if (error instanceof Error && error.message.includes('foreign key')) {
       return NextResponse.json(
-        {
-          success: false,
-          error: 'Cannot delete course: it is referenced by other records (books, orders, etc.)'
-        },
+        { success: false, error: 'Cannot delete course: it is referenced by other records (books, orders, etc.)' },
         { status: 409 }
       );
     }

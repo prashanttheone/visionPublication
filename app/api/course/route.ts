@@ -1,19 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query, getClient } from '@/lib/db';
 
-// Types
+type PeriodType = 'SEMESTER' | 'YEAR' | 'BOTH';
+
 interface Course {
   id?: number;
   name: string;
   description: string;
+  period_type?: PeriodType;
+  total_years?: number;
+  total_semesters?: number;
+  is_active?: boolean;
   created_at?: string;
   updated_at?: string;
 }
 
-interface Semester {
+interface AcademicPeriod {
   id?: number;
   course_id?: number;
-  semester_number: number;
+  period_number: number;
+  period_type?: 'SEMESTER' | 'YEAR';
+  label?: string;
   description: string;
   created_at?: string;
   updated_at?: string;
@@ -21,22 +28,15 @@ interface Semester {
 
 interface CreateCourseRequest {
   course: Course;
-  semesters: Semester[];
+  academic_periods: AcademicPeriod[];
 }
 
-/**
- * GET - Fetch all courses
- * Query params:
- * - includeSemesters: boolean (default: true)
- * - search: string (optional)
- */
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
-    const includeSemesters = searchParams.get('includeSemesters') !== 'false';
+    const includePeriods = searchParams.get('includePeriods') !== 'false';
     const searchTerm = searchParams.get('search') || '';
 
-    // Build query for courses
     let coursesQuery = 'SELECT * FROM courses'
     const queryParams: any[] = [];
 
@@ -50,33 +50,30 @@ export async function GET(request: NextRequest) {
     const coursesResult = await query<Course>(coursesQuery, queryParams);
     const courses = coursesResult.rows;
 
-    // If semesters should be included, fetch them for all courses
-    if (includeSemesters && courses.length > 0) {
-      const semestersResult = await query<Semester>(
-        `SELECT * FROM semesters 
+    if (includePeriods && courses.length > 0) {
+      const periodsResult = await query<AcademicPeriod>(
+        `SELECT * FROM academic_periods 
          WHERE course_id = ANY($1) 
-         ORDER BY course_id, semester_number`,
+         ORDER BY course_id, period_number`,
         [courses.map(c => c.id)]
       );
 
-      // Group semesters by course_id
-      const semestersByCourse: { [key: number]: Semester[] } = {};
-      semestersResult.rows.forEach(semester => {
-        if (!semestersByCourse[semester.course_id!]) {
-          semestersByCourse[semester.course_id!] = [];
+      const periodsByCourse: { [key: number]: AcademicPeriod[] } = {};
+      periodsResult.rows.forEach(period => {
+        if (!periodsByCourse[period.course_id!]) {
+          periodsByCourse[period.course_id!] = [];
         }
-        semestersByCourse[semester.course_id!].push(semester);
+        periodsByCourse[period.course_id!].push(period);
       });
 
-      // Attach semesters to courses
-      const coursesWithSemesters = courses.map(course => ({
+      const coursesWithPeriods = courses.map(course => ({
         ...course,
-        semesters: semestersByCourse[course.id!] || []
+        academic_periods: periodsByCourse[course.id!] || []
       }));
 
       return NextResponse.json({
         success: true,
-        data: coursesWithSemesters,
+        data: coursesWithPeriods,
         count: courses.length
       });
     }
@@ -99,18 +96,13 @@ export async function GET(request: NextRequest) {
   }
 }
 
-/**
- * POST - Create new course with semesters
- * Body: { course: Course, semesters: Semester[] }
- */
 export async function POST(request: NextRequest) {
   const client = await getClient();
 
   try {
     const body: CreateCourseRequest = await request.json();
-    const { course, semesters } = body;
+    const { course, academic_periods } = body;
 
-    // Validation
     if (!course.name || !course.name.trim()) {
       return NextResponse.json(
         { success: false, error: 'Course name is required' },
@@ -118,34 +110,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!semesters || semesters.length === 0) {
+    if (!academic_periods || academic_periods.length === 0) {
       return NextResponse.json(
-        { success: false, error: 'At least one semester is required' },
+        { success: false, error: 'At least one academic period is required' },
         { status: 400 }
       );
     }
 
-    // Validate semester numbers are sequential
-    const semesterNumbers = semesters
-      .map(s => s.semester_number)
-      .sort((a, b) => a - b);
-    
-    for (let i = 0; i < semesterNumbers.length; i++) {
-      if (semesterNumbers[i] !== i + 1) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: 'Semester numbers must be sequential starting from 1'
-          },
-          { status: 400 }
-        );
-      }
-    }
-
-    // Start transaction
     await client.query('BEGIN');
 
-    // Insert course
     const courseResult = await client.query<Course>(
       `INSERT INTO courses (name, description, created_at, updated_at)
        VALUES ($1, $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
@@ -155,20 +128,18 @@ export async function POST(request: NextRequest) {
 
     const newCourse = courseResult.rows[0];
 
-    // Insert semesters
-    const semesterInserts = semesters.map((semester, index) =>
-      client.query<Semester>(
-        `INSERT INTO semesters (course_id, semester_number, description, created_at, updated_at)
-         VALUES ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+    const periodInserts = academic_periods.map((period, index) =>
+      client.query<AcademicPeriod>(
+        `INSERT INTO academic_periods (course_id, period_number, description, period_type, label, created_at, updated_at)
+         VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
          RETURNING *`,
-        [newCourse.id, semester.semester_number, semester.description]
+        [newCourse.id, period.period_number || index + 1, period.description || '', period.period_type || 'SEMESTER', period.label || '']
       )
     );
 
-    const semesterResults = await Promise.all(semesterInserts);
-    const newSemesters = semesterResults.map(result => result.rows[0]);
+    const periodResults = await Promise.all(periodInserts);
+    const newPeriods = periodResults.map(result => result.rows[0]);
 
-    // Commit transaction
     await client.query('COMMIT');
 
     return NextResponse.json(
@@ -177,24 +148,19 @@ export async function POST(request: NextRequest) {
         message: 'Course created successfully',
         data: {
           course: newCourse,
-          semesters: newSemesters
+          academic_periods: newPeriods
         }
       },
       { status: 201 }
     );
   } catch (error) {
-    // Rollback transaction on error
     await client.query('ROLLBACK');
 
     console.error('Error creating course:', error);
 
-    // Check for unique constraint violation
     if (error instanceof Error && error.message.includes('duplicate key')) {
       return NextResponse.json(
-        {
-          success: false,
-          error: 'A course with this name already exists'
-        },
+        { success: false, error: 'A course with this name already exists' },
         { status: 409 }
       );
     }

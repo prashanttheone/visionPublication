@@ -1,95 +1,20 @@
 -- ============================================================================
--- MIGRATION 008: E-Commerce Scaling Patch
+-- MIGRATION 008: E-Commerce Scaling Patch + Flexible Course Periods
 -- Vision Publication - Production Ready Order Management & Course Structure
 -- ============================================================================
 
 -- ============================================================================
--- SECTION 1: COURSE TYPE ENUM & PERIOD TYPE ENUM
--- BSC_NURSING uses Semesters (8 semesters)
--- GNM uses Years (3 years)
--- POST_BASIC uses Years (2 years)
+-- SECTION 1: ADD PERIOD TYPE AND LABEL TO SEMESTERS TABLE
+-- Allows semesters table to store both Years and Semesters
 -- ============================================================================
 
-CREATE TYPE course_type AS ENUM ('BSC_NURSING', 'GNM', 'POST_BASIC');
-CREATE TYPE period_type AS ENUM ('SEMESTER', 'YEAR');
-
--- Add course_type and period_type columns to courses table
-ALTER TABLE courses ADD COLUMN IF NOT EXISTS course_type course_type;
-ALTER TABLE courses ADD COLUMN IF NOT EXISTS period_type period_type;
-ALTER TABLE courses ADD COLUMN IF NOT EXISTS total_periods INT DEFAULT 1;
-ALTER TABLE courses ADD COLUMN IF NOT EXISTS duration_months INT;
-ALTER TABLE courses ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE;
-
--- Update existing courses or set defaults based on course_type
--- BSC_NURSING: 8 semesters, GNM: 3 years, POST_BASIC: 2 years
+ALTER TABLE semesters ADD COLUMN IF NOT EXISTS period_type VARCHAR(20) DEFAULT 'SEMESTER';
+ALTER TABLE semesters ADD COLUMN IF NOT EXISTS label VARCHAR(100);
 
 -- ============================================================================
--- SECTION 2: REFACTOR SEMESTERS TO ACADEMIC_PERIODS (Semesters OR Years)
+-- SECTION 2: ENHANCED ORDER MANAGEMENT FOR SCALING
 -- ============================================================================
 
-ALTER TABLE semesters RENAME TO academic_periods;
-
-ALTER TABLE academic_periods ADD COLUMN IF NOT EXISTS period_type period_type DEFAULT 'SEMESTER';
-ALTER TABLE academic_periods RENAME COLUMN semester_number TO period_number;
-
--- Update constraint for period_number
-ALTER TABLE academic_periods DROP CONSTRAINT IF EXISTS semesters_course_id_semester_number_key;
-ALTER TABLE academic_periods ADD CONSTRAINT academic_periods_course_period_unique UNIQUE (course_id, period_number, period_type);
-
--- Add label field for display (e.g., "Semester 1", "Year 1")
-ALTER TABLE academic_periods ADD COLUMN IF NOT EXISTS label VARCHAR(50);
-
--- ============================================================================
--- SECTION 3: UPDATE book_course_map TO REFERENCE academic_periods
--- ============================================================================
-
-ALTER TABLE book_course_map RENAME COLUMN semester_id TO academic_period_id;
-
--- ============================================================================
--- SECTION 4: ENHANCED ORDER MANAGEMENT FOR SCALING
--- ============================================================================
-
--- Order Status Type for better consistency
-CREATE TYPE order_status_type AS ENUM (
-    'pending',
-    'confirmed',
-    'processing',
-    'packed',
-    'shipped',
-    'out_for_delivery',
-    'delivered',
-    'cancelled',
-    'return_requested',
-    'return_approved',
-    'return_picked',
-    'returned',
-    'refund_initiated',
-    'refunded'
-);
-
-CREATE TYPE payment_status_type AS ENUM (
-    'pending',
-    'authorized',
-    'captured',
-    'paid',
-    'failed',
-    'refund_pending',
-    'partially_refunded',
-    'refunded',
-    'cancelled'
-);
-
-CREATE TYPE payment_method_type AS ENUM (
-    'cod',
-    'razorpay',
-    'upi',
-    'card',
-    'netbanking',
-    'wallet',
-    'emi'
-);
-
--- Add new columns to orders table for scaling
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS order_source VARCHAR(50) DEFAULT 'website';
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_ip VARCHAR(50);
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS user_agent TEXT;
@@ -120,7 +45,7 @@ ALTER TABLE orders ADD COLUMN IF NOT EXISTS company_name VARCHAR(255);
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS gstin VARCHAR(20);
 
 -- ============================================================================
--- SECTION 5: SHIPPING ADDRESS SNAPSHOT (Immutable copy at order time)
+-- SECTION 3: SHIPPING ADDRESS SNAPSHOT (Immutable copy at order time)
 -- ============================================================================
 
 CREATE TABLE IF NOT EXISTS order_shipping_addresses (
@@ -149,7 +74,7 @@ CREATE TABLE IF NOT EXISTS order_shipping_addresses (
 );
 
 -- ============================================================================
--- SECTION 6: BILLING ADDRESS (For B2B & GST invoices)
+-- SECTION 4: BILLING ADDRESS (For B2B & GST invoices)
 -- ============================================================================
 
 CREATE TABLE IF NOT EXISTS order_billing_addresses (
@@ -172,7 +97,7 @@ CREATE TABLE IF NOT EXISTS order_billing_addresses (
 );
 
 -- ============================================================================
--- SECTION 7: ENHANCED ORDER ITEMS
+-- SECTION 5: ENHANCED ORDER ITEMS
 -- ============================================================================
 
 ALTER TABLE order_items ADD COLUMN IF NOT EXISTS item_status VARCHAR(30) DEFAULT 'active';
@@ -188,7 +113,7 @@ ALTER TABLE order_items ADD COLUMN IF NOT EXISTS returned_qty INT DEFAULT 0;
 ALTER TABLE order_items ADD COLUMN IF NOT EXISTS refunded_qty INT DEFAULT 0;
 
 -- ============================================================================
--- SECTION 8: REFUNDS TABLE
+-- SECTION 6: REFUNDS TABLE
 -- ============================================================================
 
 CREATE TABLE IF NOT EXISTS order_refunds (
@@ -210,7 +135,7 @@ CREATE TABLE IF NOT EXISTS order_refunds (
 );
 
 -- ============================================================================
--- SECTION 9: INVOICES TABLE
+-- SECTION 7: INVOICES TABLE
 -- ============================================================================
 
 CREATE TABLE IF NOT EXISTS order_invoices (
@@ -236,7 +161,7 @@ CREATE TABLE IF NOT EXISTS order_invoices (
 );
 
 -- ============================================================================
--- SECTION 10: SHIPPING TRACKING EVENTS
+-- SECTION 8: SHIPPING TRACKING EVENTS
 -- ============================================================================
 
 CREATE TABLE IF NOT EXISTS order_tracking_events (
@@ -257,7 +182,7 @@ CREATE INDEX IF NOT EXISTS idx_order_tracking_events_order_id ON order_tracking_
 CREATE INDEX IF NOT EXISTS idx_order_tracking_events_awb ON order_tracking_events(awb_number);
 
 -- ============================================================================
--- SECTION 11: COUPONS & PROMOTIONS (For E-Commerce Scaling)
+-- SECTION 9: COUPONS & PROMOTIONS (For E-Commerce Scaling)
 -- ============================================================================
 
 CREATE TABLE IF NOT EXISTS coupons (
@@ -294,7 +219,7 @@ CREATE TABLE IF NOT EXISTS coupon_usage (
 );
 
 -- ============================================================================
--- SECTION 12: ORDER CANCELLATION REQUESTS
+-- SECTION 10: ORDER CANCELLATION REQUESTS
 -- ============================================================================
 
 CREATE TABLE IF NOT EXISTS order_cancellation_requests (
@@ -312,7 +237,7 @@ CREATE TABLE IF NOT EXISTS order_cancellation_requests (
 );
 
 -- ============================================================================
--- SECTION 13: RETURN REQUESTS
+-- SECTION 11: RETURN REQUESTS
 -- ============================================================================
 
 CREATE TABLE IF NOT EXISTS order_return_requests (
@@ -340,7 +265,7 @@ CREATE TABLE IF NOT EXISTS order_return_requests (
 );
 
 -- ============================================================================
--- SECTION 14: INVENTORY MANAGEMENT
+-- SECTION 12: INVENTORY MANAGEMENT
 -- ============================================================================
 
 CREATE TABLE IF NOT EXISTS inventory_transactions (
@@ -361,7 +286,7 @@ CREATE INDEX IF NOT EXISTS idx_inventory_transactions_book_id ON inventory_trans
 CREATE INDEX IF NOT EXISTS idx_inventory_transactions_type ON inventory_transactions(transaction_type);
 
 -- ============================================================================
--- SECTION 15: INDEXES FOR PERFORMANCE
+-- SECTION 13: INDEXES FOR PERFORMANCE
 -- ============================================================================
 
 CREATE INDEX IF NOT EXISTS idx_orders_order_number ON orders(order_number);
@@ -379,7 +304,7 @@ CREATE INDEX IF NOT EXISTS idx_order_items_book_id ON order_items(book_id);
 
 CREATE INDEX IF NOT EXISTS idx_order_status_history_order_id ON order_status_history(order_id);
 
-CREATE INDEX IF NOT EXISTS idx_academic_periods_course_id ON academic_periods(course_id);
+CREATE INDEX IF NOT EXISTS idx_semesters_course_id ON semesters(course_id);
 CREATE INDEX IF NOT EXISTS idx_book_course_map_book_id ON book_course_map(book_id);
 CREATE INDEX IF NOT EXISTS idx_book_course_map_course_id ON book_course_map(course_id);
 
@@ -387,50 +312,28 @@ CREATE INDEX IF NOT EXISTS idx_coupons_code ON coupons(code);
 CREATE INDEX IF NOT EXISTS idx_coupons_valid_dates ON coupons(valid_from, valid_until);
 
 -- ============================================================================
--- SECTION 16: TRIGGERS FOR NEW TABLES
+-- SECTION 14: TRIGGERS FOR NEW TABLES
 -- ============================================================================
 
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+DROP TRIGGER IF EXISTS trg_order_refunds_updated_at ON order_refunds;
 CREATE TRIGGER trg_order_refunds_updated_at BEFORE UPDATE ON order_refunds FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS trg_order_invoices_updated_at ON order_invoices;
 CREATE TRIGGER trg_order_invoices_updated_at BEFORE UPDATE ON order_invoices FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS trg_coupons_updated_at ON coupons;
 CREATE TRIGGER trg_coupons_updated_at BEFORE UPDATE ON coupons FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS trg_order_cancellation_requests_updated_at ON order_cancellation_requests;
 CREATE TRIGGER trg_order_cancellation_requests_updated_at BEFORE UPDATE ON order_cancellation_requests FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+DROP TRIGGER IF EXISTS trg_order_return_requests_updated_at ON order_return_requests;
 CREATE TRIGGER trg_order_return_requests_updated_at BEFORE UPDATE ON order_return_requests FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-
--- ============================================================================
--- SECTION 17: UPDATE eresource_books TO USE academic_periods
--- ============================================================================
-
-ALTER TABLE eresource_books RENAME COLUMN semester_id TO academic_period_id;
-ALTER TABLE eresource_books DROP CONSTRAINT IF EXISTS eresource_books_course_id_semester_id_book_name_key;
-ALTER TABLE eresource_books ADD CONSTRAINT eresource_books_course_period_book_unique UNIQUE (course_id, academic_period_id, book_name);
-
--- ============================================================================
--- SECTION 18: ADD DEFAULT COURSES DATA
--- ============================================================================
-
--- Insert BSC_NURSING course with 8 semesters
-INSERT INTO courses (name, description, course_type, period_type, total_periods, duration_months, is_active)
-VALUES ('BSC Nursing', 'Bachelor of Science in Nursing - 4 Year Program', 'BSC_NURSING', 'SEMESTER', 8, 48, TRUE)
-ON CONFLICT (name) DO UPDATE SET
-    course_type = 'BSC_NURSING',
-    period_type = 'SEMESTER',
-    total_periods = 8,
-    duration_months = 48;
-
--- Insert GNM course with 3 years
-INSERT INTO courses (name, description, course_type, period_type, total_periods, duration_months, is_active)
-VALUES ('GNM', 'General Nursing and Midwifery - 3 Year Program', 'GNM', 'YEAR', 3, 36, TRUE)
-ON CONFLICT (name) DO UPDATE SET
-    course_type = 'GNM',
-    period_type = 'YEAR',
-    total_periods = 3,
-    duration_months = 36;
-
--- Insert POST_BASIC course with 2 years
-INSERT INTO courses (name, description, course_type, period_type, total_periods, duration_months, is_active)
-VALUES ('Post Basic BSC Nursing', 'Post Basic BSC Nursing - 2 Year Program', 'POST_BASIC', 'YEAR', 2, 24, TRUE)
-ON CONFLICT (name) DO UPDATE SET
-    course_type = 'POST_BASIC',
-    period_type = 'YEAR',
-    total_periods = 2,
-    duration_months = 24;

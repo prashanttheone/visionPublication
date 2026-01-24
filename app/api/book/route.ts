@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query, getClient } from '@/lib/db';
 
-// Types
 interface Book {
   id?: number;
   name: string;
@@ -25,9 +24,8 @@ interface BookCourseMap {
   id?: number;
   book_id: number;
   course_id: number;
-  semester_id: number;
+  academic_period_id: number;
   is_required: boolean;
-  is_recommended: boolean;
   created_at?: string;
   updated_at?: string;
 }
@@ -37,14 +35,6 @@ interface CreateBookRequest {
   courseMappings?: BookCourseMap[];
 }
 
-/**
- * GET - Fetch all books with optional course mappings
- * Query params:
- * - includeMappings: boolean (default: false)
- * - search: string (optional)
- * - category: string (optional)
- * - inStock: boolean (optional)
- */
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
@@ -53,7 +43,6 @@ export async function GET(request: NextRequest) {
     const category = searchParams.get('category') || '';
     const inStock = searchParams.get('inStock');
 
-    // Build query for books
     let booksQuery = 'SELECT * FROM books';
     const queryParams: any[] = [];
     const conditions: string[] = [];
@@ -82,16 +71,17 @@ export async function GET(request: NextRequest) {
     const booksResult = await query<Book>(booksQuery, queryParams);
     const books = booksResult.rows;
 
-    // If mappings should be included, fetch them
     if (includeMappings && books.length > 0) {
       const mappingsResult = await query<BookCourseMap>(
-        `SELECT * FROM book_course_map 
-         WHERE book_id = ANY($1)
-         ORDER BY book_id, course_id, semester_id`,
+        `SELECT bcm.*, c.name as course_name, ap.label as period_label, ap.period_type
+         FROM book_course_map bcm
+         LEFT JOIN courses c ON c.id = bcm.course_id
+         LEFT JOIN academic_periods ap ON ap.id = bcm.academic_period_id
+         WHERE bcm.book_id = ANY($1)
+         ORDER BY bcm.book_id, bcm.course_id, bcm.academic_period_id`,
         [books.map(b => b.id)]
       );
 
-      // Group mappings by book_id
       const mappingsByBook: { [key: number]: BookCourseMap[] } = {};
       mappingsResult.rows.forEach(mapping => {
         if (!mappingsByBook[mapping.book_id]) {
@@ -100,7 +90,6 @@ export async function GET(request: NextRequest) {
         mappingsByBook[mapping.book_id].push(mapping);
       });
 
-      // Attach mappings to books
       const booksWithMappings = books.map(book => ({
         ...book,
         courseMappings: mappingsByBook[book.id!] || []
@@ -131,10 +120,6 @@ export async function GET(request: NextRequest) {
   }
 }
 
-/**
- * POST - Create new book with optional course mappings
- * Body: { book: Book, courseMappings?: BookCourseMap[] }
- */
 export async function POST(request: NextRequest) {
   const client = await getClient();
 
@@ -142,7 +127,6 @@ export async function POST(request: NextRequest) {
     const body: CreateBookRequest = await request.json();
     const { book, courseMappings = [] } = body;
 
-    // Validation
     if (!book.name || !book.name.trim()) {
       return NextResponse.json(
         { success: false, error: 'Book name is required' },
@@ -164,10 +148,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Start transaction
     await client.query('BEGIN');
 
-    // Insert book
     const bookResult = await client.query<Book>(
       `INSERT INTO books (name, author, isbn, edition, description, image_url, actual_price, offer_price, stock_quantity, in_stock, rating, reviews_count, category, created_at, updated_at)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
@@ -192,26 +174,25 @@ export async function POST(request: NextRequest) {
     const newBook = bookResult.rows[0];
     let newMappings: BookCourseMap[] = [];
 
-    // Insert course mappings if provided
     if (courseMappings.length > 0) {
-      // Validate that all referenced semesters exist
-      const semesterIds = courseMappings.map(m => m.semester_id);
-      const uniqueSemesterIds = [...new Set(semesterIds)];
+      const periodIds = courseMappings.map(m => m.academic_period_id);
+      const uniquePeriodIds = [...new Set(periodIds)];
       
-      if (uniqueSemesterIds.length > 0) {
-        const semesterCheck = await client.query(
-          'SELECT id FROM semesters WHERE id = ANY($1)',
-          [uniqueSemesterIds]
+      if (uniquePeriodIds.length > 0) {
+        const periodCheck = await client.query(
+          'SELECT id FROM academic_periods WHERE id = ANY($1)',
+          [uniquePeriodIds]
         );
         
-        const existingSemesterIds = new Set(semesterCheck.rows.map(row => row.id));
-        const missingSemesterIds = uniqueSemesterIds.filter(id => !existingSemesterIds.has(id));
+        const existingPeriodIds = new Set(periodCheck.rows.map(row => row.id));
+        const missingPeriodIds = uniquePeriodIds.filter(id => !existingPeriodIds.has(id));
         
-        if (missingSemesterIds.length > 0) {
+        if (missingPeriodIds.length > 0) {
+          await client.query('ROLLBACK');
           return NextResponse.json(
             {
               success: false,
-              error: `Referenced semester IDs do not exist: ${missingSemesterIds.join(', ')}`
+              error: `Referenced academic period IDs do not exist: ${missingPeriodIds.join(', ')}`
             },
             { status: 400 }
           );
@@ -220,10 +201,10 @@ export async function POST(request: NextRequest) {
       
       const mappingInserts = courseMappings.map(mapping =>
         client.query<BookCourseMap>(
-          `INSERT INTO book_course_map (book_id, course_id, semester_id, is_required, is_recommended, created_at, updated_at)
-           VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+          `INSERT INTO book_course_map (book_id, course_id, academic_period_id, is_required, created_at, updated_at)
+           VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
            RETURNING *`,
-          [newBook.id, mapping.course_id, mapping.semester_id, mapping.is_required, mapping.is_recommended]
+          [newBook.id, mapping.course_id, mapping.academic_period_id, mapping.is_required ?? true]
         )
       );
 
@@ -231,7 +212,6 @@ export async function POST(request: NextRequest) {
       newMappings = mappingResults.map(result => result.rows[0]);
     }
 
-    // Commit transaction
     await client.query('COMMIT');
 
     return NextResponse.json(
@@ -246,12 +226,10 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
-    // Rollback transaction on error
     await client.query('ROLLBACK');
 
     console.error('Error creating book:', error);
 
-    // Check for unique constraint violation
     if (error instanceof Error && error.message.includes('duplicate key')) {
       return NextResponse.json(
         {
