@@ -5,7 +5,7 @@ import { query, getClient } from '@/lib/db';
 interface EResourceBook {
   id?: number;
   course_id: number;
-  semester_id: number;
+  academic_period_id: number;
   book_name: string;
   description?: string;
   created_at?: string;
@@ -38,15 +38,15 @@ export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
     const courseId = searchParams.get('courseId');
-    const semesterId = searchParams.get('semesterId');
+    const academicPeriodId = searchParams.get('academicPeriodId') || searchParams.get('semesterId');
     const includeChapters = searchParams.get('includeChapters') !== 'false';
 
     // Build query for e-resource books
     let booksQuery = `
-      SELECT eb.*, c.name as course_name, s.description as semester_name
+      SELECT eb.*, c.name as course_name, ap.description as semester_name, ap.label as period_label
       FROM eresource_books eb
       JOIN courses c ON eb.course_id = c.id
-      JOIN semesters s ON eb.semester_id = s.id
+      JOIN academic_periods ap ON eb.academic_period_id = ap.id
     `;
     const queryParams: any[] = [];
     const conditions: string[] = [];
@@ -56,18 +56,18 @@ export async function GET(request: NextRequest) {
       queryParams.push(parseInt(courseId));
     }
 
-    if (semesterId) {
-      conditions.push(`eb.semester_id = $${queryParams.length + 1}`);
-      queryParams.push(parseInt(semesterId));
+    if (academicPeriodId) {
+      conditions.push(`eb.academic_period_id = $${queryParams.length + 1}`);
+      queryParams.push(parseInt(academicPeriodId));
     }
 
     if (conditions.length > 0) {
       booksQuery += ' WHERE ' + conditions.join(' AND ');
     }
 
-    booksQuery += ' ORDER BY c.name, s.semester_number, eb.book_name';
+    booksQuery += ' ORDER BY c.name, ap.period_number, eb.book_name';
 
-    const booksResult = await query<EResourceBook & { course_name: string; semester_name: string }>(booksQuery, queryParams);
+    const booksResult = await query<EResourceBook & { course_name: string; semester_name: string; period_label: string }>(booksQuery, queryParams);
     const books = booksResult.rows;
 
     // If chapters should be included, fetch them
@@ -138,22 +138,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!book.course_id || !book.semester_id) {
+    if (!book.course_id || (!book.academic_period_id && !book.semester_id)) {
       return NextResponse.json(
-        { success: false, error: 'Course and semester are required' },
+        { success: false, error: 'Course and period/semester are required' },
         { status: 400 }
       );
     }
 
-    // Validate semester belongs to course
-    const semesterCheck = await client.query(
-      'SELECT id FROM semesters WHERE id = $1 AND course_id = $2',
-      [book.semester_id, book.course_id]
+    const periodId = book.academic_period_id || book.semester_id;
+
+    // Validate period belongs to course
+    const periodCheck = await client.query(
+      'SELECT id FROM academic_periods WHERE id = $1 AND course_id = $2',
+      [periodId, book.course_id]
     );
 
-    if (semesterCheck.rows.length === 0) {
+    if (periodCheck.rows.length === 0) {
       return NextResponse.json(
-        { success: false, error: 'Selected semester does not belong to the selected course' },
+        { success: false, error: 'Selected period does not belong to the selected course' },
         { status: 400 }
       );
     }
@@ -163,10 +165,10 @@ export async function POST(request: NextRequest) {
 
     // Insert e-resource book
     const bookResult = await client.query<EResourceBook>(
-      `INSERT INTO eresource_books (course_id, semester_id, book_name, description, created_at, updated_at)
+      `INSERT INTO eresource_books (course_id, academic_period_id, book_name, description, created_at, updated_at)
        VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
        RETURNING *`,
-      [book.course_id, book.semester_id, book.book_name.trim(), book.description || '']
+      [book.course_id, periodId, book.book_name.trim(), book.description || '']
     );
 
     const newBook = bookResult.rows[0];

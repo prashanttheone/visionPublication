@@ -24,11 +24,12 @@ interface Course {
   description: string;
 }
 
-interface Semester {
+interface AcademicPeriod {
   id: number;
   course_id: number;
-  semester_number: number;
+  period_number: number;
   description: string;
+  label?: string;
 }
 
 interface EResourceChapter {
@@ -42,7 +43,8 @@ interface EResourceChapter {
 interface EResourceBook {
   id?: number;
   course_id: number;
-  semester_id: number;
+  academic_period_id: number;
+  semester_id?: number; // Keep for backward compatibility during migration
   book_name: string;
   description?: string;
   course_name?: string;
@@ -56,7 +58,7 @@ const FormLabel = (props: any) => <Box as="label" fontWeight="bold" mb={2} {...p
 export default function ManageEresources() {
   // State
   const [courses, setCourses] = useState<Course[]>([]);
-  const [semesters, setSemesters] = useState<Semester[]>([]);
+  const [academicPeriods, setAcademicPeriods] = useState<AcademicPeriod[]>([]);
   const [eresources, setEresources] = useState<EResourceBook[]>([]);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   
@@ -71,7 +73,7 @@ export default function ManageEresources() {
   // Form state
   const [bookFormData, setBookFormData] = useState<EResourceBook>({
     course_id: 0,
-    semester_id: 0,
+    academic_period_id: 0,
     book_name: '',
     description: ''
   });
@@ -79,20 +81,20 @@ export default function ManageEresources() {
     { chapter_number: 1, chapter_name: 'Chapter 1', doc_link: '' }
   ]);
 
-  // Fetch courses and semesters
-  const fetchCoursesAndSemesters = useCallback(async () => {
+  // Fetch courses and academic periods
+  const fetchCoursesAndPeriods = useCallback(async () => {
     try {
-      const response = await fetch('/api/course?includeSemesters=true');
+      const response = await fetch('/api/course?includePeriods=true');
       const result = await response.json();
       if (result.success) {
         setCourses(result.data || []);
-        const allSems: Semester[] = [];
+        const allPeriods: AcademicPeriod[] = [];
         result.data?.forEach((course: any) => {
-          if (course.semesters) {
-            allSems.push(...course.semesters);
+          if (course.academic_periods) {
+            allPeriods.push(...course.academic_periods);
           }
         });
-        setSemesters(allSems);
+        setAcademicPeriods(allPeriods);
         
         // Set default course if available
         if (result.data && result.data.length > 0) {
@@ -119,37 +121,37 @@ export default function ManageEresources() {
 
   useEffect(() => {
     const init = async () => {
-      await fetchCoursesAndSemesters();
+      await fetchCoursesAndPeriods();
       await fetchEresources();
       setIsInitialLoading(false);
     };
     init();
   }, []);
 
-  // Get semesters for a course
-  const getSemestersForCourse = useCallback((courseId: number) => {
-    return semesters.filter(s => s.course_id === courseId);
-  }, [semesters]);
+  // Get periods for a course
+  const getPeriodsForCourse = useCallback((courseId: number) => {
+    return academicPeriods.filter(p => p.course_id === courseId);
+  }, [academicPeriods]);
 
-  // Get e-resources for a course/semester
-  const getEresourcesForSemester = useCallback((semesterId: number) => {
-    return eresources.filter(e => e.semester_id === semesterId);
+  // Get e-resources for a period
+  const getEresourcesForPeriod = useCallback((periodId: number) => {
+    return eresources.filter(e => (e.academic_period_id || e.semester_id) === periodId);
   }, [eresources]);
 
   // Handle book form change
   const handleBookChange = useCallback((field: keyof EResourceBook, value: any) => {
     setBookFormData(prev => {
       const updated = { ...prev, [field]: value };
-      // Auto-select first semester when course changes
+      // Auto-select first period when course changes
       if (field === 'course_id') {
-        const courseSems = semesters.filter(s => s.course_id === value);
-        if (courseSems.length > 0) {
-          updated.semester_id = courseSems[0].id;
+        const coursePeriods = academicPeriods.filter(p => p.course_id === value);
+        if (coursePeriods.length > 0) {
+          updated.academic_period_id = coursePeriods[0].id;
         }
       }
       return updated;
     });
-  }, [semesters]);
+  }, [academicPeriods]);
 
   // Handle chapter change
   const handleChapterChange = useCallback((index: number, field: keyof EResourceChapter, value: any) => {
@@ -183,8 +185,8 @@ export default function ManageEresources() {
       alert('Book name is required');
       return;
     }
-    if (!bookFormData.course_id || !bookFormData.semester_id) {
-      alert('Please select course and semester');
+    if (!bookFormData.course_id || !bookFormData.academic_period_id) {
+      alert('Please select course and period/semester');
       return;
     }
 
@@ -266,7 +268,7 @@ export default function ManageEresources() {
   const handleEdit = useCallback((book: EResourceBook) => {
     setBookFormData({
       course_id: book.course_id,
-      semester_id: book.semester_id,
+      academic_period_id: book.academic_period_id || book.semester_id || 0,
       book_name: book.book_name,
       description: book.description || ''
     });
@@ -282,18 +284,18 @@ export default function ManageEresources() {
   // Reset form
   const resetForm = useCallback(() => {
     const firstCourse = courses[0];
-    const firstSemester = firstCourse ? semesters.find(s => s.course_id === firstCourse.id) : null;
+    const firstPeriod = firstCourse ? academicPeriods.find(p => p.course_id === firstCourse.id) : null;
     
     setBookFormData({
       course_id: firstCourse?.id || 0,
-      semester_id: firstSemester?.id || 0,
+      academic_period_id: firstPeriod?.id || 0,
       book_name: '',
       description: ''
     });
     setChapters([{ chapter_number: 1, chapter_name: 'Chapter 1', doc_link: '' }]);
     setIsEditing(false);
     setEditingId(null);
-  }, [courses, semesters]);
+  }, [courses, academicPeriods]);
 
   // Open new form
   const openNewForm = useCallback(() => {
@@ -342,21 +344,21 @@ export default function ManageEresources() {
                   ))}
                 </Stack>
 
-                {/* Semesters and E-Resources */}
-                {selectedCourseId && (
-                  <Stack gap={4}>
-                    {getSemestersForCourse(selectedCourseId).map(semester => {
-                      const semesterBooks = getEresourcesForSemester(semester.id);
-                      
-                      return (
-                        <Box key={semester.id} borderWidth={1} borderRadius="lg" p={4} bg="white">
-                          <Heading size="sm" color="purple.600" mb={4}>
-                            📖 {semester.description || `Semester ${semester.semester_number}`}
-                          </Heading>
-                          
-                          {semesterBooks.length > 0 ? (
-                            <Stack gap={3}>
-                              {semesterBooks.map(book => (
+                  {/* Academic Periods and E-Resources */}
+                  {selectedCourseId && (
+                    <Stack gap={4}>
+                      {getPeriodsForCourse(selectedCourseId).map(period => {
+                        const periodBooks = getEresourcesForPeriod(period.id);
+                        
+                        return (
+                          <Box key={period.id} borderWidth={1} borderRadius="lg" p={4} bg="white">
+                            <Heading size="sm" color="purple.600" mb={4}>
+                              📖 {period.label} ({period.description})
+                            </Heading>
+                            
+                            {periodBooks.length > 0 ? (
+                              <Stack gap={3}>
+                                {periodBooks.map(book => (
                                 <MotionBox
                                   key={book.id}
                                   p={4}
@@ -440,16 +442,16 @@ export default function ManageEresources() {
                                 </MotionBox>
                               ))}
                             </Stack>
-                          ) : (
-                            <Text fontSize="sm" color="gray.500" fontStyle="italic">
-                              No e-resources for this semester yet
-                            </Text>
-                          )}
-                        </Box>
-                      );
-                    })}
-                  </Stack>
-                )}
+                            ) : (
+                              <Text fontSize="sm" color="gray.500" fontStyle="italic">
+                                No e-resources for this period yet
+                              </Text>
+                            )}
+                          </Box>
+                        );
+                      })}
+                    </Stack>
+                  )}
 
                 {courses.length === 0 && (
                   <Box p={8} textAlign="center" bg="gray.50" borderRadius="md">
@@ -488,21 +490,21 @@ export default function ManageEresources() {
                     </select>
                   </FormControl>
                   
-                  <FormControl flex={1}>
-                    <FormLabel>Semester *</FormLabel>
-                    <select
-                      value={bookFormData.semester_id}
-                      onChange={(e) => handleBookChange('semester_id', parseInt(e.target.value))}
-                      style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e0' }}
-                    >
-                      <option value={0}>Select Semester</option>
-                      {getSemestersForCourse(bookFormData.course_id).map(semester => (
-                        <option key={semester.id} value={semester.id}>
-                          {semester.description || `Semester ${semester.semester_number}`}
-                        </option>
-                      ))}
-                    </select>
-                  </FormControl>
+                    <FormControl flex={1}>
+                      <FormLabel>Academic Period *</FormLabel>
+                      <select
+                        value={bookFormData.academic_period_id || bookFormData.semester_id || 0}
+                        onChange={(e) => handleBookChange('academic_period_id', parseInt(e.target.value))}
+                        style={{ width: '100%', padding: '8px', borderRadius: '4px', border: '1px solid #cbd5e0' }}
+                      >
+                        <option value={0}>Select Period</option>
+                        {getPeriodsForCourse(bookFormData.course_id).map(period => (
+                          <option key={period.id} value={period.id}>
+                            {period.label} ({period.description})
+                          </option>
+                        ))}
+                      </select>
+                    </FormControl>
                 </Stack>
                 
                 <FormControl mb={4}>

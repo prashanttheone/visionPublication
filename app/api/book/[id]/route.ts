@@ -25,7 +25,7 @@ interface BookCourseMap {
   id?: number;
   book_id: number;
   course_id: number;
-  semester_id: number;
+  academic_period_id: number;
   is_required: boolean;
   is_recommended: boolean;
   created_at?: string;
@@ -77,7 +77,7 @@ export async function GET(
     // Fetch course mappings if requested
     if (includeMappings) {
       const mappingsResult = await query<BookCourseMap>(
-        'SELECT * FROM book_course_map WHERE book_id = $1 ORDER BY course_id, semester_id',
+        'SELECT * FROM book_course_map WHERE book_id = $1 ORDER BY course_id, academic_period_id',
         [bookId]
       );
       courseMappings = mappingsResult.rows;
@@ -196,38 +196,39 @@ export async function PUT(
 
     // Insert new course mappings
     if (courseMappings.length > 0) {
-      // Validate that all referenced semesters exist
-      const semesterIds = courseMappings.map(m => m.semester_id);
-      const uniqueSemesterIds = [...new Set(semesterIds)];
+      // Validate that all referenced periods exist
+      const periodIds = courseMappings.map(m => m.academic_period_id || (m as any).semester_id);
+      const uniquePeriodIds = [...new Set(periodIds)].filter(id => id !== undefined);
       
-      if (uniqueSemesterIds.length > 0) {
-        const semesterCheck = await client.query(
-          'SELECT id FROM semesters WHERE id = ANY($1)',
-          [uniqueSemesterIds]
+      if (uniquePeriodIds.length > 0) {
+        const periodCheck = await client.query(
+          'SELECT id FROM academic_periods WHERE id = ANY($1)',
+          [uniquePeriodIds]
         );
         
-        const existingSemesterIds = new Set(semesterCheck.rows.map(row => row.id));
-        const missingSemesterIds = uniqueSemesterIds.filter(id => !existingSemesterIds.has(id));
+        const existingPeriodIds = new Set(periodCheck.rows.map(row => row.id));
+        const missingPeriodIds = uniquePeriodIds.filter(id => !existingPeriodIds.has(id));
         
-        if (missingSemesterIds.length > 0) {
+        if (missingPeriodIds.length > 0) {
           return NextResponse.json(
             {
               success: false,
-              error: `Referenced semester IDs do not exist: ${missingSemesterIds.join(', ')}`
+              error: `Referenced period IDs do not exist: ${missingPeriodIds.join(', ')}`
             },
             { status: 400 }
           );
         }
       }
       
-      const mappingInserts = courseMappings.map(mapping =>
-        client.query<BookCourseMap>(
-          `INSERT INTO book_course_map (book_id, course_id, semester_id, is_required, is_recommended, created_at, updated_at)
-           VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      const mappingInserts = courseMappings.map(mapping => {
+        const periodId = mapping.academic_period_id || (mapping as any).semester_id;
+        return client.query<BookCourseMap>(
+          `INSERT INTO book_course_map (book_id, course_id, academic_period_id, is_required, created_at, updated_at)
+           VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
            RETURNING *`,
-          [bookId, mapping.course_id, mapping.semester_id, mapping.is_required, mapping.is_recommended]
-        )
-      );
+          [bookId, mapping.course_id, periodId, mapping.is_required]
+        );
+      });
 
       const mappingResults = await Promise.all(mappingInserts);
       newMappings = mappingResults.map(result => result.rows[0]);

@@ -12,14 +12,16 @@ interface Course {
   id: number;
   name: string;
   description?: string;
-  semesters?: Semester[];
+  academic_periods?: AcademicPeriod[];
 }
 
-interface Semester {
+interface AcademicPeriod {
   id: number;
   course_id: number;
-  semester_number: number;
+  period_number: number;
   description: string;
+  label?: string;
+  period_type?: 'SEMESTER' | 'YEAR';
 }
 
 interface EResourceChapter {
@@ -33,7 +35,8 @@ interface EResourceChapter {
 interface EResourceBook {
   id: number;
   course_id: number;
-  semester_id: number;
+  academic_period_id: number;
+  semester_id?: number; // Backwards compatibility
   book_name: string;
   description?: string;
   course_name: string;
@@ -44,29 +47,29 @@ interface EResourceBook {
 export default function Eresource() {
   const [searchTerm, setSearchTerm] = useState('');
   const [courses, setCourses] = useState<Course[]>([]);
-  const [semesters, setSemesters] = useState<Semester[]>([]);
+  const [academicPeriods, setAcademicPeriods] = useState<AcademicPeriod[]>([]);
   const [eresources, setEresources] = useState<EResourceBook[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
   const [selectedCourseId, setSelectedCourseId] = useState<number | null>(null);
-  const [selectedSemesterId, setSelectedSemesterId] = useState<number | null>(null);
+  const [selectedPeriodId, setSelectedPeriodId] = useState<number | null>(null);
   const [expandedBookId, setExpandedBookId] = useState<number | null>(null);
   const [sortBy, setSortBy] = useState<'name' | 'chapters'>('name');
 
-  // Fetch courses and semesters
+  // Fetch courses and periods
   const fetchCourses = useCallback(async () => {
     try {
-      const response = await fetch('/api/course?includeSemesters=true');
+      const response = await fetch('/api/course?includePeriods=true');
       const result = await response.json();
       if (result.success) {
         setCourses(result.data || []);
-        const allSems: Semester[] = [];
+        const allPeriods: AcademicPeriod[] = [];
         result.data?.forEach((course: Course) => {
-          if (course.semesters) {
-            allSems.push(...course.semesters);
+          if (course.academic_periods) {
+            allPeriods.push(...course.academic_periods);
           }
         });
-        setSemesters(allSems);
+        setAcademicPeriods(allPeriods);
       }
     } catch (error) {
       console.error('Error fetching courses:', error);
@@ -95,11 +98,11 @@ export default function Eresource() {
     init();
   }, [fetchCourses, fetchEresources]);
 
-  // Get semesters for selected course
-  const availableSemesters = useMemo(() => {
+  // Get periods for selected course
+  const availablePeriods = useMemo(() => {
     if (!selectedCourseId) return [];
-    return semesters.filter(s => s.course_id === selectedCourseId);
-  }, [selectedCourseId, semesters]);
+    return academicPeriods.filter(p => p.course_id === selectedCourseId);
+  }, [selectedCourseId, academicPeriods]);
 
   // Filter e-resources
   const filteredEresources = useMemo(() => {
@@ -110,9 +113,9 @@ export default function Eresource() {
       filtered = filtered.filter(e => e.course_id === selectedCourseId);
     }
 
-    // Filter by semester
-    if (selectedSemesterId) {
-      filtered = filtered.filter(e => e.semester_id === selectedSemesterId);
+    // Filter by period
+    if (selectedPeriodId) {
+      filtered = filtered.filter(e => (e.academic_period_id || e.semester_id) === selectedPeriodId);
     }
 
     // Search filter
@@ -242,54 +245,54 @@ export default function Eresource() {
                 <Text fontSize="sm" fontWeight="700" color="gray.300" mb="12px" textTransform="uppercase" letterSpacing="1px">
                   Course
                 </Text>
-                <select
-                  value={selectedCourseId || ''}
-                  onChange={(e: ChangeEvent<HTMLSelectElement>) => {
-                    const value = e.target.value ? parseInt(e.target.value) : null;
-                    setSelectedCourseId(value);
-                    setSelectedSemesterId(null);
-                  }}
-                  style={selectStyle}
-                >
-                  <option value="" style={{ background: '#1a2332', color: 'white', padding: '8px' }}>
-                    All Courses
-                  </option>
-                  {courses.map((course) => (
-                    <option key={course.id} value={course.id} style={{ background: '#1a2332', color: 'white', padding: '8px' }}>
-                      {course.name}
+                  <select
+                    value={selectedCourseId || ''}
+                    onChange={(e: ChangeEvent<HTMLSelectElement>) => {
+                      const value = e.target.value ? parseInt(e.target.value) : null;
+                      setSelectedCourseId(value);
+                      setSelectedPeriodId(null);
+                    }}
+                    style={selectStyle}
+                  >
+                    <option value="" style={{ background: '#1a2332', color: 'white', padding: '8px' }}>
+                      All Courses
                     </option>
-                  ))}
-                </select>
-              </Box>
+                    {courses.map((course) => (
+                      <option key={course.id} value={course.id} style={{ background: '#1a2332', color: 'white', padding: '8px' }}>
+                        {course.name}
+                      </option>
+                    ))}
+                  </select>
+                </Box>
 
-              {/* Semester Selection */}
-              <Box>
-                <Text fontSize="sm" fontWeight="700" color="gray.300" mb="12px" textTransform="uppercase" letterSpacing="1px">
-                  Semester
-                </Text>
-                <select
-                  value={selectedSemesterId || ''}
-                  onChange={(e: ChangeEvent<HTMLSelectElement>) => {
-                    const value = e.target.value ? parseInt(e.target.value) : null;
-                    setSelectedSemesterId(value);
-                  }}
-                  disabled={!selectedCourseId || availableSemesters.length === 0}
-                  style={{
-                    ...selectStyle,
-                    opacity: !selectedCourseId || availableSemesters.length === 0 ? 0.5 : 1,
-                    cursor: !selectedCourseId || availableSemesters.length === 0 ? 'not-allowed' : 'pointer',
-                  }}
-                >
-                  <option value="" style={{ background: '#1a2332', color: 'white', padding: '8px' }}>
-                    All Semesters
-                  </option>
-                  {availableSemesters.map((semester) => (
-                    <option key={semester.id} value={semester.id} style={{ background: '#1a2332', color: 'white', padding: '8px' }}>
-                      {semester.description || `Semester ${semester.semester_number}`}
+                {/* Period Selection */}
+                <Box>
+                  <Text fontSize="sm" fontWeight="700" color="gray.300" mb="12px" textTransform="uppercase" letterSpacing="1px">
+                    Year / Semester
+                  </Text>
+                  <select
+                    value={selectedPeriodId || ''}
+                    onChange={(e: ChangeEvent<HTMLSelectElement>) => {
+                      const value = e.target.value ? parseInt(e.target.value) : null;
+                      setSelectedPeriodId(value);
+                    }}
+                    disabled={!selectedCourseId || availablePeriods.length === 0}
+                    style={{
+                      ...selectStyle,
+                      opacity: !selectedCourseId || availablePeriods.length === 0 ? 0.5 : 1,
+                      cursor: !selectedCourseId || availablePeriods.length === 0 ? 'not-allowed' : 'pointer',
+                    }}
+                  >
+                    <option value="" style={{ background: '#1a2332', color: 'white', padding: '8px' }}>
+                      All Periods
                     </option>
-                  ))}
-                </select>
-              </Box>
+                    {availablePeriods.map((period) => (
+                      <option key={period.id} value={period.id} style={{ background: '#1a2332', color: 'white', padding: '8px' }}>
+                        {period.label} ({period.description})
+                      </option>
+                    ))}
+                  </select>
+                </Box>
 
               {/* Sort By */}
               <Box>

@@ -103,14 +103,14 @@ export async function POST(request: NextRequest) {
     const body: CreateCourseRequest = await request.json();
     const { course, academic_periods } = body;
 
-    if (!course.name || !course.name.trim()) {
+    if (!course?.name?.trim()) {
       return NextResponse.json(
         { success: false, error: 'Course name is required' },
         { status: 400 }
       );
     }
 
-    if (!academic_periods || academic_periods.length === 0) {
+    if (!academic_periods?.length) {
       return NextResponse.json(
         { success: false, error: 'At least one academic period is required' },
         { status: 400 }
@@ -119,51 +119,51 @@ export async function POST(request: NextRequest) {
 
     await client.query('BEGIN');
 
-    const courseResult = await client.query<Course>(
-      `INSERT INTO courses (name, description, created_at, updated_at)
-       VALUES ($1, $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-       RETURNING *`,
+    const courseResult = await client.query(
+      `
+      INSERT INTO courses (name, description, created_at, updated_at)
+      VALUES ($1, $2, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      RETURNING *
+      `,
       [course.name.trim(), course.description || '']
     );
 
     const newCourse = courseResult.rows[0];
 
-    const periodInserts = academic_periods.map((period, index) =>
-      client.query<AcademicPeriod>(
-        `INSERT INTO academic_periods (course_id, period_number, description, period_type, label, created_at, updated_at)
-         VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-         RETURNING *`,
-        [newCourse.id, period.period_number || index + 1, period.description || '', period.period_type || 'SEMESTER', period.label || '']
+    const periodResults = await Promise.all(
+      academic_periods.map((period, index) =>
+        client.query(
+          `
+          INSERT INTO academic_periods
+            (course_id, period_number, description, period_type, label, created_at, updated_at)
+          VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+          RETURNING *
+          `,
+          [
+            newCourse.id,
+            period.period_number || index + 1,
+            period.description || '',
+            period.period_type || 'SEMESTER',
+            period.label || ''
+          ]
+        )
       )
     );
-
-    const periodResults = await Promise.all(periodInserts);
-    const newPeriods = periodResults.map(result => result.rows[0]);
 
     await client.query('COMMIT');
 
     return NextResponse.json(
       {
         success: true,
-        message: 'Course created successfully',
         data: {
           course: newCourse,
-          academic_periods: newPeriods
+          academic_periods: periodResults.map(r => r.rows[0])
         }
       },
       { status: 201 }
     );
   } catch (error) {
     await client.query('ROLLBACK');
-
-    console.error('Error creating course:', error);
-
-    if (error instanceof Error && error.message.includes('duplicate key')) {
-      return NextResponse.json(
-        { success: false, error: 'A course with this name already exists' },
-        { status: 409 }
-      );
-    }
 
     return NextResponse.json(
       {

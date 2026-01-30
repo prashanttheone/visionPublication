@@ -5,7 +5,7 @@ import { query, getClient } from '@/lib/db';
 interface EResourceBook {
   id?: number;
   course_id: number;
-  semester_id: number;
+  academic_period_id: number;
   book_name: string;
   description?: string;
   created_at?: string;
@@ -45,12 +45,12 @@ export async function GET(
       );
     }
 
-    // Get book with course and semester info
+    // Get book with course and period info
     const bookResult = await query<EResourceBook & { course_name: string; semester_name: string }>(
-      `SELECT eb.*, c.name as course_name, s.description as semester_name
+      `SELECT eb.*, c.name as course_name, ap.description as semester_name
        FROM eresource_books eb
        JOIN courses c ON eb.course_id = c.id
-       JOIN semesters s ON eb.semester_id = s.id
+       JOIN academic_periods ap ON eb.academic_period_id = ap.id
        WHERE eb.id = $1`,
       [bookId]
     );
@@ -138,12 +138,13 @@ export async function PUT(
     await client.query('BEGIN');
 
     // Update book
+    const periodId = book.academic_period_id || book.semester_id;
     const bookResult = await client.query<EResourceBook>(
       `UPDATE eresource_books 
-       SET book_name = $1, description = $2, course_id = $3, semester_id = $4, updated_at = CURRENT_TIMESTAMP
+       SET book_name = $1, description = $2, course_id = $3, academic_period_id = $4, updated_at = CURRENT_TIMESTAMP
        WHERE id = $5
        RETURNING *`,
-      [book.book_name.trim(), book.description || '', book.course_id, book.semester_id, bookId]
+      [book.book_name.trim(), book.description || '', book.course_id, periodId, bookId]
     );
 
     const updatedBook = bookResult.rows[0];
