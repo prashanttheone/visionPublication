@@ -195,7 +195,9 @@ export default function HomeSlider() {
       render: (text: string, record: HomeSlider) => (
         <Space direction="vertical" size={0}>
           <Text strong>{text}</Text>
-          {record.description && <Text type="secondary" size="small">{record.description}</Text>}
+          {record.description && <Text type="secondary" style={{ fontSize: '14px' }}>
+            {record.description}
+          </Text>}
         </Space>
       ),
     },

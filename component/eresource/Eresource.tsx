@@ -140,7 +140,7 @@ export default function Eresource() {
     });
 
     return filtered;
-  }, [eresources, selectedCourseId, selectedSemesterId, searchTerm, sortBy]);
+  }, [eresources, selectedCourseId, selectedPeriodId, searchTerm, sortBy]);
 
   const containerVariants = {
     hidden: { opacity: 0 },

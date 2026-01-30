@@ -238,7 +238,7 @@ export default function ManageEresources() {
       render: (text: string, record: EResourceBook) => (
         <Space direction="vertical" size={0}>
           <Text strong style={{ fontSize: '16px' }}>{text}</Text>
-          {record.description && <Text type="secondary" size="small">{record.description}</Text>}
+          {record.description && <Text type="secondary" style={{ fontSize: '14px' }}>{record.description}</Text>}
         </Space>
       )
     },
@@ -455,7 +455,7 @@ export default function ManageEresources() {
               <TextArea rows={3} placeholder="Optional description for this e-resource book" />
             </Form.Item>
 
-            <Divider orientation="left"><FileTextOutlined /> Chapters & Links</Divider>
+            <Divider><FileTextOutlined /> Chapters & Links</Divider>
 
             <Form.List name="chapters">
               {(fields, { add, remove }) => (

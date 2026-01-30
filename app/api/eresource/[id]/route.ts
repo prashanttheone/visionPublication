@@ -138,7 +138,7 @@ export async function PUT(
     await client.query('BEGIN');
 
     // Update book
-    const periodId = book.academic_period_id || book.semester_id;
+    const periodId = book.academic_period_id;
     const bookResult = await client.query<EResourceBook>(
       `UPDATE eresource_books 
        SET book_name = $1, description = $2, course_id = $3, academic_period_id = $4, updated_at = CURRENT_TIMESTAMP

@@ -138,14 +138,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!book.course_id || (!book.academic_period_id && !book.semester_id)) {
+    if (!book.course_id || !book.academic_period_id) {
       return NextResponse.json(
-        { success: false, error: 'Course and period/semester are required' },
+        { success: false, error: 'Course and academic period are required' },
         { status: 400 }
       );
     }
 
-    const periodId = book.academic_period_id || book.semester_id;
+    const periodId = book.academic_period_id;
 
     // Validate period belongs to course
     const periodCheck = await client.query(
