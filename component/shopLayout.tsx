@@ -10,69 +10,23 @@ import { useRouter } from 'next/navigation';
 interface ShopLayoutProps {
   children: ReactNode;
   onSearch?: (query: string) => void;
-  onFilterChange?: (filters: { courseId: string; semesterId: string }) => void;
+  // onFilterChange removed - course filter functionality removed
   cartCount?: number;
   hideFilters?: boolean;
 }
 
-export default function ShopLayout({ children, onSearch, onFilterChange, cartCount = 0, hideFilters = false }: ShopLayoutProps) {
+export default function ShopLayout({ children, onSearch, cartCount = 0, hideFilters = false }: Omit<ShopLayoutProps, 'onFilterChange'>) {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [courses, setCourses] = useState<{ id: number; name: string }[]>([]);
-  const [semesters, setSemesters] = useState<{ id: number; semester_number: number; description: string }[]>([]);
-  const [selectedCourse, setSelectedCourse] = useState('');
-  const [selectedSemester, setSelectedSemester] = useState('');
+  // Course filter functionality removed - keeping only search
 
   // Check auth status on mount
   useEffect(() => {
     setIsLoggedIn(authUtils.isAuthenticated());
   }, []);
 
-  // Fetch courses on mount if filters are not hidden
-  useEffect(() => {
-    if (hideFilters) return;
-    const fetchCourses = async () => {
-      try {
-        const response = await fetch('/api/course');
-        const data = await response.json();
-        if (data.success) {
-          setCourses(data.data);
-        }
-      } catch (error) {
-        console.error('Failed to fetch courses:', error);
-      }
-    };
-    fetchCourses();
-  }, [hideFilters]);
-
-  // Fetch semesters when course is selected
-  useEffect(() => {
-    if (hideFilters || !selectedCourse) {
-      setSemesters([]);
-      setSelectedSemester('');
-      return;
-    }
-    const fetchSemesters = async () => {
-      try {
-        const response = await fetch(`/api/course/${selectedCourse}`);
-        const data = await response.json();
-        if (data.success && data.data.semesters) {
-          setSemesters(data.data.semesters);
-        }
-      } catch (error) {
-        console.error('Failed to fetch semesters:', error);
-      }
-    };
-    fetchSemesters();
-  }, [selectedCourse, hideFilters]);
-
-  // Notify parent component of filter changes
-  useEffect(() => {
-    if (onFilterChange) {
-      onFilterChange({ courseId: selectedCourse, semesterId: selectedSemester });
-    }
-  }, [selectedCourse, selectedSemester, onFilterChange]);
+  // Course filter functionality removed - keeping only search functionality
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
@@ -121,35 +75,7 @@ export default function ShopLayout({ children, onSearch, onFilterChange, cartCou
                   )}
                 </div>
 
-                {/* Desktop Filters */}
-                <div className="hidden lg:flex gap-3">
-                  <select
-                    value={selectedCourse}
-                    onChange={(e) => setSelectedCourse(e.target.value)}
-                    className="bg-[#1e293b]/60 border border-[#64B5F6]/20 text-white rounded-lg px-3 py-2 text-xs font-medium focus:outline-none focus:border-[#64B5F6]/50 cursor-pointer"
-                  >
-                    <option value="">Course</option>
-                    {courses.map((course) => (
-                      <option key={course.id} value={course.id} className="bg-[#1e293b]">{course.name}</option>
-                    ))}
-                  </select>
-
-                  <select
-                    value={selectedSemester}
-                    onChange={(e) => setSelectedSemester(e.target.value)}
-                    disabled={!selectedCourse || semesters.length === 0}
-                    className={`bg-[#1e293b]/60 border border-[#64B5F6]/20 text-white rounded-lg px-3 py-2 text-xs font-medium focus:outline-none focus:border-[#64B5F6]/50 cursor-pointer ${
-                      (!selectedCourse || semesters.length === 0) ? 'opacity-50' : 'opacity-100'
-                    }`}
-                  >
-                    <option value="">Semester</option>
-                    {semesters.map((semester) => (
-                      <option key={semester.id} value={semester.id} className="bg-[#1e293b]">
-                        {semester.description || `Sem ${semester.semester_number}`}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                {/* Course filter removed - keeping only search functionality */}
               </div>
             )}
 

@@ -104,10 +104,8 @@ export default function Book() {
         const coursesData = await coursesRes.json();
         if (coursesData.success) {
           setCourses(coursesData.data || []);
-          // Set first course as default
-          if (coursesData.data && coursesData.data.length > 0) {
-            setSelectedCourseId(coursesData.data[0].id);
-          }
+          // Set "All Books" as default selected
+          setSelectedCourseId(null);
         }
 
         // Fetch books with course mappings
@@ -152,12 +150,13 @@ export default function Book() {
         .map((mapping) => mapping.book_id);
       filtered = filtered.filter((book) => bookIds.includes(book.id));
     } else if (selectedCourseId && courseMappings.length) {
-      // Fallback to tab selection if no filter
+      // Filter by selected tab only if a tab is selected
       const bookIds = courseMappings
         .filter((mapping) => mapping.course_id === selectedCourseId)
         .map((mapping) => mapping.book_id);
       filtered = filtered.filter((book) => bookIds.includes(book.id));
     }
+    // If no tab is selected, show all books (no filtering)
 
     // Filter by Semester
     if (filterSemesterId) {
@@ -315,7 +314,7 @@ export default function Book() {
   }
 
   return (
-    <ShopLayout onSearch={setSearchQuery} onFilterChange={handleFilterChange} cartCount={0}>
+    <ShopLayout onSearch={setSearchQuery} cartCount={0}>
       <Box bg="linear-gradient(135deg, #0f172a 0%, #1a2332 50%, #0f172a 100%)" py={{ base: '10px', md: '10px' }} position="relative" overflow="hidden">
         {/* Background Elements */}
         <Box
@@ -488,25 +487,66 @@ export default function Book() {
 
           {/* Course Category Buttons */}
           <Box display="flex" gap={{ base: '12px', md: '16px' }} mb={{ base: '40px', md: '60px' }} justifyContent="center" flexWrap="wrap">
-            {courses.map((course) => {
-              const isSelected = selectedCourseId === course.id;
-              return (
-                <motion.button
-                  key={course.id}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => setSelectedCourseId(course.id)}
-                  style={{
-                    ...courseButtonStyle,
-                    border: `2px solid ${isSelected ? '#64B5F6' : 'rgba(255, 255, 255, 0.2)'}`,
-                    background: isSelected ? 'rgba(100, 181, 246, 0.1)' : 'transparent',
-                    color: isSelected ? '#64B5F6' : 'white',
-                  }}
-                >
-                  {course.name}
-                </motion.button>
-              );
-            })}
+            {/* "All Books" button */}
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setSelectedCourseId(null)}
+              style={{
+                ...courseButtonStyle,
+                border: `2px solid ${selectedCourseId === null ? '#64B5F6' : 'rgba(255, 255, 255, 0.2)'}`,
+                background: selectedCourseId === null ? 'rgba(100, 181, 246, 0.1)' : 'transparent',
+                color: selectedCourseId === null ? '#64B5F6' : 'white',
+              }}
+            >
+              All Books
+            </motion.button>
+            
+            {/* Course-specific buttons */}
+            {courses
+              .filter((course) => course.name !== 'ANM') // Show all courses except ANM first
+              .map((course) => {
+                const isSelected = selectedCourseId === course.id;
+                return (
+                  <motion.button
+                    key={course.id}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setSelectedCourseId(course.id)}
+                    style={{
+                      ...courseButtonStyle,
+                      border: `2px solid ${isSelected ? '#64B5F6' : 'rgba(255, 255, 255, 0.2)'}`,
+                      background: isSelected ? 'rgba(100, 181, 246, 0.1)' : 'transparent',
+                      color: isSelected ? '#64B5F6' : 'white',
+                    }}
+                  >
+                    {course.name}
+                  </motion.button>
+                );
+              })}
+              
+            {/* ANM tab at the end */}
+            {courses
+              .filter((course) => course.name === 'ANM')
+              .map((course) => {
+                const isSelected = selectedCourseId === course.id;
+                return (
+                  <motion.button
+                    key={course.id}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setSelectedCourseId(course.id)}
+                    style={{
+                      ...courseButtonStyle,
+                      border: `2px solid ${isSelected ? '#64B5F6' : 'rgba(255, 255, 255, 0.2)'}`,
+                      background: isSelected ? 'rgba(100, 181, 246, 0.1)' : 'transparent',
+                      color: isSelected ? '#64B5F6' : 'white',
+                    }}
+                  >
+                    {course.name}
+                  </motion.button>
+                );
+              })}
           </Box>
 
           {/* Books Grid */}
@@ -530,6 +570,12 @@ export default function Book() {
                   <>
                     {' in '}
                     <strong>{courses.find((c) => c.id === selectedCourseId)?.name || 'Selected Course'}</strong>
+                  </>
+                )}
+                {!filterCourseId && !filterSemesterId && selectedCourseId === null && (
+                  <>
+                    {' in '}
+                    <strong>All Books</strong>
                   </>
                 )}
               </Text>
