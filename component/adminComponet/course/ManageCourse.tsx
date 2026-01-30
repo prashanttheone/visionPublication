@@ -55,38 +55,13 @@ interface AcademicPeriod {
   description: string;
 }
 
-const DEFAULT_COURSES = [
-  { name: 'BSC Nursing', description: 'Bachelor of Science in Nursing - 4 Year Program', period_type: 'SEMESTER' as PeriodType, total_semesters: 8 },
-  { name: 'GNM', description: 'General Nursing and Midwifery - 3 Year Program', period_type: 'YEAR' as PeriodType, total_years: 3 },
-  { name: 'Post Basic BSC Nursing', description: 'Post Basic BSC Nursing - 2 Year Program', period_type: 'YEAR' as PeriodType, total_years: 2 },
-];
+  const DEFAULT_COURSES = [
+    { name: 'ANM', description: 'Auxiliary Nurse Midwifery - 2 Year Program', period_type: 'YEAR' as PeriodType, total_years: 2 },
+    { name: 'GNM', description: 'General Nursing and Midwifery - 3 Year Program', period_type: 'YEAR' as PeriodType, total_years: 3 },
+    { name: 'Post Basic BSC Nursing', description: 'Post Basic BSC Nursing - 2 Year Program', period_type: 'YEAR' as PeriodType, total_years: 2 },
+  ];
 
-const darkTheme = {
-  token: {
-    colorBgBase: '#1a1a1a',
-    colorBgContainer: '#262626',
-    colorBgElevated: '#262626',
-    colorBgSpotlight: '#262626',
-    colorBgLayout: '#000000',
-    colorText: 'rgba(255, 255, 255, 0.85)',
-    colorTextSecondary: 'rgba(255, 255, 255, 0.65)',
-    colorTextTertiary: 'rgba(255, 255, 255, 0.45)',
-    colorBorder: '#434343',
-    colorBorderSecondary: '#303030',
-    colorPrimary: '#177ddc',
-    colorPrimaryHover: '#3c9be8',
-    colorSuccess: '#49aa19',
-    colorWarning: '#d89614',
-    colorError: '#dc4446',
-    colorInfo: '#177ddc',
-  },
-  components: {
-    Card: { colorBgContainer: '#262626', colorBorder: '#434343' },
-    Button: { colorBgContainer: '#262626', colorBorder: '#434343' },
-    Input: { colorBgContainer: '#262626', colorBorder: '#434343', colorText: 'rgba(255, 255, 255, 0.85)', colorTextPlaceholder: 'rgba(255, 255, 255, 0.45)' },
-    Table: { colorBgContainer: '#262626', colorBorder: '#434343', headerBg: '#1d1d1d', rowHoverBg: '#303030' },
-  },
-};
+// Removed local darkTheme, using global from AdminLayoutClient
 
 export default function ManageCourse() {
   const [courses, setCourses] = useState<Course[]>([]);
@@ -403,58 +378,54 @@ export default function ManageCourse() {
     </Row>
   );
 
-  if (view === 'list') {
-    return (
-      <ConfigProvider theme={darkTheme}>
-        <div style={{ padding: 24, minHeight: '100vh', backgroundColor: '#000000' }}>
-          <Space direction="vertical" size="large" style={{ width: '100%' }}>
-            <Header
-              title="Course Management"
-              extra={
-                <Button
-                  type="primary"
-                  icon={<PlusOutlined />}
-                  onClick={() => {
-                    setEditingCourse(null);
-                    form.resetFields();
-                    setSelectedPeriodType('SEMESTER');
-                    setTotalYears(1);
-                    setTotalSemesters(2);
-                    setPeriodsForCourse([]);
-                    setView('form');
-                  }}
-                >
-                  Add New Course
-                </Button>
-              }
+    if (view === 'list') {
+      return (
+        <Space direction="vertical" size="large" style={{ width: '100%' }}>
+          <Header
+            title="Course Management"
+            extra={
+              <Button
+                type="primary"
+                icon={<PlusOutlined />}
+                onClick={() => {
+                  setEditingCourse(null);
+                  form.resetFields();
+                  setSelectedPeriodType('SEMESTER');
+                  setTotalYears(1);
+                  setTotalSemesters(2);
+                  setPeriodsForCourse([]);
+                  setView('form');
+                }}
+              >
+                Add New Course
+              </Button>
+            }
+          />
+
+          <Space wrap>
+            <Input.Search
+              placeholder="Search courses by name or description"
+              allowClear
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              style={{ width: 300 }}
             />
-
-            <Space wrap>
-              <Input.Search
-                placeholder="Search courses by name or description"
-                allowClear
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                style={{ width: 300 }}
-              />
-            </Space>
-
-            {loading ? (
-              <div style={{ textAlign: 'center', padding: 48 }}><Spin size="large" /></div>
-            ) : filteredCourses.length > 0 ? (
-              <CourseGrid />
-            ) : (
-              <Card>
-                <Text type="secondary">
-                  {search ? `No courses found matching "${search}"` : 'No courses available. Add your first course to get started.'}
-                </Text>
-              </Card>
-            )}
           </Space>
-        </div>
-      </ConfigProvider>
-    );
-  }
+
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: 48 }}><Spin size="large" /></div>
+          ) : filteredCourses.length > 0 ? (
+            <CourseGrid />
+          ) : (
+            <Card>
+              <Text type="secondary">
+                {search ? `No courses found matching "${search}"` : 'No courses available. Add your first course to get started.'}
+              </Text>
+            </Card>
+          )}
+        </Space>
+      );
+    }
 
   if (view === 'periods' && selectedCourse) {
     const periods = getCoursePeriods(selectedCourse.id);
@@ -462,41 +433,39 @@ export default function ManageCourse() {
     const semesterPeriods = periods.filter(p => p.period_type === 'SEMESTER');
 
     return (
-      <ConfigProvider theme={darkTheme}>
-        <div style={{ padding: 24, minHeight: '100vh', backgroundColor: '#000000' }}>
-          <Header title={`${selectedCourse.name} - Academic Periods`} onBack={() => setView('list')} />
+      <>
+        <Header title={`${selectedCourse.name} - Academic Periods`} onBack={() => setView('list')} />
 
-          {yearPeriods.length > 0 && (
-            <Card title="Years" style={{ marginBottom: 16 }}>
-              <Table
-                pagination={false}
-                dataSource={yearPeriods.map(p => ({ key: p.id, ...p }))}
-                columns={[
-                  { title: 'Year', dataIndex: 'label', width: 150 },
-                  { title: 'Description', dataIndex: 'description', render: (text: string) => text || <Text type="secondary">No description</Text> },
-                ]}
-              />
-            </Card>
-          )}
+        {yearPeriods.length > 0 && (
+          <Card title="Years" style={{ marginBottom: 16 }}>
+            <Table
+              pagination={false}
+              dataSource={yearPeriods.map(p => ({ key: p.id, ...p }))}
+              columns={[
+                { title: 'Year', dataIndex: 'label', width: 150 },
+                { title: 'Description', dataIndex: 'description', render: (text: string) => text || <Text type="secondary">No description</Text> },
+              ]}
+            />
+          </Card>
+        )}
 
-          {semesterPeriods.length > 0 && (
-            <Card title="Semesters">
-              <Table
-                pagination={false}
-                dataSource={semesterPeriods.map(p => ({ key: p.id, ...p }))}
-                columns={[
-                  { title: 'Semester', dataIndex: 'label', width: 150 },
-                  { title: 'Description', dataIndex: 'description', render: (text: string) => text || <Text type="secondary">No description</Text> },
-                ]}
-              />
-            </Card>
-          )}
+        {semesterPeriods.length > 0 && (
+          <Card title="Semesters">
+            <Table
+              pagination={false}
+              dataSource={semesterPeriods.map(p => ({ key: p.id, ...p }))}
+              columns={[
+                { title: 'Semester', dataIndex: 'label', width: 150 },
+                { title: 'Description', dataIndex: 'description', render: (text: string) => text || <Text type="secondary">No description</Text> },
+              ]}
+            />
+          </Card>
+        )}
 
-          {yearPeriods.length === 0 && semesterPeriods.length === 0 && (
-            <Card><Text type="secondary">No periods found for this course</Text></Card>
-          )}
-        </div>
-      </ConfigProvider>
+        {yearPeriods.length === 0 && semesterPeriods.length === 0 && (
+          <Card><Text type="secondary">No periods found for this course</Text></Card>
+        )}
+      </>
     );
   }
 
@@ -596,79 +565,77 @@ export default function ManageCourse() {
   };
 
   return (
-    <ConfigProvider theme={darkTheme}>
-      <div style={{ padding: 24, minHeight: '100vh', backgroundColor: '#000000' }}>
-        <Header title={editingCourse ? 'Edit Course' : 'Add New Course'} onBack={() => setView('list')} />
+    <>
+      <Header title={editingCourse ? 'Edit Course' : 'Add New Course'} onBack={() => setView('list')} />
 
-        <Card style={{ maxWidth: 800 }}>
-          <Form form={form} layout="vertical" onFinish={handleSubmit}>
-            <Form.Item
-              name="name"
-              label="Course Name"
-              rules={[{ required: true, message: 'Please enter course name' }]}
-            >
-              <Input placeholder="e.g., BSC Nursing, GNM, Post Basic BSC Nursing" />
-            </Form.Item>
+      <Card style={{ maxWidth: 800 }}>
+        <Form form={form} layout="vertical" onFinish={handleSubmit}>
+          <Form.Item
+            name="name"
+            label="Course Name"
+            rules={[{ required: true, message: 'Please enter course name' }]}
+          >
+            <Input placeholder="e.g., BSC Nursing, GNM, Post Basic BSC Nursing" />
+          </Form.Item>
 
-            <Form.Item
-              name="description"
-              label="Description"
-              rules={[{ required: true, message: 'Please enter description' }]}
-            >
-              <Input.TextArea rows={3} placeholder="Enter course description" />
-            </Form.Item>
+          <Form.Item
+            name="description"
+            label="Description"
+            rules={[{ required: true, message: 'Please enter description' }]}
+          >
+            <Input.TextArea rows={3} placeholder="Enter course description" />
+          </Form.Item>
 
-            <Form.Item label="Period Type">
-              <Select
-                value={selectedPeriodType}
-                onChange={handlePeriodTypeChange}
-                options={[
-                  { value: 'SEMESTER', label: 'Semesters Only' },
-                  { value: 'YEAR', label: 'Years Only' },
-                  { value: 'BOTH', label: 'Both Years & Semesters' },
-                ]}
-              />
-            </Form.Item>
+          <Form.Item label="Period Type">
+            <Select
+              value={selectedPeriodType}
+              onChange={handlePeriodTypeChange}
+              options={[
+                { value: 'SEMESTER', label: 'Semesters Only' },
+                { value: 'YEAR', label: 'Years Only' },
+                { value: 'BOTH', label: 'Both Years & Semesters' },
+              ]}
+            />
+          </Form.Item>
 
-            <Row gutter={16}>
-              {(selectedPeriodType === 'YEAR' || selectedPeriodType === 'BOTH') && (
-                <Col span={12}>
-                  <Form.Item label="Number of Years">
-                    <InputNumber min={1} max={10} value={totalYears} onChange={handleYearsChange} style={{ width: '100%' }} />
-                  </Form.Item>
-                </Col>
-              )}
-              {(selectedPeriodType === 'SEMESTER' || selectedPeriodType === 'BOTH') && (
-                <Col span={12}>
-                  <Form.Item label="Number of Semesters">
-                    <InputNumber min={1} max={16} value={totalSemesters} onChange={handleSemestersChange} style={{ width: '100%' }} />
-                  </Form.Item>
-                </Col>
-              )}
-            </Row>
+          <Row gutter={16}>
+            {(selectedPeriodType === 'YEAR' || selectedPeriodType === 'BOTH') && (
+              <Col span={12}>
+                <Form.Item label="Number of Years">
+                  <InputNumber min={1} max={10} value={totalYears} onChange={handleYearsChange} style={{ width: '100%' }} />
+                </Form.Item>
+              </Col>
+            )}
+            {(selectedPeriodType === 'SEMESTER' || selectedPeriodType === 'BOTH') && (
+              <Col span={12}>
+                <Form.Item label="Number of Semesters">
+                  <InputNumber min={1} max={16} value={totalSemesters} onChange={handleSemestersChange} style={{ width: '100%' }} />
+                </Form.Item>
+              </Col>
+            )}
+          </Row>
 
-            <Button
-              type="dashed"
-              block
-              style={{ marginBottom: 16 }}
-              onClick={() => setPeriodsForCourse(generatePeriods(selectedPeriodType, totalYears, totalSemesters))}
-            >
-              Generate Periods
+          <Button
+            type="dashed"
+            block
+            style={{ marginBottom: 16 }}
+            onClick={() => setPeriodsForCourse(generatePeriods(selectedPeriodType, totalYears, totalSemesters))}
+          >
+            Generate Periods
+          </Button>
+
+          <PeriodManagement />
+
+          <Divider />
+
+          <Space>
+            <Button onClick={() => { setView('list'); setPeriodsForCourse([]); }}>Cancel</Button>
+            <Button type="primary" htmlType="submit" loading={submitting} disabled={periodsForCourse.length === 0}>
+              {editingCourse ? 'Update Course' : 'Create Course'}
             </Button>
-
-            <PeriodManagement />
-
-            <Divider />
-
-            <Space>
-              <Button onClick={() => { setView('list'); setPeriodsForCourse([]); }}>Cancel</Button>
-              <Button type="primary" htmlType="submit" loading={submitting} disabled={periodsForCourse.length === 0}>
-                {editingCourse ? 'Update Course' : 'Create Course'}
-              </Button>
-            </Space>
-          </Form>
-        </Card>
-      </div>
-    </ConfigProvider>
+          </Space>
+        </Form>
+      </Card>
+    </>
   );
 }

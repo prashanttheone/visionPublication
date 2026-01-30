@@ -1,16 +1,11 @@
 'use client';
 
-import { Box, Container, Input, Badge } from '@chakra-ui/react';
-import { ReactNode, useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { HiMagnifyingGlass, HiXMark, HiUser, HiShoppingCart } from 'react-icons/hi2';
-import { HiOutlineUserCircle } from 'react-icons/hi2';
+import React, { ReactNode, useState, useEffect } from 'react';
+import { Input, Badge, Button } from 'antd';
+import { HiMagnifyingGlass, HiXMark, HiUser, HiShoppingCart, HiOutlineUserCircle } from 'react-icons/hi2';
 import Footer from '@/component/footer/Footer';
 import { authUtils } from '@/lib/auth';
 import { useRouter } from 'next/navigation';
-
-// Create motion components
-const MotionBox = motion.create(Box);
 
 interface ShopLayoutProps {
   children: ReactNode;
@@ -20,33 +15,23 @@ interface ShopLayoutProps {
   hideFilters?: boolean;
 }
 
-// Animation variants
-const navVariants = {
-  hidden: { y: -20, opacity: 0 },
-  visible: {
-    y: 0,
-    opacity: 1,
-    transition: { duration: 0.5, easing: 'easeOut' },
-  },
-};
-
 export default function ShopLayout({ children, onSearch, onFilterChange, cartCount = 0, hideFilters = false }: ShopLayoutProps) {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
-  const [isFocused, setIsFocused] = useState(false);
-  const [selectedCourse, setSelectedCourse] = useState('');
-  const [selectedSemester, setSelectedSemester] = useState('');
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [courses, setCourses] = useState<{ id: number; name: string }[]>([]);
   const [semesters, setSemesters] = useState<{ id: number; semester_number: number; description: string }[]>([]);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [selectedCourse, setSelectedCourse] = useState('');
+  const [selectedSemester, setSelectedSemester] = useState('');
 
   // Check auth status on mount
   useEffect(() => {
     setIsLoggedIn(authUtils.isAuthenticated());
   }, []);
 
-  // Fetch courses on mount
+  // Fetch courses on mount if filters are not hidden
   useEffect(() => {
+    if (hideFilters) return;
     const fetchCourses = async () => {
       try {
         const response = await fetch('/api/course');
@@ -59,28 +44,28 @@ export default function ShopLayout({ children, onSearch, onFilterChange, cartCou
       }
     };
     fetchCourses();
-  }, []);
+  }, [hideFilters]);
 
   // Fetch semesters when course is selected
   useEffect(() => {
-    if (selectedCourse) {
-      const fetchSemesters = async () => {
-        try {
-          const response = await fetch(`/api/course/${selectedCourse}`);
-          const data = await response.json();
-          if (data.success && data.data.semesters) {
-            setSemesters(data.data.semesters);
-          }
-        } catch (error) {
-          console.error('Failed to fetch semesters:', error);
-        }
-      };
-      fetchSemesters();
-    } else {
+    if (hideFilters || !selectedCourse) {
       setSemesters([]);
       setSelectedSemester('');
+      return;
     }
-  }, [selectedCourse]);
+    const fetchSemesters = async () => {
+      try {
+        const response = await fetch(`/api/course/${selectedCourse}`);
+        const data = await response.json();
+        if (data.success && data.data.semesters) {
+          setSemesters(data.data.semesters);
+        }
+      } catch (error) {
+        console.error('Failed to fetch semesters:', error);
+      }
+    };
+    fetchSemesters();
+  }, [selectedCourse, hideFilters]);
 
   // Notify parent component of filter changes
   useEffect(() => {
@@ -95,393 +80,159 @@ export default function ShopLayout({ children, onSearch, onFilterChange, cartCou
       onSearch(query);
     }
   };
+
   return (
-    <Box bg="linear-gradient(135deg, #0f172a 0%, #1a2332 50%, #0f172a 100%)" minH="100vh" display="flex" flexDirection="column">
+    <div className="min-h-screen flex flex-col bg-[#000000]">
       {/* Shop Navbar */}
-      <MotionBox
-        variants={navVariants}
-        initial="hidden"
-        animate="visible"
-        bg="linear-gradient(135deg, #0f172a 0%, #1e293b 100%)"
-        borderBottom="2px solid"
-        borderColor="rgba(100, 181, 246, 0.3)"
-        backdropFilter="blur(10px)"
-        position="sticky"
-        top="0"
-        zIndex="50"
-        boxShadow="0 8px 32px rgba(100, 181, 246, 0.1)"
-      >
-        <Container maxW="full" px={{ base: '16px', md: '32px' }}>
-          <Box
-            display="flex"
-            justifyContent="space-between"
-            alignItems="center"
-            py={{ base: '8px', md: '12px' }}
-            minH="60px"
-            gap={{ base: '6px', md: '12px' }}
-            flexWrap="nowrap"
-          >
+      <nav className="sticky top-0 z-50 bg-[#0f172a]/80 backdrop-blur-md border-b-2 border-[#64B5F6]/30 shadow-[0_8px_32px_rgba(100,181,246,0.1)]">
+        <div className="max-w-full px-4 md:px-8">
+          <div className="flex justify-between items-center py-2 md:py-3 min-h-[60px] gap-2 md:gap-4 flex-nowrap">
             {/* Logo */}
-            <Box flexShrink={0} w={{ base: '80px', md: '100px', lg: '160px' }}>
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <a href="/" style={{ display: 'block' }}>
-                  <img
-                    src="/newlogo.png"
-                    alt="Vision Publications Logo"
-                    style={{ height: '40px', width: 'auto', objectFit: 'contain' }}
-                  />
-                </a>
-              </motion.div>
-            </Box>
+            <div className="flex-shrink-0 w-20 md:w-24 lg:w-40 transition-transform duration-300 hover:scale-105 cursor-pointer" onClick={() => router.push('/')}>
+              <img
+                src="/newlogo.png"
+                alt="Vision Publications Logo"
+                className="h-10 w-auto object-contain"
+              />
+            </div>
 
+            {/* Middle Section: Search & Filters */}
             {!hideFilters && (
-              <>
-                {/* Search Bar - Adjusted for mobile */}
-                <Box
-                  flex="1"
-                  position="relative"
-                  minW="0"
-                >
-                  <Box position="absolute" left="10px" top="50%" transform="translateY(-50%)" zIndex={2} color="gray.400">
+              <div className="flex-1 flex items-center gap-3 max-w-4xl">
+                {/* Search Bar */}
+                <div className="flex-1 relative">
+                  <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 z-10 pointer-events-none">
                     <HiMagnifyingGlass size={16} />
-                  </Box>
-                
-                  <motion.div
-                    animate={{
-                      boxShadow: isFocused ? '0 0 0 2px rgba(100, 181, 246, 0.2)' : '0 0 0 0px rgba(100, 181, 246, 0)',
-                    }}
-                    transition={{ duration: 0.2 }}
-                    style={{
-                      borderRadius: '8px',
-                      overflow: 'hidden',
-                    }}
-                  >
-                    <Input
-                      placeholder="Search..."
-                      value={searchQuery}
-                      onChange={(e) => handleSearch(e.target.value)}
-                      onFocus={() => setIsFocused(true)}
-                      onBlur={() => setIsFocused(false)}
-                      pl="32px"
-                      pr={searchQuery ? '32px' : '10px'}
-                      py="8px"
-                      fontSize={{ base: '12px', md: '13px' }}
-                      fontWeight="500"
-                      bg="rgba(30, 41, 59, 0.6)"
-                      border="1px solid"
-                      borderColor={isFocused ? 'rgba(100, 181, 246, 0.5)' : 'rgba(100, 181, 246, 0.2)'}
-                      color="white"
-                      _placeholder={{
-                        color: 'gray.400',
-                      }}
-                      _focus={{
-                        outline: 'none',
-                        borderColor: 'rgba(100, 181, 246, 0.5)',
-                        bg: 'rgba(30, 41, 59, 0.8)',
-                      }}
-                      _hover={{
-                        borderColor: 'rgba(100, 181, 246, 0.3)',
-                      }}
-                      backdropFilter="blur(10px)"
-                      transition="all 0.2s ease"
-                    />
-                  </motion.div>
-                
-                  {/* Clear Button */}
+                  </div>
+                  <Input
+                    placeholder="Search books..."
+                    value={searchQuery}
+                    onChange={(e) => handleSearch(e.target.value)}
+                    className="pl-10 pr-10 py-2 bg-[#1e293b]/60 border-[#64B5F6]/20 text-white placeholder-gray-400 rounded-lg hover:border-[#64B5F6]/40 focus:border-[#64B5F6]/60 transition-all duration-200"
+                    style={{ background: 'rgba(30, 41, 59, 0.6)', border: '1px solid rgba(100, 181, 246, 0.2)', color: 'white' }}
+                  />
                   {searchQuery && (
-                    <motion.button
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.8 }}
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.95 }}
+                    <button
                       onClick={() => handleSearch('')}
-                      style={{
-                        position: 'absolute',
-                        right: '6px',
-                        top: '50%',
-                        transform: 'translateY(-50%)',
-                        background: 'transparent',
-                        border: 'none',
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        padding: '4px',
-                        zIndex: 3,
-                      }}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#64B5F6] hover:text-[#FF8C00] transition-colors duration-200"
                     >
-                      <HiXMark size={16} color="#64B5F6" />
-                    </motion.button>
+                      <HiXMark size={16} />
+                    </button>
                   )}
-                </Box>
+                </div>
 
-                {/* Filter: Course */}
-                <Box
-                  w={{ base: 'calc(50% - 6px)', sm: '150px', lg: '180px' }}
-                >
+                {/* Desktop Filters */}
+                <div className="hidden lg:flex gap-3">
                   <select
                     value={selectedCourse}
                     onChange={(e) => setSelectedCourse(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '10px 12px',
-                      fontSize: '13px',
-                      fontWeight: '500',
-                      background: 'rgba(30, 41, 59, 0.6)',
-                      border: '1px solid rgba(100, 181, 246, 0.2)',
-                      color: 'white',
-                      borderRadius: '10px',
-                      backdropFilter: 'blur(10px)',
-                      cursor: 'pointer',
-                      outline: 'none',
-                    }}
+                    className="bg-[#1e293b]/60 border border-[#64B5F6]/20 text-white rounded-lg px-3 py-2 text-xs font-medium focus:outline-none focus:border-[#64B5F6]/50 cursor-pointer"
                   >
-                    <option value="" style={{ background: '#1e293b' }}>Course</option>
+                    <option value="">Course</option>
                     {courses.map((course) => (
-                      <option key={course.id} value={course.id} style={{ background: '#1e293b' }}>{course.name}</option>
+                      <option key={course.id} value={course.id} className="bg-[#1e293b]">{course.name}</option>
                     ))}
                   </select>
-                </Box>
 
-                {/* Filter: Semester */}
-                <Box
-                  w={{ base: 'calc(50% - 6px)', sm: '150px', lg: '180px' }}
-                >
                   <select
                     value={selectedSemester}
                     onChange={(e) => setSelectedSemester(e.target.value)}
                     disabled={!selectedCourse || semesters.length === 0}
-                    style={{
-                      width: '100%',
-                      padding: '10px 12px',
-                      fontSize: '13px',
-                      fontWeight: '500',
-                      background: 'rgba(30, 41, 59, 0.6)',
-                      border: '1px solid rgba(100, 181, 246, 0.2)',
-                      color: 'white',
-                      borderRadius: '10px',
-                      backdropFilter: 'blur(10px)',
-                      cursor: 'pointer',
-                      outline: 'none',
-                      opacity: !selectedCourse || semesters.length === 0 ? 0.5 : 1,
-                    }}
+                    className={`bg-[#1e293b]/60 border border-[#64B5F6]/20 text-white rounded-lg px-3 py-2 text-xs font-medium focus:outline-none focus:border-[#64B5F6]/50 cursor-pointer ${
+                      (!selectedCourse || semesters.length === 0) ? 'opacity-50' : 'opacity-100'
+                    }`}
                   >
-                    <option value="" style={{ background: '#1e293b' }}>Semester</option>
+                    <option value="">Semester</option>
                     {semesters.map((semester) => (
-                      <option key={semester.id} value={semester.id} style={{ background: '#1e293b' }}>
+                      <option key={semester.id} value={semester.id} className="bg-[#1e293b]">
                         {semester.description || `Sem ${semester.semester_number}`}
                       </option>
                     ))}
                   </select>
-                </Box>
-              </>
+                </div>
+              </div>
             )}
 
-            {/* Right Actions - Compact on mobile */}
-            <Box
-              display="flex"
-              alignItems="center"
-              gap={{ base: '4px', md: '8px' }}
-            >
-              {/* Filter: Course - Hidden on mobile */}
-              {!hideFilters && (
-                <Box
-                  w={{ base: '0 0 0px', sm: '120px', lg: '150px' }}
-                  overflow="hidden"
-                  display={{ base: 'none', sm: 'block' }}
-                >
-                  <select
-                    value={selectedCourse}
-                    onChange={(e) => setSelectedCourse(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '8px 10px',
-                      fontSize: '12px',
-                      fontWeight: '500',
-                      background: 'rgba(30, 41, 59, 0.6)',
-                      border: '1px solid rgba(100, 181, 246, 0.2)',
-                      color: 'white',
-                      borderRadius: '8px',
-                      backdropFilter: 'blur(10px)',
-                      cursor: 'pointer',
-                      outline: 'none',
-                    }}
+            {/* Special search input for cases where hideFilters is true (like on Book page where we have custom filters) */}
+            {hideFilters && onSearch && (
+              <div className="flex-1 max-w-xl relative">
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 z-10 pointer-events-none">
+                  <HiMagnifyingGlass size={16} />
+                </div>
+                <Input
+                  placeholder="Search books..."
+                  value={searchQuery}
+                  onChange={(e) => handleSearch(e.target.value)}
+                  className="pl-10 pr-10 py-2 bg-[#1e293b]/60 border-[#64B5F6]/20 text-white placeholder-gray-400 rounded-lg hover:border-[#64B5F6]/40 focus:border-[#64B5F6]/60 transition-all duration-200"
+                  style={{ background: 'rgba(30, 41, 59, 0.6)', border: '1px solid rgba(100, 181, 246, 0.2)', color: 'white' }}
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => handleSearch('')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#64B5F6] hover:text-[#FF8C00] transition-colors duration-200"
                   >
-                    <option value="" style={{ background: '#1e293b' }}>Course</option>
-                    {courses.map((course) => (
-                      <option key={course.id} value={course.id} style={{ background: '#1e293b' }}>{course.name}</option>
-                    ))}
-                  </select>
-                </Box>
-              )}
+                    <HiXMark size={16} />
+                  </button>
+                )}
+              </div>
+            )}
 
-              {/* Filter: Semester - Hidden on mobile */}
-              {!hideFilters && (
-                <Box
-                  w={{ base: '0 0 0px', sm: '120px', lg: '150px' }}
-                  overflow="hidden"
-                  display={{ base: 'none', sm: 'block' }}
-                >
-                  <select
-                    value={selectedSemester}
-                    onChange={(e) => setSelectedSemester(e.target.value)}
-                    disabled={!selectedCourse || semesters.length === 0}
-                    style={{
-                      width: '100%',
-                      padding: '8px 10px',
-                      fontSize: '12px',
-                      fontWeight: '500',
-                      background: 'rgba(30, 41, 59, 0.6)',
-                      border: '1px solid rgba(100, 181, 246, 0.2)',
-                      color: 'white',
-                      borderRadius: '8px',
-                      backdropFilter: 'blur(10px)',
-                      cursor: 'pointer',
-                      outline: 'none',
-                      opacity: !selectedCourse || semesters.length === 0 ? 0.5 : 1,
-                    }}
-                  >
-                    <option value="" style={{ background: '#1e293b' }}>Semester</option>
-                    {semesters.map((semester) => (
-                      <option key={semester.id} value={semester.id} style={{ background: '#1e293b' }}>
-                        {semester.description || `Sem ${semester.semester_number}`}
-                      </option>
-                    ))}
-                  </select>
-                </Box>
-              )}
-
-              {/* Login/Profile Button - Compact on mobile */}
+            {/* Right Actions */}
+            <div className="flex items-center gap-2 md:gap-4">
+              {/* User Button */}
               {!isLoggedIn ? (
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+                <Button
+                  type="text"
+                  icon={<HiUser size={18} />}
                   onClick={() => router.push('/login')}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: '6px',
-                    borderRadius: '6px',
-                    border: '1px solid rgba(100, 181, 246, 0.3)',
-                    background: 'transparent',
-                    color: '#64B5F6',
-                    fontSize: '11px',
-                    fontWeight: '600',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s ease',
-                    minWidth: '30px',
-                  }}
-                  onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(100, 181, 246, 0.1)';
-                    (e.currentTarget as HTMLElement).style.borderColor = 'rgba(100, 181, 246, 0.5)';
-                  }}
-                  onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLElement).style.backgroundColor = 'transparent';
-                    (e.currentTarget as HTMLElement).style.borderColor = 'rgba(100, 181, 246, 0.3)';
-                  }}
+                  className="flex items-center justify-center p-2 rounded-lg border border-[#64B5F6]/30 text-[#64B5F6] hover:bg-[#64B5F6]/10 hover:border-[#64B5F6]/50 transition-all duration-300 h-10 w-10 md:w-auto md:px-4"
                 >
-                  <HiUser size={16} />
-                </motion.button>
+                  <span className="hidden md:inline ml-1">Login</span>
+                </Button>
               ) : (
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+                <Button
+                  type="text"
+                  icon={<HiOutlineUserCircle size={22} />}
                   onClick={() => router.push('/profile')}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: '6px',
-                    borderRadius: '6px',
-                    border: '1px solid rgba(100, 181, 246, 0.3)',
-                    background: 'rgba(100, 181, 246, 0.1)',
-                    color: '#64B5F6',
-                    fontSize: '11px',
-                    fontWeight: '600',
-                    cursor: 'pointer',
-                    transition: 'all 0.3s ease',
-                    minWidth: '30px',
-                  }}
-                  onMouseEnter={(e) => {
-                    (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(100, 181, 246, 0.2)';
-                    (e.currentTarget as HTMLElement).style.borderColor = 'rgba(100, 181, 246, 0.6)';
-                  }}
-                  onMouseLeave={(e) => {
-                    (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(100, 181, 246, 0.1)';
-                    (e.currentTarget as HTMLElement).style.borderColor = 'rgba(100, 181, 246, 0.3)';
-                  }}
-                >
-                  <HiOutlineUserCircle size={18} />
-                </motion.button>
+                  className="flex items-center justify-center p-2 rounded-lg border border-[#64B5F6]/30 text-[#64B5F6] bg-[#64B5F6]/10 hover:bg-[#64B5F6]/20 hover:border-[#64B5F6]/60 transition-all duration-300 h-10 w-10"
+                />
               )}
 
-              {/* Cart Button - Compact on mobile */}
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                style={{
-                  position: 'relative',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  padding: '6px',
-                  borderRadius: '6px',
-                  border: '1px solid rgba(255, 140, 0, 0.3)',
-                  background: 'rgba(255, 140, 0, 0.05)',
-                  color: '#FF8C00',
-                  fontSize: '11px',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s ease',
-                  minWidth: '30px',
-                }}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(255, 140, 0, 0.15)';
-                  (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255, 140, 0, 0.6)';
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLElement).style.backgroundColor = 'rgba(255, 140, 0, 0.05)';
-                  (e.currentTarget as HTMLElement).style.borderColor = 'rgba(255, 140, 0, 0.3)';
-                }}
+              {/* Cart Button */}
+              <button
+                onClick={() => router.push('/books/cart')}
+                className="relative group flex items-center justify-center p-2 rounded-lg border border-[#FF8C00]/30 bg-[#FF8C00]/5 text-[#FF8C00] hover:bg-[#FF8C00]/15 hover:border-[#FF8C00]/60 transition-all duration-300 h-10 w-10"
               >
-                <HiShoppingCart size={16} />
+                <HiShoppingCart size={20} />
                 {cartCount > 0 && (
                   <Badge
-                    position="absolute"
-                    top="-4px"
-                    right="-4px"
-                    bg="linear-gradient(135deg, #FF8C00, #FFA500)"
-                    color="white"
-                    borderRadius="full"
-                    fontSize="8px"
-                    fontWeight="700"
-                    minW="14px"
-                    h="14px"
-                    display="flex"
-                    alignItems="center"
-                    justifyContent="center"
-                  >
-                    {cartCount > 99 ? '99+' : cartCount}
-                  </Badge>
+                    count={cartCount > 99 ? '99+' : cartCount}
+                    className="absolute -top-2 -right-2"
+                    style={{ backgroundColor: '#FF8C00', boxShadow: 'none' }}
+                  />
                 )}
-              </motion.button>
-            </Box>
-          </Box>
-        </Container>
-      </MotionBox>
+              </button>
+            </div>
+          </div>
+        </div>
+      </nav>
 
       {/* Main Content */}
-      <Box flex="1" py={{ base: '20px', md: '40px' }}>
+      <main className="flex-1 py-4 md:py-8 relative">
         {children}
-      </Box>
+      </main>
 
       {/* Footer */}
       <Footer />
-    </Box>
+
+      <style jsx global>{`
+        .ant-input::placeholder {
+          color: #94a3b8 !important;
+        }
+        .ant-input {
+          color: white !important;
+        }
+      `}</style>
+    </div>
   );
 }

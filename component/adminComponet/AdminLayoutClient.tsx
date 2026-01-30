@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Layout, Menu, Typography, Avatar } from 'antd';
+import { Layout, Menu, Typography, Avatar, ConfigProvider, theme } from 'antd';
 import {
   HomeOutlined,
   BookOutlined,
@@ -156,75 +156,89 @@ export default function AdminLayoutClient({
   };
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
-      <Sider
-        collapsible
-        collapsed={collapsed}
-        onCollapse={setCollapsed}
-        style={{
-          overflow: 'auto',
-          height: '100vh',
-          position: 'fixed',
-          left: 0,
-          top: 0,
-          bottom: 0,
-        }}
-        theme="dark"
-      >
-        <div
+    <ConfigProvider
+      theme={{
+        algorithm: theme.darkAlgorithm,
+        token: {
+          colorPrimary: '#1890ff',
+          colorBgContainer: '#141414',
+          colorBgLayout: '#000000',
+        },
+      }}
+    >
+      <Layout style={{ minHeight: '100vh', background: '#000' }}>
+        <Sider
+          collapsible
+          collapsed={collapsed}
+          onCollapse={setCollapsed}
           style={{
-            height: 64,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '16px',
+            overflow: 'auto',
+            height: '100vh',
+            position: 'fixed',
+            left: 0,
+            top: 0,
+            bottom: 0,
+            zIndex: 1000,
+            background: '#001529',
           }}
-        >
-          {!collapsed ? (
-            <Title level={4} style={{ color: '#fff', margin: 0 }}>
-              Admin Panel
-            </Title>
-          ) : (
-            <Avatar style={{ backgroundColor: '#1890ff' }}>A</Avatar>
-          )}
-        </div>
-        <Menu
           theme="dark"
-          mode="inline"
-          selectedKeys={getSelectedKeys()}
-          defaultOpenKeys={getOpenKeys()}
-          items={menuItems}
-          onClick={handleMenuClick}
-        />
-      </Sider>
-      <Layout style={{ marginLeft: collapsed ? 80 : 200, transition: 'all 0.2s' }}>
-        <Header
-          style={{
-            padding: '0 24px',
-            background: '#fff',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            boxShadow: '0 1px 4px rgba(0,21,41,.08)',
-          }}
         >
-          <Title level={4} style={{ margin: 0 }}>
-            VisionPublication Admin
-          </Title>
-          <Avatar style={{ backgroundColor: '#87d068' }}>U</Avatar>
-        </Header>
-        <Content
-          style={{
-            margin: '24px 16px',
-            padding: 24,
-            minHeight: 280,
-            background: '#fff',
-            borderRadius: 8,
-          }}
-        >
-          {children}
-        </Content>
+          <div
+            style={{
+              height: 64,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '16px',
+            }}
+          >
+            {!collapsed ? (
+              <Title level={4} style={{ color: '#fff', margin: 0 }}>
+                Admin Panel
+              </Title>
+            ) : (
+              <Avatar style={{ backgroundColor: '#1890ff' }}>A</Avatar>
+            )}
+          </div>
+          <Menu
+            theme="dark"
+            mode="inline"
+            selectedKeys={getSelectedKeys()}
+            defaultOpenKeys={getOpenKeys()}
+            items={menuItems}
+            onClick={handleMenuClick}
+          />
+        </Sider>
+        <Layout style={{ marginLeft: collapsed ? 80 : 200, transition: 'all 0.2s', background: '#000' }}>
+          <Header
+            style={{
+              padding: '0 24px',
+              background: '#141414',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              borderBottom: '1px solid #303030',
+            }}
+          >
+            <Title level={4} style={{ margin: 0, color: '#fff' }}>
+              VisionPublication Admin
+            </Title>
+            <Avatar style={{ backgroundColor: '#87d068' }}>U</Avatar>
+          </Header>
+          <Content
+            style={{
+              margin: '24px 16px',
+              padding: 24,
+              minHeight: 280,
+              background: '#141414',
+              borderRadius: 8,
+              border: '1px solid #303030',
+            }}
+          >
+            {children}
+          </Content>
+        </Layout>
       </Layout>
-    </Layout>
+    </ConfigProvider>
   );
 }

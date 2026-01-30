@@ -1,4 +1,4 @@
--- Academic Catalog: Courses, Semesters, and Books
+-- Academic Catalog: Courses, Academic Periods, and Books
 CREATE TABLE IF NOT EXISTS courses (
     id SERIAL PRIMARY KEY,
     name VARCHAR(100) UNIQUE NOT NULL,
@@ -7,14 +7,16 @@ CREATE TABLE IF NOT EXISTS courses (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE IF NOT EXISTS semesters (
+CREATE TABLE IF NOT EXISTS academic_periods (
     id SERIAL PRIMARY KEY,
     course_id INT NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
-    semester_number INT NOT NULL,
+    period_number INT NOT NULL,
     description VARCHAR(255),
+    period_type VARCHAR(20) DEFAULT 'SEMESTER',
+    label VARCHAR(100),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(course_id, semester_number)
+    UNIQUE(course_id, period_number)
 );
 
 CREATE TABLE IF NOT EXISTS books (
@@ -45,15 +47,15 @@ CREATE TABLE IF NOT EXISTS book_course_map (
     id SERIAL PRIMARY KEY,
     book_id INT NOT NULL REFERENCES books(id) ON DELETE CASCADE,
     course_id INT NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
-    semester_id INT NOT NULL REFERENCES semesters(id) ON DELETE CASCADE,
+    academic_period_id INT NOT NULL REFERENCES academic_periods(id) ON DELETE CASCADE,
     is_required BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(book_id, course_id, semester_id)
+    UNIQUE(book_id, course_id, academic_period_id)
 );
 
 -- Triggers for updated_at
 CREATE TRIGGER trg_courses_updated_at BEFORE UPDATE ON courses FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-CREATE TRIGGER trg_semesters_updated_at BEFORE UPDATE ON semesters FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER trg_academic_periods_updated_at BEFORE UPDATE ON academic_periods FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER trg_books_updated_at BEFORE UPDATE ON books FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER trg_book_course_map_updated_at BEFORE UPDATE ON book_course_map FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
