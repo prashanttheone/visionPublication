@@ -81,7 +81,7 @@ export default function Hero() {
                           fontWeight: "bold",
                         }}
                       >
-                        Ttitles
+                        Titles
                       </div>
                     </Col>
 
