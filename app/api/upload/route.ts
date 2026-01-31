@@ -24,10 +24,10 @@ export async function POST(request: NextRequest) {
       return Response.json({ error: 'No file uploaded' }, { status: 400 });
     }
 
-    // Check file size (limit: 120MB)
-    const MAX_SIZE = 120 * 1024 * 1024;
+    // Check file size (limit: 2GB)
+    const MAX_SIZE = 2 * 1024 * 1024 * 1024;
     if (file.size > MAX_SIZE) {
-      return Response.json({ error: 'File size exceeds the 120MB limit' }, { status: 400 });
+      return Response.json({ error: 'File size exceeds the 2GB limit' }, { status: 400 });
     }
 
     // Validate file type
@@ -40,10 +40,11 @@ export async function POST(request: NextRequest) {
       'application/vnd.ms-excel',
       'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
       'text/plain',
-      'application/epub+zip'
+      'application/epub+zip',
+      'application/octet-stream' // Allow generic streams for some large files
     ];
 
-    if (!allowedTypes.includes(file.type)) {
+    if (!allowedTypes.includes(file.type) && !file.name.endsWith('.pdf')) {
       return Response.json({ error: 'File type not allowed' }, { status: 400 });
     }
 
@@ -51,9 +52,18 @@ export async function POST(request: NextRequest) {
     const fileName = `${Date.now()}-${Math.round(Math.random() * 1e9)}-${file.name}`;
     const filePath = path.join(ERESOURCES_DIR, fileName);
 
-    // Convert file to buffer and save
-    const buffer = Buffer.from(await file.arrayBuffer());
-    fs.writeFileSync(filePath, buffer);
+    // Save file using stream to handle large files efficiently
+    const stream = file.stream();
+    const writeStream = fs.createWriteStream(filePath);
+    
+    // @ts-ignore - ReadableStream to Node stream conversion
+    const reader = stream.getReader();
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      writeStream.write(value);
+    }
+    writeStream.end();
 
     // Return the URL to access the file
     const fileUrl = `/assets/eresources/${fileName}`;

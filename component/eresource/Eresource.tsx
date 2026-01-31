@@ -171,7 +171,7 @@ export default function Eresource() {
   };
 
   return (
-    <div className="min-h-screen bg-[#000000] py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-[#001529] py-12 px-4 sm:px-16 lg:px-24">
       <div className="max-w-7xl mx-auto">
         {/* Hero Section */}
         <div className="text-center mb-12">

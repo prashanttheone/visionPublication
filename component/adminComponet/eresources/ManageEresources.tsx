@@ -89,61 +89,70 @@ export default function ManageEresources() {
   
   const [form] = Form.useForm();
   
-  // Handle file upload for chapters
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>, fieldName: number) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    
-    // Check file size (limit: 120MB)
-    const MAX_SIZE = 120 * 1024 * 1024;
-    if (file.size > MAX_SIZE) {
-      message.error('File size exceeds the 120MB limit. Please upload a smaller file.');
-      return;
-    }
-    
-    // Validate file type
-    const allowedTypes = [
-      'application/pdf',
-      'application/msword',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'application/vnd.ms-powerpoint',
-      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-      'application/vnd.ms-excel',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'text/plain',
-      'application/epub+zip'
-    ];
-    
-    if (!allowedTypes.includes(file.type)) {
-      message.error('File type not allowed. Please upload PDF, DOC, PPT, XLS, TXT, or EPUB files.');
-      return;
-    }
-    
-    // Create FormData to send file
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('folder', 'assets/eresources');
-    
-    try {
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData,
-      });
+    // Handle file upload for chapters
+    const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>, fieldName: number) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
       
-      if (!response.ok) {
-        throw new Error('File upload failed');
+      // Check file size (limit: 2GB for local storage)
+      const MAX_SIZE = 2 * 1024 * 1024 * 1024;
+      if (file.size > MAX_SIZE) {
+        message.error('File size exceeds the 2GB limit.');
+        return;
       }
       
-      const result = await response.json();
+      // Validate file type
+      const allowedTypes = [
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.ms-powerpoint',
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'text/plain',
+        'application/epub+zip',
+        'application/octet-stream'
+      ];
       
-      // Update form field with the file URL
-      form.setFieldValue(['chapters', fieldName, 'doc_link'], result.url);
+      if (!allowedTypes.includes(file.type) && !file.name.endsWith('.pdf')) {
+        message.error('File type not allowed. Please upload PDF, DOC, PPT, XLS, TXT, or EPUB files.');
+        return;
+      }
       
-      message.success('File uploaded successfully!');
-    } catch (error) {
-      message.error('File upload failed: ' + (error as Error).message);
-    }
-  };
+      setIsLoading(true);
+      const hide = message.loading('Uploading file to server...', 0);
+      
+      try {
+        // Create FormData to send file to local upload API
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('folder', 'eresources');
+        
+        const response = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+        });
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Upload failed');
+        }
+        
+        const result = await response.json();
+        
+        // Update form field with the local URL
+        form.setFieldValue(['chapters', fieldName, 'doc_link'], result.url);
+        
+        message.success('File uploaded successfully!');
+      } catch (error) {
+        console.error('Upload error:', error);
+        message.error('File upload failed: ' + (error as Error).message);
+      } finally {
+        hide();
+        setIsLoading(false);
+      }
+    };
 
   // Fetch courses and academic periods
   const fetchCoursesAndPeriods = useCallback(async () => {
