@@ -23,7 +23,6 @@ export async function GET(
       return new NextResponse('File not found', { status: 404 });
     }
 
-    const fileBuffer = fs.readFileSync(filePath);
     const stats = fs.statSync(filePath);
 
     // Determine content type
@@ -38,12 +37,29 @@ export async function GET(
     else if (filename.endsWith('.txt')) contentType = 'text/plain';
     else if (filename.endsWith('.epub')) contentType = 'application/epub+zip';
 
-    return new NextResponse(fileBuffer, {
+    // Use streaming for large files
+    const fileStream = fs.createReadStream(filePath);
+    
+    // Convert Node.js Readable stream to Web ReadableStream
+    const readableStream = new ReadableStream({
+      start(controller) {
+        fileStream.on('data', (chunk) => controller.enqueue(chunk));
+        fileStream.on('end', () => controller.close());
+        fileStream.on('error', (err) => controller.error(err));
+      },
+      cancel() {
+        fileStream.destroy();
+      },
+    });
+
+    return new NextResponse(readableStream as any, {
       status: 200,
       headers: {
         'Content-Type': contentType,
         'Content-Length': stats.size.toString(),
+        'Content-Disposition': `inline; filename="${path.basename(filePath)}"`,
         'Cache-Control': 'public, max-age=31536000, immutable',
+        'Accept-Ranges': 'bytes',
       },
     });
   } catch (error) {
