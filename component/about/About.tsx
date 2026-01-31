@@ -530,7 +530,7 @@ export default function About() {
       <TeamSection />
 
       {/* Differentiators Section */}
-      <DifferentiatorSection />
+      {/* <DifferentiatorSection /> */}
 
       {/* CTA Section */}
       <CTASection />
