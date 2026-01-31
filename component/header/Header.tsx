@@ -7,6 +7,8 @@ import { MenuOutlined } from "@ant-design/icons";
 
 const { Header } = Layout;
 const { useBreakpoint } = Grid;
+const CATALOG_PDF_LINK =
+  "https://drive.google.com/file/d/13fzHOMvpP4K6YP3z99HOekh6vjQphCbZ/view?usp=sharing";
 
 const navItems = [
   { label: "Home", href: "/" },
@@ -14,12 +16,11 @@ const navItems = [
   // { label: "Books", href: "/books" },
   // { label: "E-Resources", href: "/resources" },
   { label: "Join As Author", href: "/join-as-author" },
-  { label: "Event / Vision CSR", href: "/blog" },
+  { label: "Blogs", href: "/blog" },
   { label: "Contact Us", href: "/contact" },
+  { label: "Catalogue", href: CATALOG_PDF_LINK },
 ];
 
-const CATALOG_PDF_LINK =
-  "https://drive.google.com/file/d/13fzHOMvpP4K6YP3z99HOekh6vjQphCbZ/view";
 
 export default function AppHeader() {
   const [open, setOpen] = useState(false);
@@ -118,7 +119,7 @@ export default function AppHeader() {
                 fontWeight: 700,
               }}
             >
-              Get Catalogue
+             Vision Csr
             </Button>
           </>
         )}
@@ -246,7 +247,7 @@ export default function AppHeader() {
             block
             size="large"
             onClick={() => {
-              window.open(CATALOG_PDF_LINK, "_blank");
+              // window.open(CATALOG_PDF_LINK, "_blank");
               setOpen(false);
             }}
             style={{
@@ -255,7 +256,7 @@ export default function AppHeader() {
               fontWeight: 700,
             }}
           >
-            Get Catalogue
+            Vision Csr
           </Button>
         </div>
       </Drawer>
