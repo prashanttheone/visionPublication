@@ -1,26 +1,26 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { 
-  Typography, 
-  Input, 
-  Select, 
-  Button, 
-  Card, 
-  Badge, 
-  Row, 
-  Col, 
-  Space, 
-  Modal, 
-  Empty, 
+import {
+  Typography,
+  Input,
+  Select,
+  Button,
+  Card,
+  Badge,
+  Row,
+  Col,
+  Space,
+  Modal,
+  Empty,
   Divider,
   Tag,
   Tooltip
 } from 'antd';
-import { 
-  SearchOutlined, 
-  BookOutlined, 
-  FileTextOutlined, 
+import {
+  SearchOutlined,
+  BookOutlined,
+  FileTextOutlined,
   EyeOutlined,
   CaretRightOutlined,
   FilterOutlined,
@@ -59,7 +59,7 @@ interface EResourceBook {
   id: number;
   course_id: number;
   academic_period_id: number;
-  semester_id?: number; 
+  semester_id?: number;
   book_name: string;
   description?: string;
   course_name: string;
@@ -73,7 +73,7 @@ export default function Eresource() {
   const [academicPeriods, setAcademicPeriods] = useState<AcademicPeriod[]>([]);
   const [eresources, setEresources] = useState<EResourceBook[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  
+
   const [selectedCourseId, setSelectedCourseId] = useState<number | null>(null);
   const [selectedPeriodId, setSelectedPeriodId] = useState<number | null>(null);
   const [expandedBookId, setExpandedBookId] = useState<number | null>(null);
@@ -171,33 +171,33 @@ export default function Eresource() {
   };
 
   return (
-    <div className="min-h-screen bg-[#001529] py-12 px-4 sm:px-16 lg:px-24">
+    <div className="min-h-screen bg-[#001529] py-16 px-4 sm:px-16 lg:px-24">
       <div className="max-w-7xl mx-auto">
         {/* Hero Section */}
-        <div className="text-center mb-12">
-          <Badge 
-            count="E-RESOURCES" 
-            style={{ backgroundColor: '#1890ff', color: '#fff', fontSize: '12px', padding: '0 12px', height: '24px', lineHeight: '24px', borderRadius: '12px' }} 
+        <div className="text-center mb-16">
+          <Badge
+            count="E-RESOURCES"
+            style={{ backgroundColor: '#1890ff', color: '#fff', fontSize: '13px', padding: '0 16px', height: '28px', lineHeight: '28px', borderRadius: '14px', fontWeight: 600, letterSpacing: '0.5px' }}
           />
-          <Title className="!text-white !text-5xl md:!text-6xl !font-black !mt-4 !mb-2">
+          <Title className="!text-white !text-5xl md:!text-6xl !font-black !mt-6 !mb-4" style={{ letterSpacing: '-0.02em' }}>
             Digital Study <span style={{ color: '#1890ff' }}>Resources</span>
           </Title>
-          <Paragraph className="!text-gray-400 !text-lg !max-w-2xl !mx-auto">
-            Access comprehensive e-books and chapter resources for all nursing courses. 
+          <Paragraph className="!text-gray-400 !text-lg !max-w-2xl !mx-auto" style={{ lineHeight: '1.8', fontSize: '17px' }}>
+            Access comprehensive e-books and chapter resources for all nursing courses.
             Select your course to get started.
           </Paragraph>
         </div>
 
         {/* Filters Card */}
-        <Card className="!bg-[#0a0a0a] !border-[#1f1f1f] !mb-8 !rounded-2xl shadow-2xl">
-          <Row gutter={[16, 16]} align="bottom">
+        <Card className="!bg-[#0a0a0a] !border-[#1f1f1f] !mb-10 !rounded-2xl shadow-2xl" styles={{ body: { padding: '28px' } }}>
+          <Row gutter={[20, 20]} align="bottom">
             <Col xs={24} md={8}>
-              <Text className="!text-gray-400 !text-xs !font-bold !uppercase !mb-2 !block tracking-widest">
+              <Text className="!text-gray-400 !text-xs !font-bold !uppercase !mb-3 !block" style={{ letterSpacing: '1.2px', fontSize: '11px' }}>
                 Select Course
               </Text>
               <Select
                 placeholder="All Courses"
-                className="w-full !h-11 custom-select"
+                className="w-full !h-12 custom-select"
                 onChange={(val) => {
                   setSelectedCourseId(val);
                   setSelectedPeriodId(null);
@@ -209,12 +209,12 @@ export default function Eresource() {
               </Select>
             </Col>
             <Col xs={24} md={8}>
-              <Text className="!text-gray-400 !text-xs !font-bold !uppercase !mb-2 !block tracking-widest">
+              <Text className="!text-gray-400 !text-xs !font-bold !uppercase !mb-3 !block" style={{ letterSpacing: '1.2px', fontSize: '11px' }}>
                 Year / Semester
               </Text>
               <Select
                 placeholder="All Periods"
-                className="w-full !h-11 custom-select"
+                className="w-full !h-12 custom-select"
                 disabled={!selectedCourseId || availablePeriods.length === 0}
                 onChange={setSelectedPeriodId}
                 value={selectedPeriodId}
@@ -226,11 +226,11 @@ export default function Eresource() {
               </Select>
             </Col>
             <Col xs={24} md={8}>
-              <Text className="!text-gray-400 !text-xs !font-bold !uppercase !mb-2 !block tracking-widest">
+              <Text className="!text-gray-400 !text-xs !font-bold !uppercase !mb-3 !block" style={{ letterSpacing: '1.2px', fontSize: '11px' }}>
                 Sort By
               </Text>
               <Select
-                className="w-full !h-11 custom-select"
+                className="w-full !h-12 custom-select"
                 onChange={setSortBy}
                 value={sortBy}
               >
@@ -241,8 +241,9 @@ export default function Eresource() {
             <Col span={24}>
               <Input
                 placeholder="Search for books, topics, or chapters..."
-                prefix={<SearchOutlined className="text-gray-500 mr-2" />}
-                className="!h-12 !bg-[#141414] !border-[#1f1f1f] !text-white !rounded-xl custom-input"
+                prefix={<SearchOutlined className="text-gray-500 mr-2" style={{ fontSize: '16px' }} />}
+                className="!h-14 !bg-[#141414] !border-[#1f1f1f] !text-white !rounded-xl custom-input"
+                style={{ fontSize: '15px' }}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 value={searchTerm}
               />
@@ -251,9 +252,9 @@ export default function Eresource() {
         </Card>
 
         {/* Results Info */}
-        <div className="flex justify-between items-center mb-6">
-          <Text className="!text-gray-500">
-            Showing <span className="text-[#1890ff] font-bold">{filteredEresources.length}</span> study resources
+        <div className="flex justify-between items-center mb-8">
+          <Text className="!text-gray-500" style={{ fontSize: '15px', fontWeight: 500 }}>
+            Showing <span className="text-[#1890ff] font-bold" style={{ fontSize: '16px' }}>{filteredEresources.length}</span> study resources
           </Text>
         </div>
 
@@ -265,72 +266,73 @@ export default function Eresource() {
         ) : filteredEresources.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredEresources.map((book) => (
-                <Card 
-                  key={book.id} 
-                  className="!bg-[#0a0a0a] !border-[#1f1f1f] !rounded-2xl !overflow-hidden hover:!border-[#1890ff]/50 transition-all duration-300 group shadow-xl"
-                  styles={{ body: { padding: '24px' } }}
-                >
-                <div className="flex items-start gap-4 mb-5">
-                  <div className="bg-[#1890ff]/10 p-3 rounded-xl group-hover:bg-[#1890ff]/20 transition-colors">
-                    <BookOutlined className="text-[#1890ff] text-2xl" />
+              <Card
+                key={book.id}
+                className="!bg-[#0a0a0a] !border-[#1f1f1f] !rounded-2xl !overflow-hidden hover:!border-[#1890ff]/50 transition-all duration-300 group shadow-xl"
+                styles={{ body: { padding: '28px' } }}
+              >
+                <div className="flex items-start gap-5 mb-7">
+                  <div className="bg-[#1890ff]/10 p-4 rounded-xl group-hover:bg-[#1890ff]/20 transition-colors">
+                    <BookOutlined className="text-[#1890ff]" style={{ fontSize: '28px' }} />
                   </div>
-                  <div>
-                    <Title level={4} className="!text-white !m-0 !line-clamp-2">
+                  <div className="flex-1">
+                    <Title level={4} className="!text-white !m-0 !mb-2 !line-clamp-2" style={{ fontSize: '19px', fontWeight: 700, letterSpacing: '-0.01em' }}>
                       {book.book_name}
                     </Title>
-                    <Text className="!text-gray-500 !text-xs !uppercase !font-bold tracking-wider">
+                    <Text className="!text-gray-500 !uppercase !font-bold" style={{ fontSize: '11px', letterSpacing: '1.2px' }}>
                       {book.course_name} • {book.semester_name}
                     </Text>
                   </div>
                 </div>
 
-                <Paragraph className="!text-gray-400 !text-sm !mb-6 !line-clamp-2">
+                <Paragraph className="!text-gray-400 !mb-7 !line-clamp-2" style={{ fontSize: '15px', lineHeight: '1.75' }}>
                   {book.description || "Comprehensive study materials for this subject."}
                 </Paragraph>
 
-                <Divider className="!border-[#1f1f1f] !my-4" />
+                <Divider className="!border-[#1f1f1f] !my-6" />
 
-                <div className="space-y-3">
-                  <div 
-                    className="flex justify-between items-center cursor-pointer group/toggle"
+                <div className="space-y-5">
+                  <div
+                    className="flex justify-between items-center cursor-pointer group/toggle pb-1"
                     onClick={() => setExpandedBookId(expandedBookId === book.id ? null : book.id)}
                   >
-                    <Text className="!text-gray-400 !text-xs !font-bold !uppercase tracking-widest flex items-center gap-2">
-                      <FileTextOutlined /> {book.chapters.length} Chapters
+                    <Text className="!text-gray-400 !font-bold !uppercase flex items-center gap-2.5" style={{ fontSize: '12px', letterSpacing: '1.3px' }}>
+                      <FileTextOutlined style={{ fontSize: '14px' }} /> {book.chapters.length} Chapters
                     </Text>
-                    <Text className="!text-[#1890ff] !text-xs !font-bold">
+                    <Text className="!text-[#1890ff] !font-bold" style={{ fontSize: '13px', letterSpacing: '0.4px' }}>
                       {expandedBookId === book.id ? 'Show Less' : 'Show All'}
                     </Text>
                   </div>
 
-                  <div className={`space-y-2 transition-all duration-300 ${expandedBookId === book.id ? 'max-h-[500px] overflow-y-auto pr-2' : 'max-h-[120px] overflow-hidden'}`}>
+                  <div className={`space-y-3 transition-all duration-300 ${expandedBookId === book.id ? 'max-h-[500px] overflow-y-auto pr-2' : 'max-h-[140px] overflow-hidden'}`}>
                     {book.chapters.map((chapter) => (
-                      <div 
-                        key={chapter.id} 
-                        className="flex justify-between items-center p-3 rounded-xl bg-[#141414] hover:bg-[#1a1a1a] transition-all border border-transparent hover:border-[#1890ff]/30"
+                      <div
+                        key={chapter.id}
+                        className="flex justify-between items-center p-4 rounded-xl bg-[#141414] hover:bg-[#1a1a1a] transition-all border border-transparent hover:border-[#1890ff]/30"
                       >
-                        <Space className="overflow-hidden flex-1 mr-2">
-                          <Text className="!text-[#1890ff] !font-bold !text-xs">
+                        <Space className="overflow-hidden flex-1 mr-4" size={12}>
+                          <Text className="!text-[#1890ff] !font-bold" style={{ fontSize: '13px', minWidth: '32px' }}>
                             {chapter.chapter_number.toString().padStart(2, '0')}
                           </Text>
-                          <Text className="!text-gray-300 !text-sm !line-clamp-1">
+                          <Text className="!text-gray-300 !line-clamp-1" style={{ fontSize: '15px', fontWeight: 500 }}>
                             {chapter.chapter_name}
                           </Text>
                         </Space>
                         {chapter.doc_link ? (
                           <Tooltip title="View Document">
-                            <Button 
-                              type="primary" 
-                              size="small" 
-                              icon={<EyeOutlined />} 
-                              className="!rounded-lg !bg-[#1890ff] hover:!bg-[#40a9ff] !border-none !text-[10px] !h-7 !px-3"
+                            <Button
+                              type="primary"
+                              size="middle"
+                              icon={<EyeOutlined style={{ fontSize: '14px' }} />}
+                              className="!rounded-lg !bg-[#1890ff] hover:!bg-[#40a9ff] !border-none !h-9 !px-5 !flex !items-center !gap-1.5 !my-1.5"
+                              style={{ fontSize: '12px', fontWeight: 600, letterSpacing: '0.5px' }}
                               onClick={() => handleViewDoc(chapter.doc_link!)}
                             >
                               VIEW
                             </Button>
                           </Tooltip>
                         ) : (
-                          <Tag className="!bg-[#1a1a1a] !text-gray-600 !border-none !text-[10px] !m-0">NO LINK</Tag>
+                          <Tag className="!bg-[#1a1a1a] !text-gray-600 !border-none !m-0" style={{ fontSize: '11px', padding: '4px 10px' }}>NO LINK</Tag>
                         )}
                       </div>
                     ))}
@@ -340,8 +342,8 @@ export default function Eresource() {
             ))}
           </div>
         ) : (
-          <Empty 
-            image={Empty.PRESENTED_IMAGE_SIMPLE} 
+          <Empty
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
             description={<Text className="text-gray-500">No resources found matching your criteria</Text>}
             className="!py-20"
           />
@@ -364,10 +366,10 @@ export default function Eresource() {
         }}
         title={
           <div className="flex items-center gap-3">
-            <div className="bg-[#1890ff]/20 p-2 rounded-lg">
-              <FileTextOutlined className="text-[#1890ff]" />
+            <div className="bg-[#1890ff]/20 p-2.5 rounded-lg">
+              <FileTextOutlined className="text-[#1890ff]" style={{ fontSize: '18px' }} />
             </div>
-            <Text className="!text-white !font-bold !text-lg">Document Viewer</Text>
+            <Text className="!text-white !font-bold" style={{ fontSize: '18px', letterSpacing: '-0.01em' }}>Document Viewer</Text>
           </div>
         }
       >
