@@ -1,12 +1,35 @@
 'use client';
 
-import { Box, Container, Text, Badge, Input, Button } from '@chakra-ui/react';
-import { motion } from 'framer-motion';
-import { useState, useEffect, useCallback, useMemo, ChangeEvent } from 'react';
-import { HiMagnifyingGlass, HiLink, HiChevronDown, HiChevronUp } from 'react-icons/hi2';
-import { HiOutlineBookOpen } from 'react-icons/hi';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { 
+  Typography, 
+  Input, 
+  Select, 
+  Button, 
+  Card, 
+  Badge, 
+  Row, 
+  Col, 
+  Space, 
+  Modal, 
+  Empty, 
+  Divider,
+  Tag,
+  Tooltip
+} from 'antd';
+import { 
+  SearchOutlined, 
+  BookOutlined, 
+  FileTextOutlined, 
+  EyeOutlined,
+  CaretRightOutlined,
+  FilterOutlined,
+  SortAscendingOutlined,
+  LinkOutlined
+} from '@ant-design/icons';
+import DocumentViewer from './DocumentViewer';
 
-const MotionBox = motion.create(Box);
+const { Title, Text, Paragraph } = Typography;
 
 interface Course {
   id: number;
@@ -36,7 +59,7 @@ interface EResourceBook {
   id: number;
   course_id: number;
   academic_period_id: number;
-  semester_id?: number; // Backwards compatibility
+  semester_id?: number; 
   book_name: string;
   description?: string;
   course_name: string;
@@ -55,6 +78,8 @@ export default function Eresource() {
   const [selectedPeriodId, setSelectedPeriodId] = useState<number | null>(null);
   const [expandedBookId, setExpandedBookId] = useState<number | null>(null);
   const [sortBy, setSortBy] = useState<'name' | 'chapters'>('name');
+  const [pdfModalVisible, setPdfModalVisible] = useState(false);
+  const [currentPdfUrl, setCurrentPdfUrl] = useState('');
 
   // Fetch courses and periods
   const fetchCourses = useCallback(async () => {
@@ -108,17 +133,14 @@ export default function Eresource() {
   const filteredEresources = useMemo(() => {
     let filtered = [...eresources];
 
-    // Filter by course
     if (selectedCourseId) {
       filtered = filtered.filter(e => e.course_id === selectedCourseId);
     }
 
-    // Filter by period
     if (selectedPeriodId) {
       filtered = filtered.filter(e => (e.academic_period_id || e.semester_id) === selectedPeriodId);
     }
 
-    // Search filter
     if (searchTerm) {
       const search = searchTerm.toLowerCase();
       filtered = filtered.filter(
@@ -130,7 +152,6 @@ export default function Eresource() {
       );
     }
 
-    // Sort
     filtered.sort((a, b) => {
       if (sortBy === 'name') {
         return a.book_name.localeCompare(b.book_name);
@@ -142,414 +163,262 @@ export default function Eresource() {
     return filtered;
   }, [eresources, selectedCourseId, selectedPeriodId, searchTerm, sortBy]);
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-        delayChildren: 0.2,
-      },
-    },
+  const handleViewDoc = (url: string) => {
+    if (url) {
+      setCurrentPdfUrl(url);
+      setPdfModalVisible(true);
+    }
   };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: { duration: 0.6 },
-    },
-  };
-
-  const cardVariants = {
-    hidden: { opacity: 0, scale: 0.95 },
-    visible: {
-      opacity: 1,
-      scale: 1,
-      transition: { duration: 0.4 },
-    },
-    hover: {
-      y: -8,
-      boxShadow: '0 20px 40px rgba(100, 181, 246, 0.25)',
-      transition: { duration: 0.3 },
-    },
-  };
-
-  const selectStyle = {
-    padding: '10px 12px',
-    background: 'rgba(15, 23, 42, 0.5)',
-    border: '1px solid rgba(100, 181, 246, 0.3)',
-    color: 'white',
-    borderRadius: '6px',
-    width: '100%',
-    fontSize: '14px',
-    fontFamily: 'inherit',
-    cursor: 'pointer',
-    appearance: 'none',
-    backgroundImage: `url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2364B5F6' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e")`,
-    backgroundRepeat: 'no-repeat',
-    backgroundPosition: 'right 10px center',
-    backgroundSize: '20px',
-    paddingRight: '36px',
-    transition: 'all 0.2s ease',
-  } as React.CSSProperties;
 
   return (
-    <Box bg="linear-gradient(135deg, #0f172a 0%, #1a2332 50%, #0f172a 100%)" py={{ base: '60px', md: '80px' }} position="relative" overflow="hidden">
-      {/* Background Elements */}
-      <Box position="fixed" top="-100px" right="-100px" width="400px" height="400px" borderRadius="50%" bgGradient="radial(circle, rgba(100, 181, 246, 0.1) 0%, transparent 70%)" filter="blur(40px)" pointerEvents="none" zIndex={0} />
-      <Box position="fixed" bottom="-50px" left="-50px" width="300px" height="300px" borderRadius="50%" bgGradient="radial(circle, rgba(255, 140, 0, 0.05) 0%, transparent 70%)" filter="blur(40px)" pointerEvents="none" zIndex={0} />
+    <div className="min-h-screen bg-[#000000] py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto">
+        {/* Hero Section */}
+        <div className="text-center mb-12">
+          <Badge 
+            count="E-RESOURCES" 
+            style={{ backgroundColor: '#1890ff', color: '#fff', fontSize: '12px', padding: '0 12px', height: '24px', lineHeight: '24px', borderRadius: '12px' }} 
+          />
+          <Title className="!text-white !text-5xl md:!text-6xl !font-black !mt-4 !mb-2">
+            Digital Study <span style={{ color: '#1890ff' }}>Resources</span>
+          </Title>
+          <Paragraph className="!text-gray-400 !text-lg !max-w-2xl !mx-auto">
+            Access comprehensive e-books and chapter resources for all nursing courses. 
+            Select your course to get started.
+          </Paragraph>
+        </div>
 
-      <Container maxW="1400px" px={{ base: '20px', md: '40px' }} position="relative" zIndex={1}>
-        {/* Header Section */}
-        <MotionBox variants={containerVariants} initial="hidden" animate="visible" textAlign="center" mb={{ base: '50px', md: '60px' }}>
-          <MotionBox variants={itemVariants} mb="20px">
-            <Box display="inline-block" bg="rgba(255, 140, 0, 0.1)" border="2px solid" borderColor="rgba(255, 140, 0, 0.5)" px="16px" py="8px" borderRadius="50px">
-              <Text fontSize="sm" fontWeight="700" color="#FF8C00" textTransform="uppercase" letterSpacing="1px">
-                E-Resources
+        {/* Filters Card */}
+        <Card className="!bg-[#0a0a0a] !border-[#1f1f1f] !mb-8 !rounded-2xl shadow-2xl">
+          <Row gutter={[16, 16]} align="bottom">
+            <Col xs={24} md={8}>
+              <Text className="!text-gray-400 !text-xs !font-bold !uppercase !mb-2 !block tracking-widest">
+                Select Course
               </Text>
-            </Box>
-          </MotionBox>
-
-          <MotionBox variants={itemVariants} mb="20px">
-            <Text fontSize={{ base: '42px', md: '56px', lg: '64px' }} fontWeight="900" lineHeight="1.2" color="white" mb="20px">
-              Digital Study
-            </Text>
-            <Text fontSize={{ base: '42px', md: '56px', lg: '64px' }} fontWeight="900" lineHeight="1.2" bgGradient="linear(to-r, #64B5F6, #90CAF9)" bgClip="text">
-              Resources
-            </Text>
-          </MotionBox>
-
-          <MotionBox variants={itemVariants} maxW="700px" mx="auto">
-            <Text fontSize={{ base: '16px', md: '18px' }} color="gray.300" lineHeight="1.6">
-              Access comprehensive e-books and chapter resources for all courses and semesters.
-            </Text>
-          </MotionBox>
-        </MotionBox>
-
-        {/* Filters Section */}
-        <MotionBox variants={itemVariants} initial="hidden" whileInView="visible" viewport={{ once: true }} mb={{ base: '40px', md: '50px' }} position="relative" zIndex={10}>
-          <Box
-            bg="rgba(30, 41, 59, 0.6)"
-            border="1px solid"
-            borderColor="rgba(100, 181, 246, 0.2)"
-            borderRadius="16px"
-            p={{ base: '24px', md: '32px' }}
-            backdropFilter="blur(10px)"
-          >
-            {/* Grid for filters */}
-            <Box display="grid" gridTemplateColumns={{ base: '1fr', md: 'repeat(3, 1fr)' }} gap={{ base: '12px', md: '16px' }} position="relative" zIndex={4}>
-              {/* Course Selection */}
-              <Box>
-                <Text fontSize="sm" fontWeight="700" color="gray.300" mb="12px" textTransform="uppercase" letterSpacing="1px">
-                  Course
-                </Text>
-                  <select
-                    value={selectedCourseId || ''}
-                    onChange={(e: ChangeEvent<HTMLSelectElement>) => {
-                      const value = e.target.value ? parseInt(e.target.value) : null;
-                      setSelectedCourseId(value);
-                      setSelectedPeriodId(null);
-                    }}
-                    style={selectStyle}
-                  >
-                    <option value="" style={{ background: '#1a2332', color: 'white', padding: '8px' }}>
-                      All Courses
-                    </option>
-                    {courses.map((course) => (
-                      <option key={course.id} value={course.id} style={{ background: '#1a2332', color: 'white', padding: '8px' }}>
-                        {course.name}
-                      </option>
-                    ))}
-                  </select>
-                </Box>
-
-                {/* Period Selection */}
-                <Box>
-                  <Text fontSize="sm" fontWeight="700" color="gray.300" mb="12px" textTransform="uppercase" letterSpacing="1px">
-                    Year / Semester
-                  </Text>
-                  <select
-                    value={selectedPeriodId || ''}
-                    onChange={(e: ChangeEvent<HTMLSelectElement>) => {
-                      const value = e.target.value ? parseInt(e.target.value) : null;
-                      setSelectedPeriodId(value);
-                    }}
-                    disabled={!selectedCourseId || availablePeriods.length === 0}
-                    style={{
-                      ...selectStyle,
-                      opacity: !selectedCourseId || availablePeriods.length === 0 ? 0.5 : 1,
-                      cursor: !selectedCourseId || availablePeriods.length === 0 ? 'not-allowed' : 'pointer',
-                    }}
-                  >
-                    <option value="" style={{ background: '#1a2332', color: 'white', padding: '8px' }}>
-                      All Periods
-                    </option>
-                    {availablePeriods.map((period) => (
-                      <option key={period.id} value={period.id} style={{ background: '#1a2332', color: 'white', padding: '8px' }}>
-                        {period.label} ({period.description})
-                      </option>
-                    ))}
-                  </select>
-                </Box>
-
-              {/* Sort By */}
-              <Box>
-                <Text fontSize="sm" fontWeight="700" color="gray.300" mb="12px" textTransform="uppercase" letterSpacing="1px">
-                  Sort By
-                </Text>
-                <select
-                  value={sortBy}
-                  onChange={(e: ChangeEvent<HTMLSelectElement>) => setSortBy(e.target.value as 'name' | 'chapters')}
-                  style={selectStyle}
-                >
-                  <option value="name" style={{ background: '#1a2332', color: 'white', padding: '8px' }}>
-                    Book Name (A-Z)
-                  </option>
-                  <option value="chapters" style={{ background: '#1a2332', color: 'white', padding: '8px' }}>
-                    Most Chapters
-                  </option>
-                </select>
-              </Box>
-            </Box>
-
-            {/* Search Bar */}
-            <Box mt={{ base: '16px', md: '24px' }} position="relative">
-              <HiMagnifyingGlass size={20} style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: '#64B5F6' }} />
+              <Select
+                placeholder="All Courses"
+                className="w-full !h-11 custom-select"
+                onChange={(val) => {
+                  setSelectedCourseId(val);
+                  setSelectedPeriodId(null);
+                }}
+                value={selectedCourseId}
+                allowClear
+              >
+                {courses.map(c => <Select.Option key={c.id} value={c.id}>{c.name}</Select.Option>)}
+              </Select>
+            </Col>
+            <Col xs={24} md={8}>
+              <Text className="!text-gray-400 !text-xs !font-bold !uppercase !mb-2 !block tracking-widest">
+                Year / Semester
+              </Text>
+              <Select
+                placeholder="All Periods"
+                className="w-full !h-11 custom-select"
+                disabled={!selectedCourseId || availablePeriods.length === 0}
+                onChange={setSelectedPeriodId}
+                value={selectedPeriodId}
+                allowClear
+              >
+                {availablePeriods.map(p => (
+                  <Select.Option key={p.id} value={p.id}>{p.label} ({p.description})</Select.Option>
+                ))}
+              </Select>
+            </Col>
+            <Col xs={24} md={8}>
+              <Text className="!text-gray-400 !text-xs !font-bold !uppercase !mb-2 !block tracking-widest">
+                Sort By
+              </Text>
+              <Select
+                className="w-full !h-11 custom-select"
+                onChange={setSortBy}
+                value={sortBy}
+              >
+                <Select.Option value="name">Book Name (A-Z)</Select.Option>
+                <Select.Option value="chapters">Most Chapters</Select.Option>
+              </Select>
+            </Col>
+            <Col span={24}>
               <Input
-                placeholder="Search books or chapters..."
+                placeholder="Search for books, topics, or chapters..."
+                prefix={<SearchOutlined className="text-gray-500 mr-2" />}
+                className="!h-12 !bg-[#141414] !border-[#1f1f1f] !text-white !rounded-xl custom-input"
+                onChange={(e) => setSearchTerm(e.target.value)}
                 value={searchTerm}
-                onChange={(e: ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
-                pl="40px"
-                bg="rgba(15, 23, 42, 0.5)"
-                border="1px solid"
-                borderColor="rgba(100, 181, 246, 0.3)"
-                color="white"
-                _placeholder={{ color: 'gray.500' }}
-                _hover={{ borderColor: 'rgba(100, 181, 246, 0.5)' }}
-                _focus={{ borderColor: '#64B5F6', boxShadow: '0 0 0 3px rgba(100, 181, 246, 0.1)' }}
               />
-            </Box>
-          </Box>
-        </MotionBox>
+            </Col>
+          </Row>
+        </Card>
 
-        {/* Results Count */}
-        <MotionBox variants={itemVariants} initial="hidden" whileInView="visible" viewport={{ once: true }} mb="30px">
-          <Text fontSize="sm" color="gray.400">
-            Showing <Text as="span" color="#64B5F6" fontWeight="700">{filteredEresources.length}</Text> {filteredEresources.length === 1 ? 'book' : 'books'}
+        {/* Results Info */}
+        <div className="flex justify-between items-center mb-6">
+          <Text className="!text-gray-500">
+            Showing <span className="text-[#1890ff] font-bold">{filteredEresources.length}</span> study resources
           </Text>
-        </MotionBox>
+        </div>
 
-        {/* Loading State */}
+        {/* E-Resources Grid */}
         {isLoading ? (
-          <Box textAlign="center" py="60px">
-            <Text fontSize="18px" color="gray.400">Loading e-resources...</Text>
-          </Box>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3].map(i => <Card key={i} loading className="!bg-[#0a0a0a] !border-[#1f1f1f] !h-64 !rounded-2xl" />)}
+          </div>
         ) : filteredEresources.length > 0 ? (
-          /* E-Resources Grid */
-          <Box display="grid" gridTemplateColumns={{ base: '1fr', md: 'repeat(2, 1fr)', lg: 'repeat(3, 1fr)' }} gap={{ base: '24px', md: '32px' }}>
-            {filteredEresources.map((book, index) => (
-              <MotionBox key={book.id} variants={cardVariants} initial="hidden" whileInView="visible" viewport={{ once: true }} whileHover="hover">
-                <Box
-                  bg="rgba(30, 41, 59, 0.6)"
-                  border="1px solid"
-                  borderColor="rgba(100, 181, 246, 0.2)"
-                  borderRadius="16px"
-                  overflow="hidden"
-                  backdropFilter="blur(10px)"
-                  p={{ base: '24px', md: '28px' }}
-                  height="100%"
-                  display="flex"
-                  flexDirection="column"
-                  transition="all 0.3s ease"
-                  _hover={{
-                    borderColor: 'rgba(100, 181, 246, 0.4)',
-                  }}
-                >
-                  {/* Header */}
-                  <Box display="flex" alignItems="flex-start" gap="12px" mb="20px">
-                    <Box
-                      bg="linear-gradient(135deg, #64B5F6, #42A5F5)"
-                      width="44px"
-                      height="44px"
-                      borderRadius="12px"
-                      display="flex"
-                      alignItems="center"
-                      justifyContent="center"
-                      flexShrink={0}
-                    >
-                      <HiOutlineBookOpen size={24} color="white" />
-                    </Box>
-                    <Box flex="1">
-                      <Text fontSize={{ base: '16px', md: '18px' }} fontWeight="800" color="white" lineHeight="1.3">
-                        {book.book_name}
-                      </Text>
-                      {book.description && (
-                        <Text fontSize="sm" color="gray.400" mt="4px">{book.description}</Text>
-                      )}
-                    </Box>
-                  </Box>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {filteredEresources.map((book) => (
+              <Card 
+                key={book.id} 
+                className="!bg-[#0a0a0a] !border-[#1f1f1f] !rounded-2xl !overflow-hidden hover:!border-[#1890ff]/50 transition-all duration-300 group shadow-xl"
+                bodyStyle={{ padding: '24px' }}
+              >
+                <div className="flex items-start gap-4 mb-5">
+                  <div className="bg-[#1890ff]/10 p-3 rounded-xl group-hover:bg-[#1890ff]/20 transition-colors">
+                    <BookOutlined className="text-[#1890ff] text-2xl" />
+                  </div>
+                  <div>
+                    <Title level={4} className="!text-white !m-0 !line-clamp-2">
+                      {book.book_name}
+                    </Title>
+                    <Text className="!text-gray-500 !text-xs !uppercase !font-bold tracking-wider">
+                      {book.course_name} • {book.semester_name}
+                    </Text>
+                  </div>
+                </div>
 
-                  {/* Metadata Badges */}
-                  <Box display="flex" gap="8px" flexWrap="wrap" mb="20px">
-                    <Badge bg="rgba(255, 140, 0, 0.2)" color="#FF8C00" px="10px" py="4px" borderRadius="6px" fontSize="xs" fontWeight="600">
-                      {book.course_name}
-                    </Badge>
-                    <Badge bg="rgba(100, 181, 246, 0.2)" color="#64B5F6" px="10px" py="4px" borderRadius="6px" fontSize="xs" fontWeight="600">
-                      {book.semester_name}
-                    </Badge>
-                    <Badge bg="rgba(139, 92, 246, 0.2)" color="#A78BFA" px="10px" py="4px" borderRadius="6px" fontSize="xs" fontWeight="600">
-                      {book.chapters.length} Chapters
-                    </Badge>
-                  </Box>
+                <Paragraph className="!text-gray-400 !text-sm !mb-6 !line-clamp-2">
+                  {book.description || "Comprehensive study materials for this subject."}
+                </Paragraph>
 
-                  {/* Divider */}
-                  <Box height="1px" bg="linear-gradient(to-r, transparent, rgba(100, 181, 246, 0.2), transparent)" my="16px" />
+                <Divider className="!border-[#1f1f1f] !my-4" />
 
-                  {/* Chapters Section */}
-                  <Box flex="1">
-                    <Box 
-                      display="flex" 
-                      justifyContent="space-between" 
-                      alignItems="center" 
-                      mb="12px"
-                      cursor="pointer"
-                      onClick={() => setExpandedBookId(expandedBookId === book.id ? null : book.id)}
-                    >
-                      <Text fontSize="xs" fontWeight="700" color="gray.400" textTransform="uppercase" letterSpacing="1px">
-                        Chapters & Resources
-                      </Text>
-                      {expandedBookId === book.id ? (
-                        <HiChevronUp size={18} color="#64B5F6" />
-                      ) : (
-                        <HiChevronDown size={18} color="#64B5F6" />
-                      )}
-                    </Box>
+                <div className="space-y-3">
+                  <div 
+                    className="flex justify-between items-center cursor-pointer group/toggle"
+                    onClick={() => setExpandedBookId(expandedBookId === book.id ? null : book.id)}
+                  >
+                    <Text className="!text-gray-400 !text-xs !font-bold !uppercase tracking-widest flex items-center gap-2">
+                      <FileTextOutlined /> {book.chapters.length} Chapters
+                    </Text>
+                    <Text className="!text-[#1890ff] !text-xs !font-bold">
+                      {expandedBookId === book.id ? 'Show Less' : 'Show All'}
+                    </Text>
+                  </div>
 
-                    {/* Collapsed: Show first 3 chapters */}
-                    {expandedBookId !== book.id && book.chapters.length > 0 && (
-                      <Box display="flex" flexDirection="column" gap="8px">
-                        {book.chapters.slice(0, 3).map((chapter) => (
-                          <Box key={chapter.id} display="flex" gap="8px" alignItems="center" justifyContent="space-between">
-                            <Box display="flex" gap="8px" alignItems="center" flex="1">
-                              <Text color="#FF8C00" fontWeight="900" fontSize="sm">•</Text>
-                              <Text fontSize="sm" color="gray.300" lineHeight="1.5" overflow="hidden" textOverflow="ellipsis" whiteSpace="nowrap">
-                                {chapter.chapter_name}
-                              </Text>
-                            </Box>
-                            {chapter.doc_link && (
-                              <a
-                                href={chapter.doc_link}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                style={{
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  padding: '4px 8px',
-                                  fontSize: '11px',
-                                  fontWeight: '600',
-                                  color: 'white',
-                                  backgroundColor: '#319795',
-                                  borderRadius: '4px',
-                                  textDecoration: 'none',
-                                  flexShrink: 0
-                                }}
-                              >
-                                <HiLink style={{ marginRight: '4px' }} />
-                                View
-                              </a>
-                            )}
-                          </Box>
-                        ))}
-                        {book.chapters.length > 3 && (
-                          <Text fontSize="xs" color="#64B5F6" fontWeight="600" cursor="pointer" onClick={() => setExpandedBookId(book.id)}>
-                            + {book.chapters.length - 3} more chapters
+                  <div className={`space-y-2 transition-all duration-300 ${expandedBookId === book.id ? 'max-h-[500px] overflow-y-auto pr-2' : 'max-h-[120px] overflow-hidden'}`}>
+                    {book.chapters.map((chapter) => (
+                      <div 
+                        key={chapter.id} 
+                        className="flex justify-between items-center p-3 rounded-xl bg-[#141414] hover:bg-[#1a1a1a] transition-all border border-transparent hover:border-[#1890ff]/30"
+                      >
+                        <Space className="overflow-hidden flex-1 mr-2">
+                          <Text className="!text-[#1890ff] !font-bold !text-xs">
+                            {chapter.chapter_number.toString().padStart(2, '0')}
                           </Text>
+                          <Text className="!text-gray-300 !text-sm !line-clamp-1">
+                            {chapter.chapter_name}
+                          </Text>
+                        </Space>
+                        {chapter.doc_link ? (
+                          <Tooltip title="View Document">
+                            <Button 
+                              type="primary" 
+                              size="small" 
+                              icon={<EyeOutlined />} 
+                              className="!rounded-lg !bg-[#1890ff] hover:!bg-[#40a9ff] !border-none !text-[10px] !h-7 !px-3"
+                              onClick={() => handleViewDoc(chapter.doc_link!)}
+                            >
+                              VIEW
+                            </Button>
+                          </Tooltip>
+                        ) : (
+                          <Tag className="!bg-[#1a1a1a] !text-gray-600 !border-none !text-[10px] !m-0">NO LINK</Tag>
                         )}
-                      </Box>
-                    )}
-
-                    {/* Expanded: Show all chapters */}
-                    {expandedBookId === book.id && book.chapters.length > 0 && (
-                      <Box display="flex" flexDirection="column" gap="10px">
-                        {book.chapters.map((chapter) => (
-                          <Box 
-                            key={chapter.id} 
-                            display="flex" 
-                            gap="10px" 
-                            alignItems="center" 
-                            justifyContent="space-between"
-                            p="10px"
-                            bg="rgba(15, 23, 42, 0.4)"
-                            borderRadius="8px"
-                          >
-                            <Box display="flex" gap="10px" alignItems="center" flex="1">
-                              <Badge bg="rgba(139, 92, 246, 0.3)" color="#A78BFA" px="8px" py="2px" borderRadius="4px" fontSize="xs" fontWeight="700">
-                                {chapter.chapter_number}
-                              </Badge>
-                              <Text fontSize="sm" color="gray.200" lineHeight="1.4">
-                                {chapter.chapter_name}
-                              </Text>
-                            </Box>
-                            {chapter.doc_link ? (
-                              <a
-                                href={chapter.doc_link}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                style={{
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  padding: '6px 12px',
-                                  fontSize: '12px',
-                                  fontWeight: '600',
-                                  color: 'white',
-                                  backgroundColor: '#319795',
-                                  borderRadius: '6px',
-                                  textDecoration: 'none',
-                                  flexShrink: 0
-                                }}
-                              >
-                                <HiLink style={{ marginRight: '6px' }} />
-                                View Doc
-                              </a>
-                            ) : (
-                              <Badge bg="rgba(113, 128, 150, 0.3)" color="gray.400" px="8px" py="4px" borderRadius="4px" fontSize="xs">
-                                No Link
-                              </Badge>
-                            )}
-                          </Box>
-                        ))}
-                      </Box>
-                    )}
-
-                    {book.chapters.length === 0 && (
-                      <Text fontSize="sm" color="gray.500" fontStyle="italic">
-                        No chapters available
-                      </Text>
-                    )}
-                  </Box>
-                </Box>
-              </MotionBox>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </Card>
             ))}
-          </Box>
+          </div>
         ) : (
-          /* Empty State */
-          <MotionBox variants={itemVariants} initial="hidden" whileInView="visible" viewport={{ once: true }} textAlign="center" py="60px">
-            <Box mb="24px">
-              <HiMagnifyingGlass size={64} style={{ margin: '0 auto', color: 'rgba(100, 181, 246, 0.3)' }} />
-            </Box>
-            <Text fontSize="24px" fontWeight="800" color="white" mb="12px">
-              No E-Resources Found
-            </Text>
-            <Text fontSize="16px" color="gray.400">
-              {eresources.length === 0 
-                ? 'No e-resources have been added yet. Check back later!' 
-                : 'Try adjusting your filters or search terms to find what you\'re looking for.'}
-            </Text>
-          </MotionBox>
+          <Empty 
+            image={Empty.PRESENTED_IMAGE_SIMPLE} 
+            description={<Text className="text-gray-500">No resources found matching your criteria</Text>}
+            className="!py-20"
+          />
         )}
-      </Container>
-    </Box>
+      </div>
+
+      {/* Document Viewer Modal */}
+      <Modal
+        open={pdfModalVisible}
+        onCancel={() => setPdfModalVisible(false)}
+        footer={null}
+        width="95vw"
+        centered
+        destroyOnClose
+        className="document-viewer-modal"
+        styles={{
+          mask: { backdropFilter: 'blur(8px)', backgroundColor: 'rgba(0,0,0,0.8)' },
+          content: { backgroundColor: '#000', border: '1px solid #1f1f1f', padding: 0, borderRadius: '16px', overflow: 'hidden' },
+          header: { backgroundColor: '#000', borderBottom: '1px solid #1f1f1f', padding: '16px 24px' },
+          body: { padding: 0 }
+        }}
+        title={
+          <div className="flex items-center gap-3">
+            <div className="bg-[#1890ff]/20 p-2 rounded-lg">
+              <FileTextOutlined className="text-[#1890ff]" />
+            </div>
+            <Text className="!text-white !font-bold !text-lg">Document Viewer</Text>
+          </div>
+        }
+      >
+        <div style={{ height: '85vh', position: 'relative' }}>
+          {currentPdfUrl && (
+            <DocumentViewer url={currentPdfUrl} />
+          )}
+        </div>
+      </Modal>
+
+      <style jsx global>{`
+        .custom-select .ant-select-selector {
+          background-color: #141414 !important;
+          border-color: #1f1f1f !important;
+          color: white !important;
+          border-radius: 12px !important;
+        }
+        .custom-select .ant-select-arrow {
+          color: #1890ff !important;
+        }
+        .custom-input {
+          box-shadow: none !important;
+        }
+        .custom-input:focus, .custom-input:hover {
+          border-color: #1890ff !important;
+        }
+        .ant-select-dropdown {
+          background-color: #0a0a0a !important;
+          border: 1px solid #1f1f1f !important;
+          border-radius: 12px !important;
+        }
+        .ant-select-item {
+          color: #a6a6a6 !important;
+        }
+        .ant-select-item-option-selected {
+          background-color: #1890ff !important;
+          color: white !important;
+        }
+        .ant-select-item-option-active {
+          background-color: #1a1a1a !important;
+          color: white !important;
+        }
+        .document-viewer-modal .ant-modal-close {
+          color: #fff !important;
+          top: 18px !important;
+        }
+        .document-viewer-modal .ant-modal-close:hover {
+          background-color: rgba(255,255,255,0.1) !important;
+        }
+      `}</style>
+    </div>
   );
 }

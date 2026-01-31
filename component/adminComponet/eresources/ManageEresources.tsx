@@ -30,7 +30,8 @@ import {
   LinkOutlined,
   ArrowLeftOutlined,
   EyeOutlined,
-  EyeInvisibleOutlined
+  EyeInvisibleOutlined,
+  UploadOutlined
 } from '@ant-design/icons';
 
 const { Title, Text } = Typography;
@@ -56,6 +57,7 @@ interface EResourceChapter {
   chapter_number: number;
   chapter_name: string;
   doc_link?: string;
+  file_key?: string; // For local file storage
 }
 
 interface EResourceBook {
@@ -86,6 +88,62 @@ export default function ManageEresources() {
   const [expandedRowKeys, setExpandedRowKeys] = useState<React.Key[]>([]);
   
   const [form] = Form.useForm();
+  
+  // Handle file upload for chapters
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>, fieldName: number) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    // Check file size (limit: 50MB)
+    const MAX_SIZE = 50 * 1024 * 1024;
+    if (file.size > MAX_SIZE) {
+      message.error('File size exceeds the 50MB limit. Please upload a smaller file.');
+      return;
+    }
+    
+    // Validate file type
+    const allowedTypes = [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-powerpoint',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'text/plain',
+      'application/epub+zip'
+    ];
+    
+    if (!allowedTypes.includes(file.type)) {
+      message.error('File type not allowed. Please upload PDF, DOC, PPT, XLS, TXT, or EPUB files.');
+      return;
+    }
+    
+    // Create FormData to send file
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('folder', 'assets/eresources');
+    
+    try {
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!response.ok) {
+        throw new Error('File upload failed');
+      }
+      
+      const result = await response.json();
+      
+      // Update form field with the file URL
+      form.setFieldValue(['chapters', fieldName, 'doc_link'], result.url);
+      
+      message.success('File uploaded successfully!');
+    } catch (error) {
+      message.error('File upload failed: ' + (error as Error).message);
+    }
+  };
 
   // Fetch courses and academic periods
   const fetchCoursesAndPeriods = useCallback(async () => {
@@ -483,15 +541,30 @@ export default function ManageEresources() {
                             <Input placeholder="Chapter Name" />
                           </Form.Item>
                         </Col>
-                        <Col span={10}>
-                          <Form.Item
-                            {...restField}
-                            name={[name, 'doc_link']}
-                            label="Document URL"
-                          >
-                            <Input placeholder="https://drive.google.com/..." prefix={<LinkOutlined />} />
-                          </Form.Item>
-                        </Col>
+                          <Col span={10}>
+                            <Form.Item
+                              {...restField}
+                              name={[name, 'doc_link']}
+                              label="Document URL / Path"
+                            >
+                              <Input placeholder="/assets/eresources/..." prefix={<LinkOutlined />} />
+                            </Form.Item>
+                          </Col>
+                          <Col span={2}>
+                            <Form.Item label="Upload">
+                              <Button 
+                                icon={<UploadOutlined />} 
+                                onClick={() => {
+                                  const input = document.createElement('input');
+                                  input.type = 'file';
+                                  input.accept = '.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.epub';
+                                  input.onchange = (e) => handleFileUpload(e as unknown as React.ChangeEvent<HTMLInputElement>, name);
+                                  input.click();
+                                }}
+                                className="w-full"
+                              />
+                            </Form.Item>
+                          </Col>
                         <Col span={2}>
                           <Button 
                             danger 

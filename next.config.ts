@@ -17,6 +17,15 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  // Serve static files from assets directory
+  async rewrites() {
+    return [
+      {
+        source: '/assets/:path*',
+        destination: '/assets/:path*',
+      },
+    ];
+  },
 };
 
 export default nextConfig;
