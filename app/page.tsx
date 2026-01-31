@@ -14,9 +14,10 @@ export default function Page() {
   }}>  <Home />
       
           {/* <DifferentiatorSection /> */}
+             <Youtube />
                <StatisticsSection/>
                      {/* Gallery Section */}
-                     <Youtube />
+                  
       <Gallery />
             
          <TeamSection />
