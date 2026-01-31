@@ -265,11 +265,11 @@ export default function Eresource() {
         ) : filteredEresources.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredEresources.map((book) => (
-              <Card 
-                key={book.id} 
-                className="!bg-[#0a0a0a] !border-[#1f1f1f] !rounded-2xl !overflow-hidden hover:!border-[#1890ff]/50 transition-all duration-300 group shadow-xl"
-                bodyStyle={{ padding: '24px' }}
-              >
+                <Card 
+                  key={book.id} 
+                  className="!bg-[#0a0a0a] !border-[#1f1f1f] !rounded-2xl !overflow-hidden hover:!border-[#1890ff]/50 transition-all duration-300 group shadow-xl"
+                  styles={{ body: { padding: '24px' } }}
+                >
                 <div className="flex items-start gap-4 mb-5">
                   <div className="bg-[#1890ff]/10 p-3 rounded-xl group-hover:bg-[#1890ff]/20 transition-colors">
                     <BookOutlined className="text-[#1890ff] text-2xl" />
@@ -359,7 +359,6 @@ export default function Eresource() {
         className="document-viewer-modal"
         styles={{
           mask: { backdropFilter: 'blur(8px)', backgroundColor: 'rgba(0,0,0,0.8)' },
-          content: { backgroundColor: '#000', border: '1px solid #1f1f1f', padding: 0, borderRadius: '16px', overflow: 'hidden' },
           header: { backgroundColor: '#000', borderBottom: '1px solid #1f1f1f', padding: '16px 24px' },
           body: { padding: 0 }
         }}
@@ -415,10 +414,17 @@ export default function Eresource() {
           color: #fff !important;
           top: 18px !important;
         }
-        .document-viewer-modal .ant-modal-close:hover {
-          background-color: rgba(255,255,255,0.1) !important;
-        }
-      `}</style>
+          .document-viewer-modal .ant-modal-close:hover {
+            background-color: rgba(255,255,255,0.1) !important;
+          }
+          .document-viewer-modal .ant-modal-content {
+            background-color: #000 !important;
+            border: 1px solid #1f1f1f !important;
+            padding: 0 !important;
+            border-radius: 16px !important;
+            overflow: hidden !important;
+          }
+        `}</style>
     </div>
   );
 }
