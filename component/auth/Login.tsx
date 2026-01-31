@@ -73,7 +73,7 @@ export default function Login() {
         sm={0}
         xs={0}
         style={{
-          backgroundImage: 'url(/group.jpg)',
+          backgroundImage: 'url(/login.jpeg)',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
         }}

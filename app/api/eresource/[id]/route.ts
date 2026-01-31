@@ -1,5 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { query, getClient } from '@/lib/db';
+import fs from 'fs';
+import path from 'path';
+
+// Helper to delete file from filesystem
+const deleteFile = (docLink: string | null | undefined) => {
+  if (!docLink || !docLink.startsWith('/assets/eresources/')) return;
+  
+  try {
+    const fileName = docLink.replace('/assets/eresources/', '');
+    const filePath = path.join(process.cwd(), 'public', 'assets', 'eresources', fileName);
+    
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+      console.log(`Deleted file: ${filePath}`);
+    }
+  } catch (error) {
+    console.error(`Error deleting file ${docLink}:`, error);
+  }
+};
 
 // Types
 interface EResourceBook {
@@ -137,6 +156,15 @@ export async function PUT(
     // Start transaction
     await client.query('BEGIN');
 
+    // Get old chapters to identify files to delete
+    const oldChaptersResult = await client.query<EResourceChapter>(
+      'SELECT doc_link FROM eresource_chapters WHERE eresource_book_id = $1',
+      [bookId]
+    );
+    const oldLinks = oldChaptersResult.rows
+      .map(c => c.doc_link)
+      .filter((link): link is string => !!link);
+
     // Update book
     const periodId = book.academic_period_id;
     const bookResult = await client.query<EResourceBook>(
@@ -153,6 +181,7 @@ export async function PUT(
     await client.query('DELETE FROM eresource_chapters WHERE eresource_book_id = $1', [bookId]);
 
     let newChapters: EResourceChapter[] = [];
+    const newLinks = chapters.map(c => c.doc_link).filter((link): link is string => !!link);
 
     // Insert new chapters
     if (chapters.length > 0) {
@@ -171,6 +200,13 @@ export async function PUT(
 
     // Commit transaction
     await client.query('COMMIT');
+
+    // After successful commit, delete replaced files
+    oldLinks.forEach(link => {
+      if (!newLinks.includes(link)) {
+        deleteFile(link);
+      }
+    });
 
     return NextResponse.json({
       success: true,
@@ -239,6 +275,19 @@ export async function DELETE(
         { status: 404 }
       );
     }
+
+    // Get all chapters to delete their files
+    const chaptersResult = await query<EResourceChapter>(
+      'SELECT doc_link FROM eresource_chapters WHERE eresource_book_id = $1',
+      [bookId]
+    );
+
+    // Delete files from filesystem
+    chaptersResult.rows.forEach(chapter => {
+      if (chapter.doc_link) {
+        deleteFile(chapter.doc_link);
+      }
+    });
 
     // Delete book (chapters cascade automatically)
     await query('DELETE FROM eresource_books WHERE id = $1', [bookId]);

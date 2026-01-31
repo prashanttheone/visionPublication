@@ -299,8 +299,7 @@ export default function HomeSlider() {
             <Col span={24}>
               <Form.Item
                 name="title"
-                label="Slider Title"
-                rules={[{ required: true, message: 'Please enter a title' }]}
+                label="Slider Title (Optional)"
               >
                 <Input placeholder="e.g., Welcome to Vision Publication" size="large" />
               </Form.Item>
