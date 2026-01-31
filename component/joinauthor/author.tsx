@@ -1,6 +1,6 @@
 'use client';
 
-import { Box, Container, Text, Badge } from '@chakra-ui/react';
+import { Box, Container, Text, Grid, Badge } from '@chakra-ui/react';
 import { motion } from 'framer-motion';
 import { useState } from 'react';
 import { HiCheckCircle, HiSparkles, HiGlobeAlt, HiUserGroup, HiShieldCheck } from 'react-icons/hi2';
@@ -314,6 +314,83 @@ export default function Author() {
             })}
           </Box>
         </MotionBox>
+
+        {/* How We Support Authors Section */}
+        <Box py={{ base: '60px', md: '80px' }} position="relative" zIndex={1} borderTop="1px solid" borderColor="rgba(100, 181, 246, 0.1)">
+          <Container maxW="1200px" px={{ base: '20px', md: '40px' }}>
+            <MotionBox variants={itemVariants} initial="hidden" whileInView="visible" viewport={{ once: true }}>
+              <Text fontSize="sm" fontWeight="700" color="#FF8C00" mb="12px" textTransform="uppercase" letterSpacing="1px">
+                Author Partnership
+              </Text>
+              <Text fontSize={{ base: '32px', md: '48px' }} fontWeight="900" color="white" mb="30px">
+                How We Support Authors
+              </Text>
+
+              <Grid gridTemplateColumns={{ base: '1fr', md: '1fr 1fr' }} gap="24px">
+                {[
+                  'Dedicated author liaison and support team',
+                  'Professional editing and quality assurance',
+                  'Expert design and layout services',
+                  'Marketing and promotional support',
+                  'Royalty structure designed to reward quality',
+                  'Global distribution and visibility',
+                ].map((item, i) => (
+                  <MotionBox key={i} variants={itemVariants} initial="hidden" whileInView="visible" viewport={{ once: true }}>
+                    <Box display="flex" gap="16px">
+                      <Box color="#64B5F6" mt="2px" flexShrink={0}>
+                        <HiCheckCircle size={24} />
+                      </Box>
+                      <Text fontSize="md" color="gray.300" lineHeight="1.6">
+                        {item}
+                      </Text>
+                    </Box>
+                  </MotionBox>
+                ))}
+              </Grid>
+            </MotionBox>
+          </Container>
+        </Box>
+
+        {/* Our Editorial & Production Process Section */}
+        <Box py={{ base: '60px', md: '80px' }} position="relative" zIndex={1} borderTop="1px solid" borderColor="rgba(100, 181, 246, 0.1)">
+          <Container maxW="1200px" px={{ base: '20px', md: '40px' }}>
+            <MotionBox variants={itemVariants} initial="hidden" whileInView="visible" viewport={{ once: true }}>
+              <Text fontSize="sm" fontWeight="700" color="#FF8C00" mb="12px" textTransform="uppercase" letterSpacing="1px">
+                Quality Assurance
+              </Text>
+              <Text fontSize={{ base: '32px', md: '48px' }} fontWeight="900" color="white" mb="40px">
+                Our Editorial & Production Process
+              </Text>
+
+              <Box display="flex" flexDirection="column" gap="16px">
+                {[
+                  { step: 'Manuscript Submission', desc: 'Initial review and content assessment by editorial team' },
+                  { step: 'Peer Review', desc: 'Rigorous evaluation by subject matter experts' },
+                  { step: 'Editing & Revisions', desc: 'Comprehensive editing for clarity, accuracy, and consistency' },
+                  { step: 'Design & Layout', desc: 'Professional formatting and visual design' },
+                  { step: 'Proofreading', desc: 'Final quality check for perfection' },
+                  { step: 'Publication', desc: 'Release across print and digital platforms' },
+                ].map((item, i) => (
+                  <MotionBox key={i} variants={itemVariants} initial="hidden" whileInView="visible" viewport={{ once: true }}>
+                    <Box display="flex" gap="16px" alignItems="flex-start">
+                      <Box width="32px" height="32px" borderRadius="50%" bg="linear-gradient(135deg, #64B5F6, #42A5F5)" display="flex" alignItems="center" justifyContent="center" color="white" fontWeight="700" flexShrink={0}>
+                        {i + 1}
+                      </Box>
+                      <Box>
+                        <Text fontSize="md" fontWeight="700" color="white" mb="4px">
+                          {item.step}
+                        </Text>
+                        <Text fontSize="sm" color="gray.400">
+                          {item.desc}
+                        </Text>
+                      </Box>
+                    </Box>
+                  </MotionBox>
+                ))}
+              </Box>
+            </MotionBox>
+          </Container>
+        </Box>
 
         {/* Call to Action */}
         <MotionBox
