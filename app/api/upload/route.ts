@@ -24,10 +24,10 @@ export async function POST(request: NextRequest) {
       return Response.json({ error: 'No file uploaded' }, { status: 400 });
     }
 
-    // Check file size (limit: 50MB)
-    const MAX_SIZE = 50 * 1024 * 1024;
+    // Check file size (limit: 120MB)
+    const MAX_SIZE = 120 * 1024 * 1024;
     if (file.size > MAX_SIZE) {
-      return Response.json({ error: 'File size exceeds the 50MB limit' }, { status: 400 });
+      return Response.json({ error: 'File size exceeds the 120MB limit' }, { status: 400 });
     }
 
     // Validate file type

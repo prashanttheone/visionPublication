@@ -94,10 +94,10 @@ export default function ManageEresources() {
     const file = event.target.files?.[0];
     if (!file) return;
     
-    // Check file size (limit: 50MB)
-    const MAX_SIZE = 50 * 1024 * 1024;
+    // Check file size (limit: 120MB)
+    const MAX_SIZE = 120 * 1024 * 1024;
     if (file.size > MAX_SIZE) {
-      message.error('File size exceeds the 50MB limit. Please upload a smaller file.');
+      message.error('File size exceeds the 120MB limit. Please upload a smaller file.');
       return;
     }
     
