@@ -88,6 +88,21 @@ export default function ManageEresources() {
   const [expandedRowKeys, setExpandedRowKeys] = useState<React.Key[]>([]);
   
   const [form] = Form.useForm();
+  const selectedCourseIdForForm = Form.useWatch('course_id', form);
+
+  // Get dynamic label for academic period
+  const getAcademicPeriodLabel = (courseId: number | undefined) => {
+    if (!courseId) return 'Academic Period';
+    const course = courses.find(c => c.id === courseId);
+    if (!course) return 'Academic Period';
+    
+    const name = course.name.toLowerCase();
+    // BSC Nursing is semester based, but Post Basic BSC is year based
+    if (name.includes('bsc nursing') && !name.includes('post basic')) {
+      return 'Semester';
+    }
+    return 'Year';
+  };
   
     // Handle file upload for chapters
     const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>, fieldName: number) => {
@@ -494,20 +509,21 @@ export default function ManageEresources() {
                   </Select>
                 </Form.Item>
               </Col>
-              <Col span={12}>
-                <Form.Item 
-                  name="academic_period_id" 
-                  label="Academic Period" 
-                  rules={[{ required: true, message: 'Please select a period' }]}
-                >
-                  <Select placeholder="Select Period">
-                    {academicPeriods
-                      .filter(p => p.course_id === form.getFieldValue('course_id'))
-                      .map(p => <Select.Option key={p.id} value={p.id}>{p.label} ({p.description})</Select.Option>)
-                    }
-                  </Select>
-                </Form.Item>
-              </Col>
+                <Col span={12}>
+                  <Form.Item 
+                    name="academic_period_id" 
+                    label={getAcademicPeriodLabel(selectedCourseIdForForm)} 
+                    rules={[{ required: true, message: `Please select a ${getAcademicPeriodLabel(selectedCourseIdForForm).toLowerCase()}` }]}
+                  >
+                    <Select placeholder={`Select ${getAcademicPeriodLabel(selectedCourseIdForForm)}`}>
+                      {academicPeriods
+                        .filter(p => p.course_id === selectedCourseIdForForm)
+                        .map(p => <Select.Option key={p.id} value={p.id}>{p.label} ({p.description})</Select.Option>)
+                      }
+                    </Select>
+                  </Form.Item>
+                </Col>
+
             </Row>
 
             <Form.Item 
