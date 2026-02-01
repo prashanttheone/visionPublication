@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { HiMiniEye, HiMiniNewspaper, HiMiniAcademicCap, HiMiniPlayCircle, HiMiniQuestionMarkCircle, HiMiniBookOpen, HiMiniPhoto, HiMiniShoppingCart } from 'react-icons/hi2';
+import { authUtils } from '@/lib/auth';
 
 const MotionBox = motion.create(Box);
 
@@ -17,6 +18,8 @@ interface AdminStats {
   totalEresources: number;
   totalHomeSliders: number;
   totalOrders: number;
+  totalEresourceViews: number;
+  uniqueEresourceUsers: number;
 }
 
 const adminSections = [
@@ -103,6 +106,7 @@ const adminSections = [
     bgGradient: 'linear(135deg, rgba(0, 188, 212, 0.2) 0%, rgba(0, 151, 167, 0.1) 100%)',
     subsections: [
       { label: 'All E-Resources', route: '/admin/eresource' },
+      { label: 'E-Resource Stats', route: '/admin/eresource/stats' },
     ],
   },
   {
@@ -130,6 +134,8 @@ export default function AdminHome() {
     totalEresources: 0,
     totalHomeSliders: 0,
     totalOrders: 0,
+    totalEresourceViews: 0,
+    uniqueEresourceUsers: 0,
   });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -167,6 +173,10 @@ export default function AdminHome() {
         const ordersRes = await fetch('/api/orders');
         const ordersData = await ordersRes.json();
 
+        // Fetch e-resource stats
+        const eresourceStatsRes = await authUtils.fetchWithAuth('/api/eresource/stats');
+        const eresourceStatsData = await eresourceStatsRes.json();
+
         setStats({
           totalBooks: booksData.count || 0,
           totalCourses: coursesData.count || 0,
@@ -176,6 +186,8 @@ export default function AdminHome() {
           totalEresources: eresourcesData.count || 0,
           totalHomeSliders: homeSlidersData.data?.length || 0,
           totalOrders: Array.isArray(ordersData) ? ordersData.length : 0,
+          totalEresourceViews: eresourceStatsData.success ? (eresourceStatsData.data?.statistics?.total_views || 0) : 0,
+          uniqueEresourceUsers: eresourceStatsData.success ? (eresourceStatsData.data?.statistics?.unique_users || 0) : 0,
         });
 
         setError(null);
@@ -273,6 +285,8 @@ export default function AdminHome() {
             { label: 'Total Blogs', value: stats.totalBlogs, color: '#9C27B0' },
             { label: 'E-Resources', value: stats.totalEresources, color: '#00BCD4' },
             { label: 'Total Orders', value: stats.totalOrders, color: '#E91E63' },
+            { label: 'E-Resource Views', value: stats.totalEresourceViews, color: '#00BCD4' },
+            { label: 'Unique E-Resource Users', value: stats.uniqueEresourceUsers, color: '#00BCD4' },
           ].map((stat, index) => (
             <MotionBox key={index} variants={cardVariants} initial="hidden" animate="visible">
               <Box

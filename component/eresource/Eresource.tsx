@@ -32,6 +32,7 @@ import {
 import DocumentViewer from './DocumentViewer';
 import Login from '@/component/auth/Login';
 import { useAuth } from '@/context/AuthProvider';
+import { authUtils } from '@/lib/auth';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -173,7 +174,7 @@ export default function Eresource() {
 
   const trackView = async (chapterId: number, bookId: number) => {
     try {
-      await fetch('/api/eresource/track', {
+      await authUtils.fetchWithAuth('/api/eresource/track', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ chapterId, bookId })

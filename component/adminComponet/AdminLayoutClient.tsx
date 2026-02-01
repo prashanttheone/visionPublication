@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Layout, Menu, Typography, Avatar, ConfigProvider, theme } from 'antd';
+import { Layout, Menu, Typography, Avatar, ConfigProvider, theme, Dropdown, Button } from 'antd';
 import {
   HomeOutlined,
   BookOutlined,
@@ -12,9 +12,12 @@ import {
   PictureOutlined,
   ShoppingOutlined,
   UsergroupAddOutlined,
+  LogoutOutlined,
+  UserOutlined,
 } from '@ant-design/icons';
 import { useRouter, usePathname } from 'next/navigation';
 import type { MenuProps } from 'antd';
+import { useAuth } from '@/context/AuthProvider';
 
 const { Header, Sider, Content } = Layout;
 const { Title } = Typography;
@@ -68,9 +71,19 @@ const menuItems: MenuItem[] = [
     label: 'Enquiry Forms',
   },
   {
-    key: '/admin/eresource',
+    key: 'eresources',
     icon: <CloudOutlined />,
     label: 'E-Resources',
+    children: [
+      {
+        key: '/admin/eresource',
+        label: 'All E-Resources',
+      },
+      {
+        key: '/admin/eresource/stats',
+        label: 'E-Resource Stats',
+      },
+    ],
   },
   {
     key: '/admin/orders',
@@ -87,7 +100,7 @@ const menuItems: MenuItem[] = [
     icon: <UsergroupAddOutlined />,
     label: 'Team Members',
   },
-    {
+  {
     key: '',
     icon: <UsergroupAddOutlined />,
     label: 'Team Members',
@@ -102,6 +115,34 @@ export default function AdminLayoutClient({
   const [collapsed, setCollapsed] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
+  const { user, signOut } = useAuth();
+
+  const handleLogout = () => {
+    signOut();
+  };
+
+  const userMenuItems: MenuProps['items'] = [
+    {
+      key: 'user-info',
+      label: (
+        <div style={{ padding: '8px 0' }}>
+          <div style={{ fontWeight: 600, color: '#fff' }}>{user?.full_name || 'Admin'}</div>
+          <div style={{ fontSize: '12px', color: '#8c8c8c' }}>{user?.email || ''}</div>
+        </div>
+      ),
+      disabled: true,
+    },
+    {
+      type: 'divider',
+    },
+    {
+      key: 'logout',
+      icon: <LogoutOutlined />,
+      label: 'Logout',
+      onClick: handleLogout,
+      danger: true,
+    },
+  ];
 
   // Load Cloudinary widget script
   useEffect(() => {
@@ -112,11 +153,11 @@ export default function AdminLayoutClient({
         script.id = 'cloudinary-widget-script';
         script.src = 'https://widget.cloudinary.com/v2.0/global/all.js';
         script.async = true;
-        
+
         script.onload = () => {
           console.log('Cloudinary widget script loaded successfully');
         };
-        
+
         script.onerror = () => {
           console.error('Failed to load Cloudinary widget script');
           // Retry after 2 seconds
@@ -131,7 +172,7 @@ export default function AdminLayoutClient({
             document.head.appendChild(retryScript);
           }, 2000);
         };
-        
+
         document.head.appendChild(script);
       }
     }
@@ -151,6 +192,9 @@ export default function AdminLayoutClient({
   const getOpenKeys = () => {
     if (pathname.startsWith('/admin/books')) {
       return ['books'];
+    }
+    if (pathname.startsWith('/admin/eresource')) {
+      return ['eresources'];
     }
     return [];
   };
@@ -223,7 +267,14 @@ export default function AdminLayoutClient({
             <Title level={4} style={{ margin: 0, color: '#fff' }}>
               VisionPublication Admin
             </Title>
-            <Avatar style={{ backgroundColor: '#87d068' }}>U</Avatar>
+            <Dropdown menu={{ items: userMenuItems }} placement="bottomRight" trigger={['click']}>
+              <Avatar
+                style={{ backgroundColor: '#87d068', cursor: 'pointer' }}
+                icon={<UserOutlined />}
+              >
+                {user?.full_name?.charAt(0)?.toUpperCase() || 'A'}
+              </Avatar>
+            </Dropdown>
           </Header>
           <Content
             style={{
