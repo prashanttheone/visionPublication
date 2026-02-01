@@ -15,7 +15,8 @@ import {
   Empty,
   Divider,
   Tag,
-  Tooltip
+  Tooltip,
+  message
 } from 'antd';
 import {
   SearchOutlined,
@@ -25,9 +26,12 @@ import {
   CaretRightOutlined,
   FilterOutlined,
   SortAscendingOutlined,
-  LinkOutlined
+  LinkOutlined,
+  LoginOutlined
 } from '@ant-design/icons';
 import DocumentViewer from './DocumentViewer';
+import Login from '@/component/auth/Login';
+import { useAuth } from '@/context/AuthProvider';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -80,6 +84,10 @@ export default function Eresource() {
   const [sortBy, setSortBy] = useState<'name' | 'chapters'>('name');
   const [pdfModalVisible, setPdfModalVisible] = useState(false);
   const [currentPdfUrl, setCurrentPdfUrl] = useState('');
+  const [loginModalVisible, setLoginModalVisible] = useState(false);
+  const [pendingChapter, setPendingChapter] = useState<{ url: string; chapterId: number; bookId: number } | null>(null);
+
+  const { user, isLoading: authLoading } = useAuth();
 
   // Fetch courses and periods
   const fetchCourses = useCallback(async () => {
@@ -163,12 +171,47 @@ export default function Eresource() {
     return filtered;
   }, [eresources, selectedCourseId, selectedPeriodId, searchTerm, sortBy]);
 
-  const handleViewDoc = (url: string) => {
-    if (url) {
-      setCurrentPdfUrl(url);
-      setPdfModalVisible(true);
+  const trackView = async (chapterId: number, bookId: number) => {
+    try {
+      await fetch('/api/eresource/track', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chapterId, bookId })
+      });
+    } catch (error) {
+      console.error('Error tracking view:', error);
     }
   };
+
+  const handleViewDoc = (url: string, chapterId: number, bookId: number) => {
+    if (!url) return;
+
+    // Check if user is authenticated
+    if (!user) {
+      // Store the pending chapter to view after login
+      setPendingChapter({ url, chapterId, bookId });
+      setLoginModalVisible(true);
+      return;
+    }
+
+    // Track the view
+    trackView(chapterId, bookId);
+
+    // Open the document
+    setCurrentPdfUrl(url);
+    setPdfModalVisible(true);
+  };
+
+  // Handle successful login - view the pending chapter
+  useEffect(() => {
+    if (user && pendingChapter) {
+      trackView(pendingChapter.chapterId, pendingChapter.bookId);
+      setCurrentPdfUrl(pendingChapter.url);
+      setPdfModalVisible(true);
+      setPendingChapter(null);
+      setLoginModalVisible(false);
+    }
+  }, [user, pendingChapter]);
 
   return (
     <div className="min-h-screen bg-[#001529] py-16 px-4 sm:px-16 lg:px-24">
@@ -326,7 +369,7 @@ export default function Eresource() {
                               icon={<EyeOutlined style={{ fontSize: '14px' }} />}
                               className="!rounded-lg !bg-[#1890ff] hover:!bg-[#40a9ff] !border-none !h-9 !px-5 !flex !items-center !gap-1.5 !my-1.5"
                               style={{ fontSize: '12px', fontWeight: 600, letterSpacing: '0.5px' }}
-                              onClick={() => handleViewDoc(chapter.doc_link!)}
+                              onClick={() => handleViewDoc(chapter.doc_link!, chapter.id, book.id)}
                             >
                               VIEW
                             </Button>
@@ -378,6 +421,43 @@ export default function Eresource() {
             <DocumentViewer url={currentPdfUrl} />
           )}
         </div>
+      </Modal>
+
+      {/* Login Modal */}
+      <Modal
+        open={loginModalVisible}
+        onCancel={() => {
+          setLoginModalVisible(false);
+          setPendingChapter(null);
+        }}
+        footer={null}
+        width={450}
+        centered
+        destroyOnClose
+        className="login-modal"
+        styles={{
+          mask: { backdropFilter: 'blur(8px)', backgroundColor: 'rgba(0,0,0,0.85)' },
+          body: { padding: '32px' }
+        }}
+        title={
+          <div className="flex items-center gap-3">
+            <div className="bg-[#1890ff]/20 p-2.5 rounded-lg">
+              <LoginOutlined className="text-[#1890ff]" style={{ fontSize: '18px' }} />
+            </div>
+            <div>
+              <Text className="!text-white !font-bold" style={{ fontSize: '18px', letterSpacing: '-0.01em', display: 'block' }}>
+                Login Required
+              </Text>
+              <Text className="!text-gray-400" style={{ fontSize: '13px' }}>
+                Please sign in to view e-resource documents
+              </Text>
+            </div>
+          </div>
+        }
+      >
+        <Login isModal onSuccess={() => {
+          // The useEffect will handle opening the document
+        }} />
       </Modal>
 
       <style jsx global>{`
