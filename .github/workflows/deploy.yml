@@ -40,12 +40,24 @@ jobs:
           script: |
             cd /var/www/visionPublication
 
+            # Backup uploaded assets before cleaning
+            if [ -d "public/assets" ]; then
+              mv public/assets /tmp/visionpub-assets-backup
+            fi
+
             # Remove old source files to ensure a clean extraction
             rm -rf app component context hooks lib migrations public types utils .next
 
             # Extract the new files
             tar -xzf deploy.tar.gz
             rm -f deploy.tar.gz
+
+            # Restore uploaded assets
+            if [ -d "/tmp/visionpub-assets-backup" ]; then
+              mkdir -p public/assets
+              cp -r /tmp/visionpub-assets-backup/* public/assets/
+              rm -rf /tmp/visionpub-assets-backup
+            fi
 
             # Create/Update .env file
             cat <<EOF > .env
@@ -63,5 +75,8 @@ jobs:
             npm run build
 
             # Restart the application using PM2
-            pm2 restart visionpub || pm2 start npm --name visionpub -- start
+            # Delete old process to avoid stale config/cwd issues
+            pm2 delete visionpub || true
+            # Start fresh with explicit working directory
+            pm2 start npm --name visionpub --cwd /var/www/visionPublication -- start
             pm2 save
