@@ -23,7 +23,7 @@ export async function getAuthUser(request: NextRequest): Promise<AuthUser | null
     if (!token) return null;
 
     const decoded = jwt.verify(token, JWT_SECRET) as any;
-    
+
     return {
       id: decoded.sub,
       email: decoded.email,
@@ -33,4 +33,15 @@ export async function getAuthUser(request: NextRequest): Promise<AuthUser | null
     console.error('Auth check failed:', error);
     return null;
   }
+}
+
+/**
+ * Verifies authentication and returns structured result
+ */
+export async function verifyAuth(request: NextRequest): Promise<{ authenticated: boolean; user: AuthUser | null }> {
+  const user = await getAuthUser(request);
+  return {
+    authenticated: user !== null,
+    user
+  };
 }
