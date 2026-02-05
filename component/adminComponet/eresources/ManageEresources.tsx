@@ -92,6 +92,10 @@ export default function ManageEresources() {
   const [viewerVisible, setViewerVisible] = useState(false);
   const [currentDocUrl, setCurrentDocUrl] = useState('');
 
+  // File upload state management
+  const [tempFiles, setTempFiles] = useState<{[key: number]: File}>({}); // Store temp files by chapter index
+  const [uploadedFiles, setUploadedFiles] = useState<string[]>([]); // Track successfully uploaded file URLs
+
   const [form] = Form.useForm();
   const selectedCourseIdForForm = Form.useWatch('course_id', form);
 
@@ -109,8 +113,8 @@ export default function ManageEresources() {
     return 'Year';
   };
 
-  // Handle file upload for chapters
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>, fieldName: number) => {
+  // Handle file selection for chapters - store temporarily instead of uploading
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>, fieldName: number) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -140,39 +144,67 @@ export default function ManageEresources() {
       return;
     }
 
-    setIsLoading(true);
-    const hide = message.loading('Uploading file to server...', 0);
+    // Store file temporarily
+    setTempFiles(prev => ({
+      ...prev,
+      [fieldName]: file
+    }));
 
-    try {
-      // Create FormData to send file to local upload API
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('folder', 'eresources');
-
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Upload failed');
-      }
-
-      const result = await response.json();
-
-      // Update form field with the local URL
-      form.setFieldValue(['chapters', fieldName, 'doc_link'], result.url);
-
-      message.success('File uploaded successfully!');
-    } catch (error) {
-      console.error('Upload error:', error);
-      message.error('File upload failed: ' + (error as Error).message);
-    } finally {
-      hide();
-      setIsLoading(false);
-    }
+    // Create temporary URL for preview
+    const tempUrl = URL.createObjectURL(file);
+    form.setFieldValue(['chapters', fieldName, 'doc_link'], tempUrl);
+    
+    message.success('File selected. Will be uploaded when form is saved.');
   };
+
+  // Upload all temporary files when form is submitted
+  const uploadTempFiles = useCallback(async (): Promise<{[key: number]: string}> => {
+    if (Object.keys(tempFiles).length === 0) return {};
+    
+    const uploadedUrls: {[key: number]: string} = {};
+    
+    for (const [index, file] of Object.entries(tempFiles)) {
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('folder', 'eresources');
+        
+        const response = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+        });
+        
+        if (response.ok) {
+          const result = await response.json();
+          uploadedUrls[parseInt(index)] = result.url;
+          setUploadedFiles(prev => [...prev, result.url]);
+        }
+      } catch (error) {
+        console.error('File upload failed:', error);
+        message.error(`Failed to upload file: ${file.name}`);
+      }
+    }
+    
+    return uploadedUrls;
+  }, [tempFiles]);
+
+  // Clean up temporary files
+  const cleanupTempFiles = useCallback(() => {
+    setTempFiles(prevTempFiles => {
+      Object.values(prevTempFiles).forEach(file => {
+        URL.revokeObjectURL(URL.createObjectURL(file));
+      });
+      return {};
+    });
+  }, []);
+
+  // Clean up orphaned files if form submission fails
+  const cleanupOrphanedFiles = useCallback(async (fileUrls: string[]) => {
+    // In a production environment, you'd want to implement
+    // a cleanup endpoint to remove unused files
+    // For now, we'll just log them
+    console.log('Orphaned files to cleanup:', fileUrls);
+  }, []);
 
   // Handle view document
   const handleViewDocument = (url: string) => {
@@ -232,6 +264,13 @@ export default function ManageEresources() {
     init();
   }, []);
 
+  // Cleanup temporary files when component unmounts
+  useEffect(() => {
+    return () => {
+      cleanupTempFiles();
+    };
+  }, [cleanupTempFiles]);
+
   // Filter periods and books
   const currentPeriods = selectedCourseId ? academicPeriods.filter(p => p.course_id === selectedCourseId) : [];
 
@@ -243,7 +282,9 @@ export default function ManageEresources() {
     });
     setIsEditing(false);
     setEditingId(null);
-  }, [form]);
+    // Clean up temporary files
+    cleanupTempFiles();
+  }, [form, cleanupTempFiles]);
 
   // Open form
   const handleOpenNew = useCallback(() => {
@@ -277,7 +318,23 @@ export default function ManageEresources() {
   // Handle Submit
   const onFinish = async (values: any) => {
     setIsLoading(true);
+    let uploadedFileUrls: {[key: number]: string} = {};
+    
     try {
+      // Upload temporary files first
+      uploadedFileUrls = await uploadTempFiles();
+      
+      // Update chapters with actual file URLs
+      const updatedChapters = values.chapters.map((chapter: any, index: number) => {
+        if (uploadedFileUrls[index]) {
+          return {
+            ...chapter,
+            doc_link: uploadedFileUrls[index]
+          };
+        }
+        return chapter;
+      });
+
       const endpoint = isEditing ? `/api/eresource/${editingId}` : '/api/eresource';
       const method = isEditing ? 'PUT' : 'POST';
 
@@ -298,7 +355,7 @@ export default function ManageEresources() {
           book_name: values.book_name,
           description: values.description
         },
-        chapters: values.chapters
+        chapters: updatedChapters
       };
 
       // If editing, include previous chapters to handle file cleanup
@@ -316,14 +373,26 @@ export default function ManageEresources() {
       if (result.success) {
         message.success(`E-resource ${isEditing ? 'updated' : 'created'} successfully`);
         await fetchEresources();
+        
+        // Clear temp files since they're now uploaded
+        cleanupTempFiles();
+        
         setActiveView('list');
         handleResetForm();
       } else {
         message.error(result.error || 'Operation failed');
+        // Clean up uploaded files if form submission fails
+        if (Object.values(uploadedFileUrls).length > 0) {
+          cleanupOrphanedFiles(Object.values(uploadedFileUrls));
+        }
       }
     } catch (error) {
       console.error('Submit error:', error);
       message.error('An error occurred');
+      // Clean up uploaded files if form submission fails
+      if (Object.values(uploadedFileUrls).length > 0) {
+        cleanupOrphanedFiles(Object.values(uploadedFileUrls));
+      }
     } finally {
       setIsLoading(false);
     }
@@ -617,7 +686,7 @@ export default function ManageEresources() {
                                 const input = document.createElement('input');
                                 input.type = 'file';
                                 input.accept = '.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.epub';
-                                input.onchange = (e) => handleFileUpload(e as unknown as React.ChangeEvent<HTMLInputElement>, name);
+                                input.onchange = (e) => handleFileSelect(e as unknown as React.ChangeEvent<HTMLInputElement>, name);
                                 input.click();
                               }}
                               className="w-full"

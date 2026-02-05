@@ -124,11 +124,13 @@ export default function BlogPostEditor({ initialBlogId = null }: { initialBlogId
    * Clean up temporary image URLs
    */
   const cleanupTempImages = useCallback(() => {
-    tempImages.forEach(file => {
-      URL.revokeObjectURL(URL.createObjectURL(file));
+    setTempImages(prevTempImages => {
+      prevTempImages.forEach(file => {
+        URL.revokeObjectURL(URL.createObjectURL(file));
+      });
+      return [];
     });
-    setTempImages([]);
-  }, [tempImages]);
+  }, []);
 
   /**
    * Replace temporary image URLs with actual uploaded URLs
