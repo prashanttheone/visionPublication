@@ -6,10 +6,10 @@ import fs from 'fs/promises';
 // Get blog post by slug
 export async function GET(
   request: NextRequest,
-  { params }: { params: { slug: string } }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
-    const { slug } = params;
+    const { slug } = await params;
 
     // Fetch blog post from database
     const result = await query(
@@ -56,10 +56,10 @@ export async function GET(
 // Update blog post by slug
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { slug: string } }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
-    const { slug } = params;
+    const { slug } = await params;
     const body = await request.json();
 
     // Find existing blog post by slug (exact match)
@@ -154,10 +154,10 @@ export async function PUT(
 // Delete blog post by slug
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { slug: string } }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
-    const { slug } = params;
+    const { slug } = await params;
 
     // Fetch blog post to get image path before deletion
     const result = await query(
