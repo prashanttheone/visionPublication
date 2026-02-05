@@ -1,32 +1,32 @@
 'use client';
 
 import React, { useState, useCallback, useEffect } from 'react';
-import { 
-  Table, 
-  Button, 
-  Input, 
-  Select, 
-  Space, 
-  Typography, 
-  Card, 
-  Tag, 
-  Modal, 
-  Form, 
-  message, 
-  Popconfirm, 
-  Empty, 
+import {
+  Table,
+  Button,
+  Input,
+  Select,
+  Space,
+  Typography,
+  Card,
+  Tag,
+  Modal,
+  Form,
+  message,
+  Popconfirm,
+  Empty,
   Divider,
   Breadcrumb,
   Row,
   Col,
   Tooltip
 } from 'antd';
-import { 
-  PlusOutlined, 
-  EditOutlined, 
-  DeleteOutlined, 
-  BookOutlined, 
-  FileTextOutlined, 
+import {
+  PlusOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  BookOutlined,
+  FileTextOutlined,
   LinkOutlined,
   ArrowLeftOutlined,
   EyeOutlined,
@@ -78,15 +78,20 @@ export default function ManageEresources() {
   const [academicPeriods, setAcademicPeriods] = useState<AcademicPeriod[]>([]);
   const [eresources, setEresources] = useState<EResourceBook[]>([]);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
-  
+
   const [activeView, setActiveView] = useState<'list' | 'form'>('list');
   const [isEditing, setIsEditing] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  
+  const [previousChapters, setPreviousChapters] = useState<EResourceChapter[]>([]); // Store previous chapters to track file deletions
+
   const [selectedCourseId, setSelectedCourseId] = useState<number | null>(null);
   const [expandedRowKeys, setExpandedRowKeys] = useState<React.Key[]>([]);
-  
+
+  // Document viewer state
+  const [viewerVisible, setViewerVisible] = useState(false);
+  const [currentDocUrl, setCurrentDocUrl] = useState('');
+
   const [form] = Form.useForm();
   const selectedCourseIdForForm = Form.useWatch('course_id', form);
 
@@ -95,7 +100,7 @@ export default function ManageEresources() {
     if (!courseId) return 'Academic Period';
     const course = courses.find(c => c.id === courseId);
     if (!course) return 'Academic Period';
-    
+
     const name = course.name.toLowerCase();
     // BSC Nursing is semester based, but Post Basic BSC is year based
     if (name.includes('bsc nursing') && !name.includes('post basic')) {
@@ -103,71 +108,81 @@ export default function ManageEresources() {
     }
     return 'Year';
   };
-  
-    // Handle file upload for chapters
-    const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>, fieldName: number) => {
-      const file = event.target.files?.[0];
-      if (!file) return;
-      
-      // Check file size (limit: 2GB for local storage)
-      const MAX_SIZE = 2 * 1024 * 1024 * 1024;
-      if (file.size > MAX_SIZE) {
-        message.error('File size exceeds the 2GB limit.');
-        return;
+
+  // Handle file upload for chapters
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>, fieldName: number) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Check file size (limit: 2GB for local storage)
+    const MAX_SIZE = 2 * 1024 * 1024 * 1024;
+    if (file.size > MAX_SIZE) {
+      message.error('File size exceeds the 2GB limit.');
+      return;
+    }
+
+    // Validate file type
+    const allowedTypes = [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'application/vnd.ms-powerpoint',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'text/plain',
+      'application/epub+zip',
+      'application/octet-stream'
+    ];
+
+    if (!allowedTypes.includes(file.type) && !file.name.endsWith('.pdf')) {
+      message.error('File type not allowed. Please upload PDF, DOC, PPT, XLS, TXT, or EPUB files.');
+      return;
+    }
+
+    setIsLoading(true);
+    const hide = message.loading('Uploading file to server...', 0);
+
+    try {
+      // Create FormData to send file to local upload API
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('folder', 'eresources');
+
+      const response = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Upload failed');
       }
-      
-      // Validate file type
-      const allowedTypes = [
-        'application/pdf',
-        'application/msword',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'application/vnd.ms-powerpoint',
-        'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-        'application/vnd.ms-excel',
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'text/plain',
-        'application/epub+zip',
-        'application/octet-stream'
-      ];
-      
-      if (!allowedTypes.includes(file.type) && !file.name.endsWith('.pdf')) {
-        message.error('File type not allowed. Please upload PDF, DOC, PPT, XLS, TXT, or EPUB files.');
-        return;
-      }
-      
-      setIsLoading(true);
-      const hide = message.loading('Uploading file to server...', 0);
-      
-      try {
-        // Create FormData to send file to local upload API
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('folder', 'eresources');
-        
-        const response = await fetch('/api/upload', {
-          method: 'POST',
-          body: formData,
-        });
-        
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || 'Upload failed');
-        }
-        
-        const result = await response.json();
-        
-        // Update form field with the local URL
-        form.setFieldValue(['chapters', fieldName, 'doc_link'], result.url);
-        
-        message.success('File uploaded successfully!');
-      } catch (error) {
-        console.error('Upload error:', error);
-        message.error('File upload failed: ' + (error as Error).message);
-      } finally {
-        hide();
-        setIsLoading(false);
-      }
-    };
+
+      const result = await response.json();
+
+      // Update form field with the local URL
+      form.setFieldValue(['chapters', fieldName, 'doc_link'], result.url);
+
+      message.success('File uploaded successfully!');
+    } catch (error) {
+      console.error('Upload error:', error);
+      message.error('File upload failed: ' + (error as Error).message);
+    } finally {
+      hide();
+      setIsLoading(false);
+    }
+  };
+
+  // Handle view document
+  const handleViewDocument = (url: string) => {
+    if (!url) {
+      message.warning('No document URL available');
+      return;
+    }
+    setCurrentDocUrl(url);
+    setViewerVisible(true);
+  };
 
   // Fetch courses and academic periods
   const fetchCoursesAndPeriods = useCallback(async () => {
@@ -183,7 +198,7 @@ export default function ManageEresources() {
           }
         });
         setAcademicPeriods(allPeriods);
-        
+
         if (result.data && result.data.length > 0 && !selectedCourseId) {
           setSelectedCourseId(result.data[0].id);
         }
@@ -235,7 +250,7 @@ export default function ManageEresources() {
     handleResetForm();
     if (selectedCourseId) {
       const firstPeriod = academicPeriods.find(p => p.course_id === selectedCourseId);
-      form.setFieldsValue({ 
+      form.setFieldsValue({
         course_id: selectedCourseId,
         academic_period_id: firstPeriod?.id
       });
@@ -247,12 +262,14 @@ export default function ManageEresources() {
   const handleEdit = (record: EResourceBook) => {
     setEditingId(record.id!);
     setIsEditing(true);
+    const chaptersData = record.chapters?.length ? record.chapters : [{ chapter_number: 1, chapter_name: 'Chapter 1', doc_link: '' }];
+    setPreviousChapters([...chaptersData]); // Store previous chapters to track file deletions
     form.setFieldsValue({
       course_id: record.course_id,
       academic_period_id: record.academic_period_id,
       book_name: record.book_name,
       description: record.description,
-      chapters: record.chapters?.length ? record.chapters : [{ chapter_number: 1, chapter_name: 'Chapter 1', doc_link: '' }]
+      chapters: chaptersData
     });
     setActiveView('form');
   };
@@ -263,21 +280,38 @@ export default function ManageEresources() {
     try {
       const endpoint = isEditing ? `/api/eresource/${editingId}` : '/api/eresource';
       const method = isEditing ? 'PUT' : 'POST';
-      
+
+      // Prepare data for API call
+      const requestData: {
+        book: {
+          course_id: any;
+          academic_period_id: any;
+          book_name: any;
+          description: any;
+        };
+        chapters: any;
+        previous_chapters?: EResourceChapter[];
+      } = {
+        book: {
+          course_id: values.course_id,
+          academic_period_id: values.academic_period_id,
+          book_name: values.book_name,
+          description: values.description
+        },
+        chapters: values.chapters
+      };
+
+      // If editing, include previous chapters to handle file cleanup
+      if (isEditing) {
+        requestData.previous_chapters = previousChapters;
+      }
+
       const response = await fetch(endpoint, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          book: {
-            course_id: values.course_id,
-            academic_period_id: values.academic_period_id,
-            book_name: values.book_name,
-            description: values.description
-          },
-          chapters: values.chapters
-        })
+        body: JSON.stringify(requestData)
       });
-      
+
       const result = await response.json();
       if (result.success) {
         message.success(`E-resource ${isEditing ? 'updated' : 'created'} successfully`);
@@ -347,10 +381,10 @@ export default function ManageEresources() {
       render: (_: any, record: EResourceBook) => (
         <Space>
           <Tooltip title="Edit">
-            <Button 
-              type="text" 
-              icon={<EditOutlined style={{ color: '#1890ff' }} />} 
-              onClick={() => handleEdit(record)} 
+            <Button
+              type="text"
+              icon={<EditOutlined style={{ color: '#1890ff' }} />}
+              onClick={() => handleEdit(record)}
             />
           </Tooltip>
           <Popconfirm
@@ -373,9 +407,9 @@ export default function ManageEresources() {
     const chapterColumns = [
       { title: '#', dataIndex: 'chapter_number', key: 'chapter_number', width: 60 },
       { title: 'Chapter Name', dataIndex: 'chapter_name', key: 'chapter_name' },
-      { 
-        title: 'Link', 
-        dataIndex: 'doc_link', 
+      {
+        title: 'Link',
+        dataIndex: 'doc_link',
         key: 'doc_link',
         render: (link: string) => link ? (
           <Button type="link" href={link} target="_blank" icon={<LinkOutlined />}>
@@ -386,11 +420,11 @@ export default function ManageEresources() {
     ];
 
     return (
-      <Table 
-        columns={chapterColumns} 
-        dataSource={record.chapters} 
-        pagination={false} 
-        size="small" 
+      <Table
+        columns={chapterColumns}
+        dataSource={record.chapters}
+        pagination={false}
+        size="small"
         rowKey="id"
         className="nested-chapter-table"
       />
@@ -437,15 +471,15 @@ export default function ManageEresources() {
                 currentPeriods.map(period => {
                   const periodBooks = eresources.filter(e => e.academic_period_id === period.id);
                   return (
-                    <Card 
-                      key={period.id} 
+                    <Card
+                      key={period.id}
                       title={
                         <Space>
                           <BookOutlined style={{ color: '#722ed1' }} />
                           <span>{period.label} <Text type="secondary">({period.description})</Text></span>
                         </Space>
                       }
-                        styles={{ header: { backgroundColor: '#1d1d1d' } }}
+                      styles={{ header: { backgroundColor: '#1d1d1d' } }}
                       className="shadow-sm overflow-hidden"
                     >
                       <Table
@@ -474,7 +508,7 @@ export default function ManageEresources() {
         </div>
       ) : (
         /* Form View */
-        <Card 
+        <Card
           className="shadow-lg max-w-4xl mx-auto"
           title={
             <Space>
@@ -493,13 +527,13 @@ export default function ManageEresources() {
           >
             <Row gutter={24}>
               <Col span={12}>
-                <Form.Item 
-                  name="course_id" 
-                  label="Course" 
+                <Form.Item
+                  name="course_id"
+                  label="Course"
                   rules={[{ required: true, message: 'Please select a course' }]}
                 >
-                  <Select 
-                    placeholder="Select Course" 
+                  <Select
+                    placeholder="Select Course"
                     onChange={(val) => {
                       const firstPeriod = academicPeriods.find(p => p.course_id === val);
                       form.setFieldValue('academic_period_id', firstPeriod?.id);
@@ -509,26 +543,26 @@ export default function ManageEresources() {
                   </Select>
                 </Form.Item>
               </Col>
-                <Col span={12}>
-                  <Form.Item 
-                    name="academic_period_id" 
-                    label={getAcademicPeriodLabel(selectedCourseIdForForm)} 
-                    rules={[{ required: true, message: `Please select a ${getAcademicPeriodLabel(selectedCourseIdForForm).toLowerCase()}` }]}
-                  >
-                    <Select placeholder={`Select ${getAcademicPeriodLabel(selectedCourseIdForForm)}`}>
-                      {academicPeriods
-                        .filter(p => p.course_id === selectedCourseIdForForm)
-                        .map(p => <Select.Option key={p.id} value={p.id}>{p.label} ({p.description})</Select.Option>)
-                      }
-                    </Select>
-                  </Form.Item>
-                </Col>
+              <Col span={12}>
+                <Form.Item
+                  name="academic_period_id"
+                  label={getAcademicPeriodLabel(selectedCourseIdForForm)}
+                  rules={[{ required: true, message: `Please select a ${getAcademicPeriodLabel(selectedCourseIdForForm).toLowerCase()}` }]}
+                >
+                  <Select placeholder={`Select ${getAcademicPeriodLabel(selectedCourseIdForForm)}`}>
+                    {academicPeriods
+                      .filter(p => p.course_id === selectedCourseIdForForm)
+                      .map(p => <Select.Option key={p.id} value={p.id}>{p.label} ({p.description})</Select.Option>)
+                    }
+                  </Select>
+                </Form.Item>
+              </Col>
 
             </Row>
 
-            <Form.Item 
-              name="book_name" 
-              label="Book Name" 
+            <Form.Item
+              name="book_name"
+              label="Book Name"
               rules={[{ required: true, message: 'Please enter book name' }]}
             >
               <Input placeholder="e.g., Anatomy Textbook, Nursing Fundamentals" size="large" />
@@ -543,8 +577,8 @@ export default function ManageEresources() {
             <Form.List name="chapters">
               {(fields, { add, remove }) => (
                 <div className="space-y-4">
-                    {fields.map(({ key, name, ...restField }) => (
-                      <Card key={key} size="small" className="bg-[#1d1d1d] border-[#303030]">
+                  {fields.map(({ key, name, ...restField }) => (
+                    <Card key={key} size="small" className="bg-[#1d1d1d] border-[#303030]">
                       <Row gutter={12} align="middle">
                         <Col span={3}>
                           <Form.Item
@@ -556,7 +590,7 @@ export default function ManageEresources() {
                             <Input type="number" min={1} />
                           </Form.Item>
                         </Col>
-                        <Col span={9}>
+                        <Col span={8}>
                           <Form.Item
                             {...restField}
                             name={[name, 'chapter_name']}
@@ -566,35 +600,50 @@ export default function ManageEresources() {
                             <Input placeholder="Chapter Name" />
                           </Form.Item>
                         </Col>
-                          <Col span={10}>
-                            <Form.Item
-                              {...restField}
-                              name={[name, 'doc_link']}
-                              label="Document URL / Path"
-                            >
-                              <Input placeholder="/assets/eresources/..." prefix={<LinkOutlined />} />
-                            </Form.Item>
-                          </Col>
-                          <Col span={2}>
-                            <Form.Item label="Upload">
-                              <Button 
-                                icon={<UploadOutlined />} 
+                        <Col span={9}>
+                          <Form.Item
+                            {...restField}
+                            name={[name, 'doc_link']}
+                            label="Document URL / Path"
+                          >
+                            <Input placeholder="/assets/eresources/..." prefix={<LinkOutlined />} />
+                          </Form.Item>
+                        </Col>
+                        <Col span={2}>
+                          <Form.Item label="Upload">
+                            <Button
+                              icon={<UploadOutlined />}
+                              onClick={() => {
+                                const input = document.createElement('input');
+                                input.type = 'file';
+                                input.accept = '.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.epub';
+                                input.onchange = (e) => handleFileUpload(e as unknown as React.ChangeEvent<HTMLInputElement>, name);
+                                input.click();
+                              }}
+                              className="w-full"
+                            />
+                          </Form.Item>
+                        </Col>
+                        <Col span={2}>
+                          <Form.Item label="View">
+                            <Tooltip title="Preview Document">
+                              <Button
+                                icon={<EyeOutlined />}
                                 onClick={() => {
-                                  const input = document.createElement('input');
-                                  input.type = 'file';
-                                  input.accept = '.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.epub';
-                                  input.onchange = (e) => handleFileUpload(e as unknown as React.ChangeEvent<HTMLInputElement>, name);
-                                  input.click();
+                                  const docUrl = form.getFieldValue(['chapters', name, 'doc_link']);
+                                  handleViewDocument(docUrl);
                                 }}
                                 className="w-full"
+                                type="default"
                               />
-                            </Form.Item>
-                          </Col>
-                        <Col span={2}>
-                          <Button 
-                            danger 
-                            type="text" 
-                            icon={<DeleteOutlined />} 
+                            </Tooltip>
+                          </Form.Item>
+                        </Col>
+                        <Col span={1}>
+                          <Button
+                            danger
+                            type="text"
+                            icon={<DeleteOutlined />}
                             onClick={() => remove(name)}
                             className="mt-6"
                           />
@@ -619,7 +668,40 @@ export default function ManageEresources() {
         </Card>
       )}
 
-        <style jsx global>{`
+      {/* Document Viewer Modal */}
+      <Modal
+        open={viewerVisible}
+        onCancel={() => setViewerVisible(false)}
+        footer={null}
+        width="95vw"
+        centered
+        destroyOnClose
+        title={
+          <Space>
+            <EyeOutlined style={{ color: '#1890ff' }} />
+            <Text strong>Document Preview</Text>
+          </Space>
+        }
+      >
+        <div style={{ height: '85vh', position: 'relative' }}>
+          {currentDocUrl ? (
+            <iframe
+              src={currentDocUrl}
+              style={{
+                width: '100%',
+                height: '100%',
+                border: 'none',
+                borderRadius: '8px'
+              }}
+              title="Document Preview"
+            />
+          ) : (
+            <Empty description="No document to preview" />
+          )}
+        </div>
+      </Modal>
+
+      <style jsx global>{`
           .nested-chapter-table .ant-table-thead > tr > th {
             background-color: #262626 !important;
           }

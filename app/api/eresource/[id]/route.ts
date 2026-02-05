@@ -44,6 +44,7 @@ interface EResourceChapter {
 interface UpdateEResourceRequest {
   book: EResourceBook;
   chapters: EResourceChapter[];
+  previous_chapters?: EResourceChapter[];
 }
 
 /**
@@ -130,7 +131,7 @@ export async function PUT(
     }
 
     const body: UpdateEResourceRequest = await request.json();
-    const { book, chapters = [] } = body;
+    const { book, chapters = [], previous_chapters } = body;
 
     // Validation
     if (!book.book_name || !book.book_name.trim()) {
@@ -157,13 +158,22 @@ export async function PUT(
     await client.query('BEGIN');
 
     // Get old chapters to identify files to delete
-    const oldChaptersResult = await client.query<EResourceChapter>(
-      'SELECT doc_link FROM eresource_chapters WHERE eresource_book_id = $1',
-      [bookId]
-    );
-    const oldLinks = oldChaptersResult.rows
-      .map(c => c.doc_link)
-      .filter((link): link is string => !!link);
+    // If previous_chapters is provided, use that instead of fetching from DB for more accurate file cleanup
+    let oldLinks: string[] = [];
+    if (previous_chapters && previous_chapters.length > 0) {
+      oldLinks = previous_chapters
+        .map(c => c.doc_link)
+        .filter((link): link is string => !!link);
+    } else {
+      // Fallback to fetching from DB if previous_chapters not provided
+      const oldChaptersResult = await client.query<EResourceChapter>(
+        'SELECT doc_link FROM eresource_chapters WHERE eresource_book_id = $1',
+        [bookId]
+      );
+      oldLinks = oldChaptersResult.rows
+        .map(c => c.doc_link)
+        .filter((link): link is string => !!link);
+    }
 
     // Update book
     const periodId = book.academic_period_id;

@@ -119,11 +119,13 @@ export default function Hero() {
               transition={{ duration: 0.7 }}
               className="relative"
             >
-              <div className="relative aspect-[16/9] rounded-3xl overflow-hidden shadow-2xl" style={{ margin: "16px"}}>
+              <div className="relative  rounded-3xl overflow-hidden shadow-2xl" style={{ margin: "16px"}}>
                 <Image
-                  src="/group.jpg"
+                  src="/herobanner.jpeg"
                   alt="Vision Publication"
-                  fill
+                  width={600}
+                  height={300}
+                  // fill
                   priority
                   className="object-cover"
                 />

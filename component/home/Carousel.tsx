@@ -221,59 +221,66 @@ export default function Carousel() {
                       justifyContent="flex-start"
                       px={{ base: '20px', md: '40px', lg: '60px' }}
                     >
-                      <MotionBox
-                        variants={textVariants}
-                        initial="hidden"
-                        animate="visible"
-                        maxW={{ base: '100%', md: '600px' }}
-                      >
-                        {/* Title */}
-                        <Text
-                          fontSize={{ base: '32px', md: '48px', lg: '56px' }}
-                          fontWeight="900"
-                          color="white"
-                          lineHeight="1.2"
-                          mb="16px"
-                          textShadow="0 4px 12px rgba(0, 0, 0, 0.5)"
+                      {(item.title || item.description) && (
+                        <MotionBox
+                          variants={textVariants}
+                          initial="hidden"
+                          animate="visible"
+                          maxW={{ base: '100%', md: '600px' }}
                         >
-                          {item.title}
-                        </Text>
+                          {/* Title */}
+                          {item.title && (
+                            <Text
+                              fontSize={{ base: '32px', md: '48px', lg: '56px' }}
+                              fontWeight="900"
+                              color="white"
+                              lineHeight="1.2"
+                              mb="16px"
+                              textShadow="0 4px 12px rgba(0, 0, 0, 0.5)"
+                            >
+                              {item.title}
+                            </Text>
+                          )}
 
-                        {/* Description */}
-                        <Text
-                          fontSize={{ base: '14px', md: '16px', lg: '18px' }}
-                          color="gray.200"
-                          lineHeight="1.6"
-                          maxW="500px"
-                          mb="24px"
-                        >
-                          {item.description}
-                        </Text>
+                          {/* Description */}
+                          {item.description && (
+                            <Text
+                              fontSize={{ base: '14px', md: '16px', lg: '18px' }}
+                              color="gray.200"
+                              lineHeight="1.6"
+                              maxW="500px"
+                              mb="24px"
+                            >
+                              {item.description}
+                            </Text>
+                          )}
 
-                        {/* CTA Button */}
-                        <motion.button
-                          onClick={() => handleLearnMore(item.link_url)}
-                          whileHover={{
-                            scale: 1.05,
-                            boxShadow: '0 20px 40px rgba(100, 181, 246, 0.4)',
-                          }}
-                          whileTap={{ scale: 0.95 }}
-                          style={{
-                            padding: '12px 28px',
-                            fontSize: '14px',
-                            fontWeight: '600',
-                            border: 'none',
-                            borderRadius: '8px',
-                            background: 'linear-gradient(135deg, #64B5F6, #42A5F5)',
-                            color: 'white',
-                            cursor: item.link_url ? 'pointer' : 'default',
-                            boxShadow: '0 10px 30px rgba(100, 181, 246, 0.3)',
-                            opacity: item.link_url ? 1 : 0.5,
-                          }}
-                        >
-                          Learn More
-                        </motion.button>
-                      </MotionBox>
+                          {/* CTA Button */}
+                          {item.link_url && (
+                            <motion.button
+                              onClick={() => handleLearnMore(item.link_url)}
+                              whileHover={{
+                                scale: 1.05,
+                                boxShadow: '0 20px 40px rgba(100, 181, 246, 0.4)',
+                              }}
+                              whileTap={{ scale: 0.95 }}
+                              style={{
+                                padding: '12px 28px',
+                                fontSize: '14px',
+                                fontWeight: '600',
+                                border: 'none',
+                                borderRadius: '8px',
+                                background: 'linear-gradient(135deg, #64B5F6, #42A5F5)',
+                                color: 'white',
+                                cursor: 'pointer',
+                                boxShadow: '0 10px 30px rgba(100, 181, 246, 0.3)',
+                              }}
+                            >
+                              Learn More
+                            </motion.button>
+                          )}
+                        </MotionBox>
+                      )}
                     </Box>
                   </MotionBox>
                 );
