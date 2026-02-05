@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import {
   Box,
   Container,
@@ -35,7 +35,7 @@ const FormLabel = (props: any) => <Box as="label" fontWeight="bold" mb={2} {...p
 /**
  * Blog Post Editor Component
  */
-export default function BlogPostEditor() {
+export default function BlogPostEditor({ initialBlogId = null }: { initialBlogId?: number | null }) {
   const [formData, setFormData] = useState<CreateBlogPostRequest>({
     title: '',
     subtitle: '',
@@ -48,6 +48,10 @@ export default function BlogPostEditor() {
     authorRole: 'Healthcare Specialist',
     isPublished: false
   });
+
+  const [blogId, setBlogId] = useState<number | null>(initialBlogId); // For edit mode
+  const [uploadedImages, setUploadedImages] = useState<string[]>([]); // Track uploaded image URLs
+  const [tempImages, setTempImages] = useState<File[]>([]); // Temporarily store image files during editing
 
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<'edit' | 'preview' | 'settings'>('edit');
@@ -69,6 +73,100 @@ export default function BlogPostEditor() {
   const handleContentChange = useCallback((value: string) => {
     setFormData(prev => ({ ...prev, content: value }));
   }, []);
+
+  /**
+   * Handle image selection from Quill editor - store temporarily instead of uploading
+   */
+  const handleImageSelect = useCallback((file: File) => {
+    // Store the file temporarily until form submission
+    setTempImages(prev => [...prev, file]);
+    
+    // Create a temporary URL for preview
+    const tempUrl = URL.createObjectURL(file);
+    return tempUrl;
+  }, []);
+
+  /**
+   * Upload all temporary images when form is submitted
+   */
+  const uploadTempImages = useCallback(async (): Promise<string[]> => {
+    if (tempImages.length === 0) return [];
+    
+    const uploadedUrls: string[] = [];
+    
+    for (const file of tempImages) {
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        if (blogId) {
+          formData.append('blogId', blogId.toString());
+        }
+        
+        const response = await fetch('/api/blog/upload', {
+          method: 'POST',
+          body: formData
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          uploadedUrls.push(data.url);
+        }
+      } catch (error) {
+        console.error('Image upload failed:', error);
+      }
+    }
+    
+    return uploadedUrls;
+  }, [tempImages, blogId]);
+
+  /**
+   * Clean up temporary image URLs
+   */
+  const cleanupTempImages = useCallback(() => {
+    tempImages.forEach(file => {
+      URL.revokeObjectURL(URL.createObjectURL(file));
+    });
+    setTempImages([]);
+  }, [tempImages]);
+
+  /**
+   * Replace temporary image URLs with actual uploaded URLs
+   */
+  const replaceTempImageUrls = useCallback((content: string, uploadedUrls: string[]): string => {
+    let updatedContent = content;
+    
+    // Replace temporary URLs with actual uploaded URLs
+    // Temporary URLs are blob: URLs
+    const tempUrlRegex = /src="blob:[^"]*"/g;
+    let match;
+    let urlIndex = 0;
+    
+    while ((match = tempUrlRegex.exec(content)) !== null && urlIndex < uploadedUrls.length) {
+      const fullMatch = match[0];
+      updatedContent = updatedContent.replace(fullMatch, `src="${uploadedUrls[urlIndex]}"`);
+      urlIndex++;
+    }
+    
+    return updatedContent;
+  }, []);
+
+  /**
+   * Clean up orphaned images if form submission fails
+   */
+  const cleanupOrphanedImages = useCallback(async (imageUrls: string[]) => {
+    // In a production environment, you'd want to implement
+    // a cleanup endpoint to remove unused files
+    // For now, we'll just log them
+    console.log('Orphaned images to cleanup:', imageUrls);
+  }, []);
+
+  // Cleanup temporary images when component unmounts
+  useEffect(() => {
+    return () => {
+      cleanupTempImages();
+    };
+  }, [cleanupTempImages]);
 
   /**
    * Handle input field changes
@@ -138,15 +236,39 @@ export default function BlogPostEditor() {
     if (!validateForm()) return;
 
     setIsLoading(true);
+    let uploadedImageUrls: string[] = [];
+    
     try {
-      const response = await authUtils.fetchWithAuth('/api/blog/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...formData,
-          isPublished: false
-        })
-      });
+      // Upload images first
+      uploadedImageUrls = await uploadTempImages();
+      
+      // Update content with actual image URLs
+      const finalContent = replaceTempImageUrls(formData.content, uploadedImageUrls);
+      
+      let response;
+      if (blogId) {
+        // Update existing blog post
+        response = await authUtils.fetchWithAuth(`/api/blog/edit/${blogId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...formData,
+            content: finalContent,
+            isPublished: false
+          })
+        });
+      } else {
+        // Create new blog post
+        response = await authUtils.fetchWithAuth('/api/blog', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...formData,
+            content: finalContent,
+            isPublished: false
+          })
+        });
+      }
 
       if (!response.ok) {
         const error = await response.json();
@@ -155,6 +277,15 @@ export default function BlogPostEditor() {
 
       const data = await response.json();
       alert(`Draft Saved: ${data.post.slug}`);
+      
+      // Update blogId if this was a new post
+      if (!blogId) {
+        setBlogId(data.post.id);
+      }
+      
+      // Clear temp images since they're now uploaded
+      cleanupTempImages();
+      setUploadedImages(uploadedImageUrls);
 
       // Reset form
       setFormData({
@@ -171,11 +302,15 @@ export default function BlogPostEditor() {
       });
 
     } catch (error) {
+      // Clean up uploaded images if form submission fails
+      if (uploadedImageUrls.length > 0) {
+        cleanupOrphanedImages(uploadedImageUrls);
+      }
       alert(error instanceof Error ? error.message : 'Failed to save draft');
     } finally {
       setIsLoading(false);
     }
-  }, [formData, validateForm]);
+  }, [formData, validateForm, blogId, uploadTempImages, cleanupTempImages, cleanupOrphanedImages, replaceTempImageUrls]);
 
   /**
    * Publish blog post
@@ -184,15 +319,39 @@ export default function BlogPostEditor() {
     if (!validateForm()) return;
 
     setIsLoading(true);
+    let uploadedImageUrls: string[] = [];
+    
     try {
-      const response = await authUtils.fetchWithAuth('/api/blog/create', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...formData,
-          isPublished: true
-        })
-      });
+      // Upload images first
+      uploadedImageUrls = await uploadTempImages();
+      
+      // Update content with actual image URLs
+      const finalContent = replaceTempImageUrls(formData.content, uploadedImageUrls);
+      
+      let response;
+      if (blogId) {
+        // Update existing blog post
+        response = await authUtils.fetchWithAuth(`/api/blog/edit/${blogId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...formData,
+            content: finalContent,
+            isPublished: true
+          })
+        });
+      } else {
+        // Create new blog post
+        response = await authUtils.fetchWithAuth('/api/blog', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...formData,
+            content: finalContent,
+            isPublished: true
+          })
+        });
+      }
 
       if (!response.ok) {
         const error = await response.json();
@@ -201,6 +360,15 @@ export default function BlogPostEditor() {
 
       const data = await response.json();
       alert(`Published Successfully: ${data.post.slug}`);
+      
+      // Update blogId if this was a new post
+      if (!blogId) {
+        setBlogId(data.post.id);
+      }
+      
+      // Clear temp images since they're now uploaded
+      cleanupTempImages();
+      setUploadedImages(uploadedImageUrls);
 
       // Reset form
       setFormData({
@@ -217,11 +385,15 @@ export default function BlogPostEditor() {
       });
 
     } catch (error) {
+      // Clean up uploaded images if form submission fails
+      if (uploadedImageUrls.length > 0) {
+        cleanupOrphanedImages(uploadedImageUrls);
+      }
       alert(error instanceof Error ? error.message : 'Failed to publish post');
     } finally {
       setIsLoading(false);
     }
-  }, [formData, validateForm]);
+  }, [formData, validateForm, blogId, uploadTempImages, cleanupTempImages, cleanupOrphanedImages, replaceTempImageUrls]);
 
   return (
     <Container maxW="1200px" py={8}>
@@ -362,6 +534,8 @@ export default function BlogPostEditor() {
                   value={formData.content}
                   onChange={handleContentChange}
                   placeholder="Start writing your blog post..."
+                  blogId={blogId}
+                  onImageSelect={handleImageSelect}
                 />
                 <Text fontSize="xs" color="gray.500" mt={2}>
                   Use the toolbar to format your content with bold, italic, links, images, and more

@@ -4,13 +4,18 @@ import { useEffect, useRef } from 'react';
 import { Box } from '@chakra-ui/react';
 import 'quill/dist/quill.snow.css';
 
+// Define Quill modules globally to register image handler
+let Quill: any = null;
+
 interface QuillEditorProps {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
+  onImageSelect?: (file: File) => string; // Callback for handling image selection (returns temp URL)
+  blogId?: number | null; // Blog ID for image upload
 }
 
-export default function QuillEditor({ value, onChange, placeholder }: QuillEditorProps) {
+export default function QuillEditor({ value, onChange, placeholder, onImageSelect, blogId }: QuillEditorProps) {
   const editorRef = useRef<any>(null);
   const quillRef = useRef<any>(null);
 
@@ -21,9 +26,10 @@ export default function QuillEditor({ value, onChange, placeholder }: QuillEdito
     const loadQuill = async () => {
       try {
         // Import Quill library directly
-        const { default: Quill } = await import('quill');
+        const QuillModule = await import('quill');
+        Quill = QuillModule.default;
         
-        if (!editorRef.current || quillRef.current) return;
+                if (!editorRef.current || quillRef.current) return;
 
         // Create a new Quill instance
         quillRef.current = new Quill(editorRef.current, {
@@ -44,6 +50,44 @@ export default function QuillEditor({ value, onChange, placeholder }: QuillEdito
               ['clean']
             ]
           }
+        });
+
+        // Custom image handler
+        quillRef.current.getModule('toolbar').addHandler('image', () => {
+          const input = document.createElement('input');
+          input.setAttribute('type', 'file');
+          input.setAttribute('accept', 'image/*');
+          input.click();
+
+          input.onchange = () => {
+            const file = input.files?.[0];
+            if (!file) return;
+
+            if (onImageSelect) {
+              try {
+                // Get temporary URL for preview
+                const tempUrl = onImageSelect(file);
+                
+                // Insert the temporary image URL into the editor
+                const range = quillRef.current.getSelection();
+                if (range) {
+                  quillRef.current.insertEmbed(range.index, 'image', tempUrl);
+                }
+              } catch (error) {
+                console.error('Image selection failed:', error);
+              }
+            } else {
+              // Fallback to base64 if no callback provided
+              const reader = new FileReader();
+              reader.onload = () => {
+                const range = quillRef.current.getSelection();
+                if (range) {
+                  quillRef.current.insertEmbed(range.index, 'image', reader.result);
+                }
+              };
+              reader.readAsDataURL(file);
+            }
+          };
         });
 
         // Set initial value if provided
@@ -69,7 +113,7 @@ export default function QuillEditor({ value, onChange, placeholder }: QuillEdito
         quillRef.current = null;
       }
     };
-  }, [onChange, placeholder]);
+  }, [onChange, placeholder, onImageSelect]);
 
   // Update content when value prop changes externally
   useEffect(() => {
