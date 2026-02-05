@@ -28,6 +28,18 @@ export default function Login({ isModal = false, onSuccess }: LoginModalProps = 
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  React.useEffect(() => {
+    setIsMobile(window.innerWidth < 992);
+    
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 992);
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const handleLogin = async (values: any) => {
     setLoading(true);
@@ -150,7 +162,7 @@ export default function Login({ isModal = false, onSuccess }: LoginModalProps = 
           backgroundImage: 'url(/login.jpeg)',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
-          display: window.innerWidth < 992 ? 'none' : 'block'
+          display: isMobile ? 'none' : 'block'
         }}
       />
 

@@ -14,7 +14,7 @@ export default function Hero() {
   const router = useRouter();
   return (
     <section className="relative bg-indigo overflow-hidden px-[20px]">
-      <div className="max-w-7xl mx-auto">
+      <div className=" mx-auto">
         <Row gutter={[48, 48]} align="middle">
           {/* LEFT */}
           <Col xs={24} lg={12}>
@@ -119,7 +119,7 @@ export default function Hero() {
               transition={{ duration: 0.7 }}
               className="relative"
             >
-              <div className="relative aspect-[16/9] rounded-3xl overflow-hidden shadow-2xl">
+              <div className="relative aspect-[16/9] rounded-3xl overflow-hidden shadow-2xl" style={{ margin: "16px"}}>
                 <Image
                   src="/group.jpg"
                   alt="Vision Publication"
