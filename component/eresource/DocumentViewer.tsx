@@ -13,11 +13,20 @@ interface DocumentViewerProps {
 }
 
 export default function DocumentViewer({ url }: DocumentViewerProps) {
+  const fileExtension = url.split('.').pop()?.toLowerCase();
+  
+  // Set default viewer based on file type
+  const getDefaultViewer = () => {
+    if (fileExtension === 'pptx' || fileExtension === 'ppt') {
+      return 'microsoft';
+    }
+    return 'default';
+  };
+
   const [viewerType, setViewerType] =
-    useState<'default' | 'microsoft' | 'google'>('default');
+    useState<'default' | 'microsoft' | 'google'>(getDefaultViewer());
   const [isLoading, setIsLoading] = useState(true);
 
-  const fileExtension = url.split('.').pop()?.toLowerCase();
   const isOfficeDoc = ['pptx', 'ppt', 'docx', 'doc', 'xlsx', 'xls'].includes(
     fileExtension || ''
   );
